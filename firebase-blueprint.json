@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A student participating in the IB Explorer program.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The student's full name."
+        },
+        "grade": {
+          "type": "string",
+          "description": "The student's grade level."
+        },
+        "class": {
+          "type": "string",
+          "description": "The student's class number."
+        },
+        "score": {
+          "type": "integer",
+          "description": "The student's total quiz score."
+        },
+        "lastQuizDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the student's last quiz attempt."
+        },
+        "streak": {
+          "type": "integer",
+          "description": "The student's maximum quiz streak."
+        }
+      },
+      "required": ["name", "grade", "class", "score"]
+    },
+    "Reflection": {
+      "title": "Reflection",
+      "description": "A student's reflection journal entries.",
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "ATL": {
+      "title": "ATL",
+      "description": "A student's ATL self-assessment data.",
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of student profiles and their scores."
+    },
+    "/reflections/{userId}": {
+      "schema": "Reflection",
+      "description": "Collection of student reflection journals."
+    },
+    "/atl/{userId}": {
+      "schema": "ATL",
+      "description": "Collection of student ATL self-assessments."
+    }
+  }
+}
