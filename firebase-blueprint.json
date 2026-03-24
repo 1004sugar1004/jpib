@@ -15,7 +15,12 @@
         },
         "class": {
           "type": "string",
-          "description": "The student's class number."
+          "description": "The user's class number."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["student", "teacher"],
+          "description": "The user's role in the program."
         },
         "score": {
           "type": "integer",

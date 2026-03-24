@@ -16,6 +16,16 @@ export const ASSETS = {
     daily_mission: 'https://i.imgur.com/xcAHh1g.png',
     quiz_icon: 'https://i.imgur.com/YtyIn1s.png',
     ranking_icon: 'https://i.imgur.com/EhA2HQZ.png',
+    flashcard_icon: 'https://i.imgur.com/Kq3J8uq.png',
+    memory_icon: 'https://i.imgur.com/bqaks8U.png',
+    game_icon: 'https://i.imgur.com/aq9XF3j.png',
+  },
+  games: {
+    anipang_thumb: 'https://i.imgur.com/v7KIyBI.png',
+    galaga_thumb: 'https://i.imgur.com/8pKDYvD.png',
+    fruit_thumb: 'https://i.imgur.com/B67rTec.png',
+    sort_thumb: 'https://i.imgur.com/ruQHrfW.png',
+    mario_thumb: 'https://i.imgur.com/sEqw0FL.png',
   },
   backgrounds: {
     main: 'https://i.imgur.com/4c2LpFS.png',
@@ -26,5 +36,7 @@ export const ASSETS = {
   sounds: {
     correct: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
     joyful: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
+    wrong: 'https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3',
+    bgm: 'https://assets.mixkit.co/active_storage/sfx/123/123-preview.mp3',
   }
 };

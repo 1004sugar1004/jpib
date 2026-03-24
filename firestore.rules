@@ -9,10 +9,11 @@ service cloud.firestore {
     // Collection: users
     // Document ID: {userId}
     // Fields:
-    //   - name: string (required, min 1, max 50) - The student's full name.
-    //   - grade: string (required, min 1, max 10) - The student's grade level.
-    //   - class: string (required, min 1, max 10) - The student's class number.
-    //   - score: number (required, min 0) - The student's total quiz score.
+    //   - name: string (required, min 1, max 50) - The user's full name.
+    //   - grade: string (required, min 1, max 10) - The user's grade level.
+    //   - class: string (required, min 1, max 10) - The user's class number.
+    //   - role: string (required, enum: ['student', 'teacher']) - The user's role.
+    //   - score: number (required, min 0) - The user's total quiz score.
     //   - lastQuizDate: string (optional, ISO 8601) - The timestamp of the student's last quiz attempt.
     //   - streak: number (optional, min 0) - The student's max quiz streak.
     //
@@ -45,10 +46,11 @@ service cloud.firestore {
     }
 
     function isValidUser(data) {
-      return data.keys().hasAll(['name', 'grade', 'class', 'score']) &&
+      return data.keys().hasAll(['name', 'grade', 'class', 'score', 'role']) &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 50 &&
              data.grade is string && data.grade.size() > 0 && data.grade.size() <= 10 &&
              data.class is string && data.class.size() > 0 && data.class.size() <= 10 &&
+             data.role in ['student', 'teacher'] &&
              data.score is number && data.score >= 0 &&
              (!('streak' in data) || (data.streak is number && data.streak >= 0));
     }
