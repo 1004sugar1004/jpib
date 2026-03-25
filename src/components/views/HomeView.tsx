@@ -21,12 +21,13 @@ import {
 import { ibReflectionQuestions } from '../../content';
 
 import { UserProfile } from '../../types';
-import { getLevel } from '../../lib/utils';
+import { getLevel, formatGradeClass } from '../../lib/utils';
 
 interface HomeViewProps {
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate') => void;
+  rankings: UserProfile[];
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
   bgMusicPlaying: boolean;
@@ -40,6 +41,7 @@ export const HomeView = ({
   profile, 
   reflectionData, 
   setView, 
+  rankings,
   soundEnabled, 
   setSoundEnabled, 
   bgMusicPlaying,
@@ -50,6 +52,41 @@ export const HomeView = ({
 }: HomeViewProps) => {
   const level = getLevel(profile?.score || 0);
   const studyProgress = Math.floor((Object.keys(reflectionData).length / ibReflectionQuestions.length) * 100);
+
+  // Calculate class rankings
+  const classRankings = React.useMemo(() => {
+    const classMap: { [key: string]: { name: string; score: number; count: number } } = {};
+    
+    rankings.forEach(user => {
+      if (user.role === 'teacher') return;
+      
+      const extractNumbers = (val: string) => {
+        if (!val) return [];
+        const matches = val.toString().match(/\d+/g);
+        return matches ? matches.map(m => parseInt(m, 10).toString()) : [];
+      };
+
+      const allNums = [
+        ...extractNumbers(user.grade || ''),
+        ...extractNumbers(user.class || '')
+      ];
+      
+      if (allNums.length >= 2) {
+        const nGrade = allNums[0];
+        const nClass = allNums[1];
+        const groupKey = `${nGrade}-${nClass}`;
+        const groupName = `${nGrade}학년 ${nClass}반`;
+        
+        if (!classMap[groupKey]) {
+          classMap[groupKey] = { name: groupName, score: 0, count: 0 };
+        }
+        classMap[groupKey].score += (user.score || 0);
+        classMap[groupKey].count += 1;
+      }
+    });
+    
+    return Object.values(classMap).sort((a, b) => b.score - a.score).slice(0, 3);
+  }, [rankings]);
   
   return (
     <div className="max-w-4xl mx-auto p-4 py-8 space-y-8">
@@ -76,9 +113,7 @@ export const HomeView = ({
               </span>
             </div>
             <p className="text-gray-500 font-medium mb-4">
-              {profile?.role === 'teacher' ? '교사' : (
-                `${profile?.grade.includes('학년') ? profile?.grade : profile?.grade + '학년'} ${profile?.class.includes('반') ? profile?.class : profile?.class + '반'}`
-              )} • 증평초등학교
+              {formatGradeClass(profile?.grade, profile?.class, profile?.role)} • 증평초등학교
             </p>
             
             <div className="space-y-2">
@@ -129,70 +164,216 @@ export const HomeView = ({
         </div>
       </header>
 
-      {/* XP Guide Card */}
+      {/* Top 3 Rankings Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/40 backdrop-blur-md rounded-[40px] p-8 border border-white/40 shadow-xl"
+      >
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-200">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-gray-900">🏆 실시간 누적 랭킹 TOP 3</h3>
+              <p className="text-yellow-600 font-bold text-sm uppercase tracking-widest">CURRENT LEADERS</p>
+            </div>
+          </div>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => setView('ranking')}
+            className="bg-white/80 hover:bg-white"
+          >
+            전체 순위 보기
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {rankings.slice(0, 3).map((rank, index) => (
+            <div 
+              key={rank.uid}
+              className={cn(
+                "relative p-6 rounded-3xl border-2 flex flex-col items-center text-center transition-all hover:scale-105",
+                index === 0 ? "bg-gradient-to-b from-yellow-50 to-white border-yellow-200 shadow-yellow-100 shadow-lg" :
+                index === 1 ? "bg-gradient-to-b from-slate-50 to-white border-slate-200" :
+                "bg-gradient-to-b from-orange-50 to-white border-orange-200"
+              )}
+            >
+              <div className={cn(
+                "absolute -top-4 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md",
+                index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
+              )}>
+                {index + 1}
+              </div>
+              
+              <div className="w-20 h-20 rounded-full border-4 border-white shadow-inner mb-4 overflow-hidden bg-gray-100">
+                <img 
+                  src={rank.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${rank.uid}`} 
+                  alt={rank.name}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              
+              <h4 className="text-xl font-black text-gray-900">{rank.name}</h4>
+              <p className="text-gray-500 font-bold text-xs mb-3">{formatGradeClass(rank.grade, rank.class, rank.role)}</p>
+              
+              <div className="px-4 py-1.5 bg-white rounded-full border border-gray-100 shadow-sm">
+                <span className="text-indigo-600 font-black">{rank.score.toLocaleString()} XP</span>
+              </div>
+            </div>
+          ))}
+          {rankings.length === 0 && (
+            <div className="col-span-3 py-12 text-center text-gray-400 font-bold italic">
+              아직 탐험가가 없습니다. 첫 번째 주인공이 되어보세요!
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Top 3 Classes Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-indigo-50/50 backdrop-blur-md rounded-[40px] p-8 border border-indigo-100 shadow-xl"
+      >
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-gray-900">🏫 학급 대항전 TOP 3</h3>
+              <p className="text-indigo-600 font-bold text-sm uppercase tracking-widest">CLASS LEADERS</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {classRankings.map((cls, index) => (
+            <div 
+              key={cls.name}
+              className={cn(
+                "relative p-6 rounded-3xl border-2 flex flex-col items-center text-center bg-white shadow-sm",
+                index === 0 ? "border-yellow-400 ring-4 ring-yellow-50" : "border-gray-100"
+              )}
+            >
+              <div className={cn(
+                "absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-white font-black text-xs shadow-md",
+                index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
+              )}>
+                {index + 1}위
+              </div>
+              
+              <h4 className="text-xl font-black text-gray-900 mt-2">{cls.name}</h4>
+              <p className="text-gray-500 font-bold text-xs mb-4">참여 학생: {cls.count}명</p>
+              
+              <div className="w-full space-y-2">
+                <div className="flex justify-between text-[10px] font-black text-indigo-400 uppercase">
+                  <span>TOTAL SCORE</span>
+                  <span>{cls.score.toLocaleString()} XP</span>
+                </div>
+                <div className="h-2 bg-indigo-50 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((cls.score / (classRankings[0]?.score || 1)) * 100, 100)}%` }}
+                    className="h-full bg-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          {classRankings.length === 0 && (
+            <div className="col-span-3 py-12 text-center text-gray-400 font-bold italic">
+              아직 학급 데이터가 없습니다.
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* XP Guide Card - Information Section */}
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl border border-white/20"
+        className="bg-indigo-900/5 backdrop-blur-md p-8 rounded-[2.5rem] border-2 border-indigo-100/50"
       >
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-indigo-600" />
+          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+            <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-2xl font-black text-gray-900">XP 획득 가이드</h3>
-            <p className="text-gray-500 font-bold text-sm uppercase tracking-widest">HOW TO EARN XP</p>
+            <h3 className="text-2xl font-black text-indigo-900">💎 포인트 획득 방법 (안내)</h3>
+            <p className="text-indigo-500 font-bold text-sm uppercase tracking-widest">XP ACQUISITION GUIDE</p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="flex items-center gap-4 p-6 bg-blue-50/50 rounded-3xl border border-blue-100">
-            <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0 p-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div 
+            onClick={() => setView('study')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-blue-50 transition-colors group"
+          >
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform">
               <img src={ASSETS.quiz.logo} alt="Knowledge" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
-            <div>
-              <h4 className="font-black text-blue-900">지식 탐험</h4>
-              <p className="text-sm text-blue-700 font-bold">항목당 +30 XP</p>
-              <p className="text-xs text-blue-500 mt-1">IB 핵심 개념을 학습하고 체크하세요!</p>
-            </div>
+            <h4 className="font-black text-blue-900 text-sm">지식 탐험</h4>
+            <p className="text-xs text-blue-700 font-bold mt-1">+30 XP</p>
           </div>
           
-          <div className="flex items-center gap-4 p-6 bg-amber-50/50 rounded-3xl border border-amber-100">
-            <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center flex-shrink-0 p-2">
+          <div 
+            onClick={() => setView('flashcards')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-amber-50 transition-colors group"
+          >
+            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform">
               <img src={ASSETS.quiz.flashcard_icon} alt="Flashcards" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
-            <div>
-              <h4 className="font-black text-amber-900">플래시카드</h4>
-              <p className="text-sm text-amber-700 font-bold">세트당 +150 XP</p>
-              <p className="text-xs text-amber-500 mt-1">한 세트를 모두 학습하면 보너스 XP!</p>
-            </div>
+            <h4 className="font-black text-amber-900 text-sm">플래시카드</h4>
+            <p className="text-xs text-amber-700 font-bold mt-1">+150 XP</p>
           </div>
 
-          <div className="flex items-center gap-4 p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100">
-            <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center flex-shrink-0 p-2">
+          <div 
+            onClick={() => setView('memory')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-indigo-50 transition-colors group"
+          >
+            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform">
               <img src={ASSETS.quiz.memory_icon} alt="Memory" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
-            <div>
-              <h4 className="font-black text-indigo-900">기억력 강화</h4>
-              <p className="text-sm text-indigo-700 font-bold">성공 시 +50 XP</p>
-              <p className="text-xs text-indigo-500 mt-1">모든 짝을 맞추고 두뇌를 훈련하세요!</p>
-            </div>
+            <h4 className="font-black text-indigo-900 text-sm">기억력 강화</h4>
+            <p className="text-xs text-indigo-700 font-bold mt-1">+50 XP</p>
           </div>
 
-          <div className="flex items-center gap-4 p-6 bg-purple-50/50 rounded-3xl border border-purple-100">
-            <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center flex-shrink-0 p-2">
+          <div 
+            onClick={() => setView('quiz')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-purple-50 transition-colors group"
+          >
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform">
               <img src={ASSETS.quiz.quiz_icon} alt="Quiz" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
-            <div>
-              <h4 className="font-black text-purple-900">퀴즈 챌린지</h4>
-              <p className="text-sm text-purple-700 font-bold">정답당 +50 XP</p>
-              <p className="text-xs text-purple-500 mt-1">10문제 만점 시 티켓 3장 획득!</p>
+            <h4 className="font-black text-purple-900 text-sm">퀴즈 챌린지</h4>
+            <p className="text-xs text-purple-700 font-bold mt-1">+50 XP</p>
+          </div>
+
+          <div 
+            onClick={() => setView('music-quiz')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-rose-50 transition-colors group"
+          >
+            <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform">
+              <img src={ASSETS.quiz.music_icon} alt="Music" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
+            <h4 className="font-black text-rose-900 text-sm">음악 퀴즈</h4>
+            <p className="text-xs text-rose-700 font-bold mt-1">+50 XP</p>
           </div>
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-2 h-8 bg-indigo-600 rounded-full" />
+          <h3 className="text-2xl font-black text-gray-900">🚀 탐험 시작하기 (입장)</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div 
           whileHover={{ y: -10, scale: 1.02 }} 
           whileTap={{ scale: 0.98 }}
@@ -349,7 +530,34 @@ export const HomeView = ({
             </div>
           </Card>
         </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('certificate')}
+          className="group"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-indigo-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-indigo-50/30">
+            <div className="w-20 h-20 bg-indigo-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-indigo-100 overflow-hidden p-2">
+              <img 
+                src="https://i.imgur.com/ToOjCxD.png" 
+                alt="Certificate" 
+                className="w-full h-full object-contain" 
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://picsum.photos/seed/award/200/200";
+                }}
+              />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">자격증 발급</h3>
+            <p className="text-gray-500 text-sm font-medium mb-2">나만의 탐험가 자격증을 받아보세요!</p>
+            <div className="mt-6 flex items-center gap-1 text-indigo-600 font-bold text-sm">
+              발급하기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
       </div>
     </div>
+  </div>
   );
 };

@@ -1,29 +1,57 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import * as Tone from 'tone';
 import { MiniQuiz } from './MiniQuiz';
 import { ASSETS } from '../../assets';
 import { quizQuestions, QuizQuestion } from '../../content';
 import { cn } from '../../lib/utils';
 import { Cloud } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
-  const [marioX, setMarioX] = useState(10);
+  const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
   const [marioY, setMarioY] = useState(0);
-  const [velocityY, setVelocityY] = useState(0);
-  const [isJumping, setIsJumping] = useState(false);
+  const [worldX, setWorldX] = useState(0);
   const [score, setScore] = useState(0);
   const [life, setLife] = useState(10);
   const [quizCount, setQuizCount] = useState(0);
+  const [quizWrongCount, setQuizWrongCount] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
-  const [gates, setGates] = useState<{ id: number, x: number, question: QuizQuestion, options: string[], correctIdx: number, solved: boolean }[]>([]);
-  const [isMovingLeft, setIsMovingLeft] = useState(false);
-  const [isMovingRight, setIsMovingRight] = useState(false);
-  const [gameSpeed, setGameSpeed] = useState(4);
-  const requestRef = useRef<number>(null);
-  const lastTimeRef = useRef<number>(0);
+  const [gates, setGates] = useState<{ id: number, worldX: number, question: QuizQuestion, options: string[], correctIdx: number, solved: boolean }[]>([]);
+  const [gameSpeed, setGameSpeed] = useState(3);
+  const [floatingTexts, setFloatingTexts] = useState<{ id: number, x: number, y: number, text: string, color: string }[]>([]);
+  const [coins, setCoins] = useState<{ id: number, x: number, y: number, vy: number }[]>([]);
+
+  const addFloatingText = (x: number, y: number, text: string, color: string = 'text-yellow-400') => {
+    const id = Date.now() + Math.random();
+    const newText = { id, x, y, text, color };
+    setFloatingTexts(prev => [...prev, newText]);
+    setTimeout(() => {
+      setFloatingTexts(prev => prev.filter(t => t.id !== id));
+    }, 1000);
+  };
+
+  // Game state refs for the loop
+  const requestRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
+  const worldXRef = useRef(0);
+  const marioYRef = useRef(0);
+  const velocityYRef = useRef(0);
+  const isJumpingRef = useRef(false);
+  const gatesRef = useRef<{ id: number, worldX: number, question: QuizQuestion, options: string[], correctIdx: number, solved: boolean }[]>([]);
+  const scoreRef = useRef(0);
+  const lifeRef = useRef(10);
+  const quizCountRef = useRef(0);
+  const showQuizRef = useRef(false);
+  const gameStateRef = useRef<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
+  const coinsRef = useRef<{ id: number, x: number, y: number, vy: number }[]>([]);
+  const keysPressed = useRef<Set<string>>(new Set());
 
   const synthRef = useRef<Tone.PolySynth | null>(null);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
 
   useEffect(() => {
     if (soundEnabled) {
@@ -34,79 +62,217 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     };
   }, [soundEnabled]);
 
-  const playSound = (type: 'jump' | 'correct' | 'wrong') => {
-    if (!soundEnabled || !synthRef.current) return;
-    if (type === 'jump') synthRef.current.triggerAttackRelease("C4", "16n");
-    if (type === 'correct') synthRef.current.triggerAttackRelease(["E4", "G4", "C5"], "8n");
-    if (type === 'wrong') synthRef.current.triggerAttackRelease("G2", "4n");
+  const startGame = async () => {
+    await Tone.start();
+    setGameState('PLAYING');
+    gameStateRef.current = 'PLAYING';
+    setScore(0);
+    scoreRef.current = 0;
+    setLife(10);
+    lifeRef.current = 10;
+    setQuizCount(0);
+    quizCountRef.current = 0;
+    setQuizWrongCount(0);
+    setGates([]);
+    gatesRef.current = [];
+    worldXRef.current = 0;
+    marioYRef.current = 0;
+    velocityYRef.current = 0;
+    coinsRef.current = [];
+    setCoins([]);
+    
+    // Initial gates
+    spawnGate(500);
+    spawnGate(1200);
   };
 
-  const spawnGate = () => {
+  const playSound = (type: 'jump' | 'correct' | 'wrong' | 'coin') => {
+    if (!soundEnabled) return;
+    try {
+      if (type === 'coin') {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+        return;
+      }
+      if (type === 'jump' && synthRef.current) synthRef.current.triggerAttackRelease("C4", "16n");
+      if (type === 'correct' && synthRef.current) synthRef.current.triggerAttackRelease(["E4", "G4", "C5"], "8n");
+      if (type === 'wrong' && synthRef.current) synthRef.current.triggerAttackRelease("G2", "4n");
+    } catch (e) {}
+  };
+
+  const spawnGate = (atX?: number) => {
     const q = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
     const options = [...q.options];
     const correctIdx = q.correctAnswer;
-    setGates(prev => [...prev, { 
-      id: Date.now(), 
-      x: 110, 
+    
+    // Ensure minimum distance from the last gate
+    const lastGateX = gatesRef.current.length > 0 
+      ? Math.max(...gatesRef.current.map(g => g.worldX)) 
+      : worldXRef.current + 400;
+      
+    const spawnX = atX || lastGateX + 1200 + Math.random() * 600;
+    
+    const newGate = { 
+      id: Date.now() + Math.random(), 
+      worldX: spawnX, 
       question: q, 
       options, 
       correctIdx,
-      solved: false 
-    }]);
+      solved: false,
+      hitIdx: -1
+    };
+    gatesRef.current.push(newGate);
   };
 
   const animate = (time: number) => {
-    if (lastTimeRef.current !== undefined) {
-      const deltaTime = time - lastTimeRef.current;
-      if (deltaTime > 16) {
-        setMarioY(prevY => {
-          let nextY = prevY + velocityY;
-          if (nextY <= 0) {
-            nextY = 0;
-            setVelocityY(0);
-            setIsJumping(false);
-          } else {
-            setVelocityY(v => v - 0.8);
-          }
-          return nextY;
-        });
+    if (lastTimeRef.current === null) {
+      lastTimeRef.current = time;
+    }
+    const deltaTime = time - lastTimeRef.current;
 
-        setMarioX(prevX => {
-          let nextX = prevX;
-          if (isMovingLeft) nextX -= 0.8;
-          if (isMovingRight) nextX += 0.8;
-          return Math.max(5, Math.min(95, nextX));
-        });
+    if (deltaTime > 16) {
+      if (gameStateRef.current === 'PLAYING' && !showQuizRef.current) {
+        // 1. World Movement (Manual Control)
+        const moveSpeed = 6;
+        if (keysPressed.current.has('ArrowRight') || keysPressed.current.has('KeyD')) {
+          worldXRef.current += moveSpeed;
+        }
+        if (keysPressed.current.has('ArrowLeft') || keysPressed.current.has('KeyA')) {
+          worldXRef.current = Math.max(0, worldXRef.current - moveSpeed);
+        }
+        
+        // Optional: slow auto-scroll to keep the game moving forward
+        worldXRef.current += 1; 
+        
+        setWorldX(worldXRef.current);
 
-        setGates(prev => {
-          const next = prev.map(g => ({ ...g, x: g.x - (gameSpeed / 10) })).filter(g => g.x > -50);
+        // 2. Mario Physics (Jump only)
+        let nextY = marioYRef.current + velocityYRef.current;
+        if (nextY <= 0) {
+          nextY = 0;
+          velocityYRef.current = 0;
+          isJumpingRef.current = false;
+        } else {
+          velocityYRef.current -= 0.8;
+        }
+        marioYRef.current = nextY;
+
+        // 3. Collision Detection
+        const marioWorldX = worldXRef.current + 150; // Mario's horizontal position in world
+
+        gatesRef.current.forEach(g => {
+          // Check if Mario is horizontally within the gate area
+          const relativeX = marioWorldX - g.worldX;
           
-          next.forEach(g => {
-            if (!g.solved && Math.abs(g.x - marioX) < 15 && marioY > 80 && marioY < 150 && velocityY > 0) {
-              const hitIdx = marioX < g.x ? 0 : 1;
-              g.solved = true;
-              setVelocityY(-2);
-              if (hitIdx === g.correctIdx) {
-                setScore(s => s + 100);
-                playSound('correct');
-              } else {
-                setLife(l => Math.max(0, l - 1));
-                playSound('wrong');
-              }
-              setQuizCount(c => c + 1);
-              if ((quizCount + 1) % 5 === 0) setShowQuiz(true);
-            }
-          });
+          // The gate container is centered at g.worldX
+          // Bricks are in a flex container. Let's assume they are roughly at:
+          // Option 0: -180 to -20
+          // Option 1: -80 to 80
+          // Option 2: 20 to 180
+          // (Adjusted for 3 bricks of w-40 with gap-6)
+          
+          if (!g.solved && Math.abs(relativeX) < 250 && marioYRef.current > 140 && marioYRef.current < 220 && velocityYRef.current > 0) {
+            // Determine which option was hit
+            let hitIdx = -1;
+            if (relativeX < -80) hitIdx = 0;
+            else if (relativeX > 80) hitIdx = 2;
+            else hitIdx = 1;
 
-          return next;
+            if (hitIdx !== -1) {
+              g.solved = true;
+              g.hitIdx = hitIdx;
+              velocityYRef.current = -5; // Bounce back
+              
+              const isCorrect = hitIdx === g.correctIdx;
+              
+              if (isCorrect) {
+                scoreRef.current += 500;
+                setScore(scoreRef.current);
+                playSound('coin');
+                addFloatingText(150, 100 + marioYRef.current, 'CORRECT! +500', 'text-green-400');
+                
+                // Add coin effect
+                const coinX = (150 - relativeX) + (hitIdx - 1) * 184;
+                coinsRef.current.push({
+                  id: Date.now() + Math.random(),
+                  x: coinX,
+                  y: 100 + marioYRef.current + 40,
+                  vy: 10
+                });
+
+                // Jump again for joy
+                velocityYRef.current = 15;
+                
+                quizCountRef.current += 1;
+                setQuizCount(quizCountRef.current);
+                
+                // Every 5 correct answers, show a mini quiz challenge
+                if (quizCountRef.current % 5 === 0) {
+                  showQuizRef.current = true;
+                  setShowQuiz(true);
+                }
+              } else {
+                playSound('wrong');
+                addFloatingText(150, 100 + marioYRef.current, 'WRONG!', 'text-red-400');
+                
+                setLife(prev => {
+                  const next = Math.max(0, prev - 1);
+                  lifeRef.current = next;
+                  if (next === 0) {
+                    setGameState('GAMEOVER');
+                    gameStateRef.current = 'GAMEOVER';
+                  }
+                  return next;
+                });
+              }
+            }
+          }
         });
 
-        if (Math.random() > 0.99 && gates.length < 2) {
+        // 5. Cleanup & Spawn & Miss Penalty
+        gatesRef.current = gatesRef.current.filter(g => {
+          const isOffScreen = g.worldX < worldXRef.current - 200;
+          if (isOffScreen && !g.solved) {
+            // Missed the gate!
+            setLife(prev => {
+              const next = Math.max(0, prev - 1);
+              lifeRef.current = next;
+              if (next === 0) {
+                setGameState('GAMEOVER');
+                gameStateRef.current = 'GAMEOVER';
+              }
+              return next;
+            });
+            addFloatingText(150, 200, 'MISSED! -1 ❤️', 'text-red-500');
+            playSound('wrong');
+          }
+          return !isOffScreen;
+        });
+
+        if (gatesRef.current.length < 2) {
           spawnGate();
         }
 
-        lastTimeRef.current = time;
+        // 6. Sync to state
+        setMarioY(marioYRef.current);
+        setGates([...gatesRef.current]);
       }
+
+      // Coin Physics - Outside the quiz-pause block so they keep moving
+      if (gameStateRef.current === 'PLAYING') {
+        coinsRef.current.forEach(c => {
+          c.y += c.vy;
+          c.vy -= 0.5;
+        });
+        const activeCoins = coinsRef.current.filter(c => c.y > -50);
+        if (activeCoins.length !== coinsRef.current.length || activeCoins.length > 0) {
+          coinsRef.current = activeCoins;
+          setCoins([...coinsRef.current]);
+        }
+      }
+
+      lastTimeRef.current = time;
     }
     requestRef.current = requestAnimationFrame(animate);
   };
@@ -116,21 +282,20 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [marioX, marioY, velocityY, isMovingLeft, isMovingRight, gates, quizCount, gameSpeed]);
+  }, [gameSpeed]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') setIsMovingLeft(true);
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') setIsMovingRight(true);
-      if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !isJumping) {
-        setVelocityY(14);
-        setIsJumping(true);
+      keysPressed.current.add(e.code);
+      if (gameStateRef.current !== 'PLAYING' || showQuizRef.current) return;
+      if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !isJumpingRef.current) {
+        velocityYRef.current = 15;
+        isJumpingRef.current = true;
         playSound('jump');
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') setIsMovingLeft(false);
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') setIsMovingRight(false);
+      keysPressed.current.delete(e.code);
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -138,82 +303,291 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isJumping]);
+  }, []);
 
   return (
-    <div className="w-full h-full bg-[#5c94fc] relative overflow-hidden flex flex-col items-center">
-      {showQuiz && <MiniQuiz soundEnabled={soundEnabled} onCorrect={() => { setShowQuiz(false); }} />}
-      
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-1">
-        <div className="bg-black/50 text-white px-4 py-2 rounded-xl border-2 border-white/20 backdrop-blur-sm">
-          <p className="font-black text-xl">점수: {score}</p>
-          <p className="text-sm font-bold opacity-80">생명: {life} | 단계: {quizCount}</p>
-        </div>
-      </div>
-
-      <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
-        <div className="bg-white/20 backdrop-blur-md p-2 rounded-2xl border border-white/30 flex flex-col items-center">
-          <label className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Speed</label>
-          <input 
-            type="range" 
-            min="2" 
-            max="10" 
-            value={gameSpeed} 
-            onChange={(e) => setGameSpeed(Number(e.target.value))}
-            className="w-24 accent-white"
-          />
-        </div>
-      </div>
-
-      {/* Clouds */}
-      <div className="absolute top-20 left-[10%] opacity-50"><Cloud className="w-16 h-10 text-white" /></div>
-      <div className="absolute top-32 left-[60%] opacity-30"><Cloud className="w-24 h-14 text-white" /></div>
-
-      {/* Mario */}
+    <div className="w-full h-full bg-[#5c94fc] relative overflow-hidden flex flex-col items-center min-h-[400px] select-none">
+      {/* Parallax Background - Far Clouds */}
       <div 
-        className="absolute w-12 h-12 z-10 transition-transform duration-100"
+        className="absolute inset-0 pointer-events-none opacity-30"
+        style={{ transform: `translateX(${-(worldX * 0.1) % 100}%)` }}
+      >
+        <div className="absolute top-20 left-[10%]"><Cloud className="w-16 h-10 text-white" /></div>
+        <div className="absolute top-40 left-[110%]"><Cloud className="w-16 h-10 text-white" /></div>
+      </div>
+
+      {/* Parallax Background - Near Clouds */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-60"
+        style={{ transform: `translateX(${-(worldX * 0.3) % 100}%)` }}
+      >
+        <div className="absolute top-32 left-[40%]"><Cloud className="w-24 h-14 text-white" /></div>
+        <div className="absolute top-32 left-[140%]"><Cloud className="w-24 h-14 text-white" /></div>
+      </div>
+
+      {gameState === 'START' && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-6 text-center">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="space-y-8"
+          >
+            <div className="relative w-24 h-24 mx-auto mb-4">
+               <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20" />
+               <div className="text-7xl relative z-10">🍄</div>
+            </div>
+            <h2 className="text-5xl font-black text-white tracking-tighter italic">SUPER IB MARIO</h2>
+            <p className="text-white/60 font-bold max-w-xs text-lg">
+              마리오가 달려갑니다!<br />
+              점프해서 퀴즈 블록을 치세요.
+            </p>
+            <Button 
+              onClick={startGame}
+              className="w-full py-6 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-2xl shadow-[0_10px_0_rgb(153,27,27)] active:translate-y-1 active:shadow-none transition-all"
+            >
+              게임 시작하기
+            </Button>
+          </motion.div>
+        </div>
+      )}
+
+      {gameState === 'GAMEOVER' && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl p-6 text-center">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="space-y-6"
+          >
+            <h2 className="text-6xl font-black text-white tracking-tighter">GAME OVER</h2>
+            <p className="text-2xl font-bold text-white/60">최종 점수: {score}</p>
+            <Button 
+              onClick={startGame}
+              className="py-4 px-12 bg-white text-black hover:bg-gray-200 rounded-2xl font-black text-xl"
+            >
+              다시 도전하기
+            </Button>
+          </motion.div>
+        </div>
+      )}
+
+      {showQuiz && (
+        <MiniQuiz 
+          soundEnabled={soundEnabled} 
+          wrongCount={quizWrongCount}
+          onCorrect={() => { 
+            setShowQuiz(false); 
+            showQuizRef.current = false;
+            // Correct effect: Mario jumps!
+            if (!isJumpingRef.current) {
+              velocityYRef.current = 18;
+              isJumpingRef.current = true;
+              playSound('jump');
+            }
+            setScore(prev => prev + 500);
+            addFloatingText(150, 100 + marioYRef.current, 'CORRECT! +500', 'text-green-400');
+            
+            // Add coin effect for quiz success too
+            coinsRef.current.push({
+              id: Date.now() + Math.random(),
+              x: 150,
+              y: 100 + marioYRef.current + 40,
+              vy: 12
+            });
+            playSound('coin');
+          }} 
+          onWrong={() => {
+            setQuizWrongCount(prev => prev + 1);
+            // Penalty: Lose one life
+            setLife(prev => {
+              const next = Math.max(0, prev - 1);
+              lifeRef.current = next;
+              if (next === 0) {
+                setGameState('GAMEOVER');
+                gameStateRef.current = 'GAMEOVER';
+              }
+              return next;
+            });
+            if (soundEnabled) {
+              const audio = new Audio(ASSETS.sounds.wrong);
+              audio.volume = 0.3;
+              audio.play().catch(() => {});
+            }
+          }}
+          onFail={() => {
+            setShowQuiz(false);
+            showQuizRef.current = false;
+            setGameState('GAMEOVER');
+            gameStateRef.current = 'GAMEOVER';
+          }}
+        />
+      )}
+      
+      {/* HUD */}
+      <div className="absolute top-4 left-4 z-20 flex gap-4">
+        <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border-2 border-white/20 text-white shadow-xl">
+          <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Score</div>
+          <div className="text-2xl font-black tabular-nums">{score}</div>
+        </div>
+        <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border-2 border-white/20 text-white shadow-xl">
+          <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Life</div>
+          <div className="text-2xl font-black flex gap-1 items-center">
+            <span className="text-red-500">❤️</span>
+            <span className="ml-1">{life}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Mario - Improved Sprite */}
+      <div 
+        className="absolute w-16 h-16 z-20"
         style={{ 
-          left: `${marioX}%`, 
-          bottom: `${75 + marioY}px`,
-          transform: `translateX(-50%) scaleX(${isMovingLeft ? -1 : 1})`
+          left: `150px`, 
+          bottom: `${100 + marioY}px`,
         }}
       >
-        <div className="w-full h-full relative">
-          <div className="absolute inset-0 bg-red-600 rounded-lg shadow-[4px_4px_0_rgba(0,0,0,0.2)]" />
-          <div className="absolute top-1 left-2 w-8 h-4 bg-[#FFD59F] rounded-sm" />
-          <div className="absolute bottom-0 left-1 w-10 h-6 bg-blue-700 rounded-b-lg" />
-        </div>
+        {/* Shadow */}
+        <div 
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-2 bg-black/20 rounded-full blur-sm"
+          style={{ transform: `translateX(-50%) scale(${1 - marioY/200})` }}
+        />
+        
+        <motion.div 
+          animate={isJumpingRef.current ? { scale: [1, 1.1, 1] } : { y: [0, -5, 0] }}
+          transition={isJumpingRef.current ? { duration: 0.2 } : { duration: 0.4, repeat: Infinity }}
+          className="w-full h-full relative"
+        >
+          {/* Hair */}
+          <div className="absolute top-2 left-2 w-4 h-6 bg-[#8B4513] rounded-full" />
+          <div className="absolute top-4 left-1 w-3 h-5 bg-[#8B4513] rounded-full" />
+          
+          {/* Hat */}
+          <div className="absolute top-0 left-3 w-10 h-4 bg-red-600 rounded-t-lg border-b-2 border-black/20">
+            <div className="absolute top-0.5 left-3 w-3 h-3 bg-white rounded-full flex items-center justify-center">
+              <span className="text-[8px] font-black text-red-600 leading-none">M</span>
+            </div>
+          </div>
+          <div className="absolute top-1 left-10 w-4 h-2 bg-red-600 rounded-r-full" />
+          {/* Face */}
+          <div className="absolute top-4 left-4 w-9 h-7 bg-[#FFD59F] rounded-md shadow-sm" />
+          <div className="absolute top-6 left-10 w-2 h-2 bg-black rounded-full" /> {/* Eye */}
+          <div className="absolute top-8 left-11 w-3 h-2 bg-[#FFB07C] rounded-full" /> {/* Nose */}
+          <div className="absolute top-8 left-6 w-4 h-1 bg-[#8B4513] rounded-full" /> {/* Mustache */}
+          {/* Sideburns */}
+          <div className="absolute top-6 left-3 w-2 h-4 bg-[#8B4513] rounded-sm" />
+          {/* Body */}
+          <div className="absolute top-11 left-4 w-9 h-5 bg-red-600 rounded-sm" />
+          <div className="absolute top-11 left-5 w-7 h-5 bg-blue-700 rounded-b-md" />
+          {/* Arms */}
+          <div className="absolute top-11 left-1 w-4 h-4 bg-red-600 rounded-full" />
+          <div className="absolute top-11 left-12 w-4 h-4 bg-red-600 rounded-full" />
+          {/* Legs with running animation */}
+          <motion.div 
+            animate={!isJumpingRef.current ? { rotate: [-10, 10, -10] } : {}}
+            transition={{ duration: 0.2, repeat: Infinity }}
+            className="absolute bottom-0 left-4 w-4 h-3 bg-blue-800 rounded-sm" 
+          />
+          <motion.div 
+            animate={!isJumpingRef.current ? { rotate: [10, -10, 10] } : {}}
+            transition={{ duration: 0.2, repeat: Infinity }}
+            className="absolute bottom-0 left-9 w-4 h-3 bg-blue-800 rounded-sm" 
+          />
+        </motion.div>
       </div>
 
-      {/* Gates (Bricks) */}
+      {/* World Objects (Gates/Bricks) */}
       {gates.map(g => (
         <div 
           key={g.id}
-          className="absolute w-48 sm:w-64 h-full z-5"
-          style={{ left: `${g.x}%` }}
+          className="absolute w-[600px] h-full z-10"
+          style={{ left: `${g.worldX - worldX - 300}px` }}
         >
-          <div className="absolute top-16 sm:top-24 left-0 right-0 bg-black/80 text-white p-2 sm:p-3 rounded-xl border-2 border-white text-[10px] sm:text-xs font-bold text-center shadow-xl">
-            {g.question.question}
-          </div>
-          <div className="absolute top-36 sm:top-48 left-0 flex flex-col sm:flex-row gap-2 sm:gap-4">
-            {g.options.map((opt, i) => (
-              <div 
-                key={i}
-                className={cn(
-                  "w-24 sm:w-28 h-10 sm:h-14 flex items-center justify-center text-white font-black text-[10px] sm:text-sm rounded-xl border-2 sm:border-4 border-black shadow-[2px_2px_0_rgba(0,0,0,0.3)] sm:shadow-[4px_4px_0_rgba(0,0,0,0.3)] transition-transform",
-                  g.solved ? (i === g.correctIdx ? "bg-green-500" : "bg-gray-500") : "bg-[#b85c38]"
-                )}
-              >
-                {opt}
-              </div>
-            ))}
+          {/* Question Box */}
+          <motion.div 
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute top-20 left-0 right-0 bg-white/95 backdrop-blur-md p-6 rounded-3xl border-4 border-yellow-500 shadow-2xl"
+          >
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-white px-4 py-1.5 rounded-full text-xs font-black shadow-lg">QUIZ</div>
+            <p className="text-lg font-black text-gray-800 text-center leading-tight">
+              {g.question.question}
+            </p>
+          </motion.div>
+
+          {/* Bricks */}
+          <div className="absolute top-52 left-0 right-0 flex justify-center gap-6">
+            {g.options.map((opt, i) => {
+              const isHit = g.solved && g.hitIdx === i;
+              const isCorrect = i === g.correctIdx;
+              
+              return (
+                <motion.div 
+                  key={i}
+                  animate={isHit ? { 
+                    y: [0, -20, 0],
+                    scale: isCorrect ? [1, 1.1, 1] : [1, 0.9, 1]
+                  } : {}}
+                  className={cn(
+                    "w-40 h-24 flex items-center justify-center text-white font-black text-sm rounded-2xl border-4 border-black/20 shadow-xl transition-all",
+                    g.solved 
+                      ? (isCorrect ? "bg-yellow-600 scale-105 border-yellow-800" : "bg-gray-400 opacity-50") 
+                      : "bg-[#b85c38] hover:scale-105"
+                  )}
+                >
+                  <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+                  {isHit && isCorrect ? (
+                    <div className="text-4xl">?</div>
+                  ) : (
+                    <span className="relative z-10 text-center px-3 drop-shadow-md">{opt}</span>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       ))}
 
-      {/* Ground */}
-      <div className="absolute bottom-0 left-0 right-0 h-[75px] bg-[#c84c0c] border-t-4 border-black">
-        <div className="absolute top-0 left-0 right-0 h-4 bg-[#00aa00] border-b-4 border-black" />
+      {/* Coins */}
+      {coins.map(c => (
+        <motion.div
+          key={c.id}
+          className="absolute w-8 h-8 bg-yellow-400 rounded-full border-2 border-yellow-600 flex items-center justify-center z-30 shadow-lg"
+          style={{ left: c.x, bottom: c.y }}
+          animate={{ rotateY: [0, 180, 360] }}
+          transition={{ duration: 0.5, repeat: Infinity }}
+        >
+          <div className="w-1 h-4 bg-yellow-600 rounded-full" />
+        </motion.div>
+      ))}
+
+      {/* Floating Texts */}
+      <AnimatePresence>
+        {floatingTexts.map(t => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 1, y: 0 }}
+            animate={{ opacity: 0, y: -100 }}
+            exit={{ opacity: 0 }}
+            className={cn("absolute z-50 font-black text-2xl drop-shadow-lg", t.color)}
+            style={{ left: t.x, bottom: t.y }}
+          >
+            {t.text}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* Ground - Scrolling Texture */}
+      <div className="absolute bottom-0 left-0 right-0 h-[100px] bg-[#c84c0c] border-t-8 border-black overflow-hidden">
+        <div 
+          className="absolute inset-0 flex"
+          style={{ transform: `translateX(${-(worldX % 100)}px)` }}
+        >
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className="min-w-[100px] h-full border-r-4 border-black/20 flex flex-col">
+              <div className="h-4 bg-[#00aa00] border-b-4 border-black" />
+              <div className="flex-1 opacity-10" style={{ backgroundImage: 'linear-gradient(45deg, #000 25%, transparent 25%, transparent 50%, #000 50%, #000 75%, transparent 75%, transparent)' , backgroundSize: '20px 20px' }} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -98,7 +98,12 @@ export const StudyView = ({
     <div className="max-w-5xl mx-auto p-4 py-8 space-y-8">
       <header className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl border border-white/20">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <Button variant="ghost" onClick={() => setView('home')} icon={ArrowLeft} className="w-fit">
+          <Button 
+            variant="secondary" 
+            onClick={() => setView('home')} 
+            icon={ArrowLeft} 
+            className="w-fit bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100 shadow-sm"
+          >
             기지로 돌아가기
           </Button>
           <div className="text-right">

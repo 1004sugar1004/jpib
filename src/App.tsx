@@ -30,6 +30,8 @@ import { RankingView } from './components/views/RankingView';
 import { FlashcardView } from './components/views/FlashcardView';
 import { MemoryGameView } from './components/views/MemoryGameView';
 import { GameCornerView } from './components/views/GameCornerView';
+import { MusicQuizView } from './components/views/MusicQuizView';
+import { CertificateView } from './components/views/CertificateView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
 import { UserProfile } from './types';
@@ -40,7 +42,7 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -49,6 +51,11 @@ export default function App() {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [reflectionData, setReflectionData] = useState<Record<string, string>>({});
   const [atlData, setAtlData] = useState<Record<string, number>>({});
+
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
 
   // Load persistence data
   useEffect(() => {
@@ -94,9 +101,21 @@ export default function App() {
   // Ranking Listener
   useEffect(() => {
     if (!isAuthReady || !user) return;
-    const q = query(collection(db, 'users'), orderBy('score', 'desc'), limit(500));
+    // Fetch all users to ensure everyone is counted, even if score field is missing
+    const q = query(collection(db, 'users'), limit(3000));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data() as UserProfile);
+      const data = snapshot.docs.map(doc => {
+        const userData = doc.data() as UserProfile;
+        // Ensure scores are at least 0
+        return { 
+          ...userData, 
+          score: userData.score || 0,
+          monthlyScore: userData.monthlyScore || 0
+        };
+      });
+      // Sort by score descending in memory
+      data.sort((a, b) => b.score - a.score);
+      console.log(`Fetched ${data.length} users for ranking.`);
       setRankings(data);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'users');
@@ -123,7 +142,10 @@ export default function App() {
       class: formData.get('class') as string,
       role: formData.get('role') as 'student' | 'teacher',
       score: 0,
+      monthlyScore: 0,
+      lastActiveMonth: getCurrentMonth(),
       completedStudyItems: [],
+      photoURL: user.photoURL || undefined,
     };
     try {
       await setDoc(doc(db, 'users', user.uid), newProfile);
@@ -135,9 +157,19 @@ export default function App() {
 
   const handleFinishQuiz = React.useCallback(async (quizScore: number, maxStreak: number, correctCount: number) => {
     if (profile) {
+      const currentMonth = getCurrentMonth();
       const oldLevel = getLevel(profile.score).name;
       const newTotalScore = profile.score + quizScore;
       const newLevel = getLevel(newTotalScore).name;
+      
+      // Handle monthly score
+      let newMonthlyScore = (profile.monthlyScore || 0);
+      if (profile.lastActiveMonth !== currentMonth) {
+        newMonthlyScore = quizScore;
+      } else {
+        newMonthlyScore += quizScore;
+      }
+
       // 10 questions -> 3 tickets (proportional)
       const newTickets = (profile.gameTickets || 0) + Math.floor((correctCount / 10) * 3);
 
@@ -148,11 +180,19 @@ export default function App() {
       try {
         await updateDoc(doc(db, 'users', profile.uid), {
           score: newTotalScore,
+          monthlyScore: newMonthlyScore,
+          lastActiveMonth: currentMonth,
           lastQuizDate: new Date().toISOString(),
           streak: maxStreak,
           gameTickets: newTickets
         });
-        setProfile({ ...profile, score: newTotalScore, gameTickets: newTickets });
+        setProfile({ 
+          ...profile, 
+          score: newTotalScore, 
+          monthlyScore: newMonthlyScore,
+          lastActiveMonth: currentMonth,
+          gameTickets: newTickets 
+        });
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
@@ -161,9 +201,18 @@ export default function App() {
 
   const handleEarnXP = React.useCallback(async (xp: number) => {
     if (profile) {
+      const currentMonth = getCurrentMonth();
       const oldLevel = getLevel(profile.score).name;
       const newTotalScore = profile.score + xp;
       const newLevel = getLevel(newTotalScore).name;
+
+      // Handle monthly score
+      let newMonthlyScore = (profile.monthlyScore || 0);
+      if (profile.lastActiveMonth !== currentMonth) {
+        newMonthlyScore = xp;
+      } else {
+        newMonthlyScore += xp;
+      }
 
       if (oldLevel !== newLevel) {
         setShowLevelUp(true);
@@ -171,9 +220,16 @@ export default function App() {
 
       try {
         await updateDoc(doc(db, 'users', profile.uid), {
-          score: newTotalScore
+          score: newTotalScore,
+          monthlyScore: newMonthlyScore,
+          lastActiveMonth: currentMonth
         });
-        setProfile({ ...profile, score: newTotalScore });
+        setProfile({ 
+          ...profile, 
+          score: newTotalScore, 
+          monthlyScore: newMonthlyScore,
+          lastActiveMonth: currentMonth 
+        });
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
@@ -204,13 +260,30 @@ export default function App() {
     }
     
     const newScore = Math.max(0, profile.score + scoreChange);
+    const currentMonth = getCurrentMonth();
+    
+    // Handle monthly score update
+    let newMonthlyScore = (profile.monthlyScore || 0);
+    if (profile.lastActiveMonth !== currentMonth) {
+      newMonthlyScore = Math.max(0, scoreChange);
+    } else {
+      newMonthlyScore = Math.max(0, newMonthlyScore + scoreChange);
+    }
     
     try {
       await updateDoc(doc(db, 'users', user.uid), {
         completedStudyItems: newCompleted,
-        score: newScore
+        score: newScore,
+        monthlyScore: newMonthlyScore,
+        lastActiveMonth: currentMonth
       });
-      setProfile({ ...profile, completedStudyItems: newCompleted, score: newScore });
+      setProfile({ 
+        ...profile, 
+        completedStudyItems: newCompleted, 
+        score: newScore,
+        monthlyScore: newMonthlyScore,
+        lastActiveMonth: currentMonth
+      });
       
       if (!isCompleted) {
         confetti({
@@ -327,6 +400,7 @@ export default function App() {
                 profile={profile} 
                 reflectionData={reflectionData} 
                 setView={setView} 
+                rankings={rankings}
                 soundEnabled={soundEnabled} 
                 setSoundEnabled={setSoundEnabled} 
                 bgMusicPlaying={bgMusicPlaying}
@@ -361,10 +435,7 @@ export default function App() {
               />
             )}
             {view === 'music-quiz' && (
-              <QuizView 
-                profile={profile}
-                questions={songQuizQuestions}
-                title="MUSIC QUIZ"
+              <MusicQuizView 
                 onFinish={handleFinishQuiz}
                 onClose={() => setView('home')}
                 soundEnabled={soundEnabled}
@@ -374,6 +445,12 @@ export default function App() {
               <RankingView 
                 setView={setView} 
                 rankings={rankings} 
+              />
+            )}
+            {view === 'certificate' && (
+              <CertificateView 
+                profile={profile} 
+                onClose={() => setView('home')} 
               />
             )}
             {view === 'flashcards' && (
@@ -403,19 +480,21 @@ export default function App() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="relative z-10 py-12 text-center">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-8" />
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm px-6 py-2 rounded-full border border-white/20 shadow-sm">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Developer</span>
-              <div className="w-1 h-1 bg-indigo-400 rounded-full" />
-              <span className="text-sm font-bold text-gray-600">증평초 김혜진</span>
+      {view !== 'games' && (
+        <footer className="relative z-10 py-12 text-center">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-8" />
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm px-6 py-2 rounded-full border border-white/20 shadow-sm">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Developer</span>
+                <div className="w-1 h-1 bg-indigo-400 rounded-full" />
+                <span className="text-sm font-bold text-gray-600">증평초 김혜진</span>
+              </div>
+              <p className="text-[10px] font-medium text-gray-400">© 2026 IB Explorer. All rights reserved.</p>
             </div>
-            <p className="text-[10px] font-medium text-gray-400">© 2026 IB Explorer. All rights reserved.</p>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

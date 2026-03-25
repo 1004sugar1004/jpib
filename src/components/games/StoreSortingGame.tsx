@@ -1,211 +1,371 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { MiniQuiz } from './MiniQuiz';
 import { ASSETS } from '../../assets';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
+import { CheckCircle2, Trophy, RefreshCw } from 'lucide-react';
 
-const ITEMS = ['🥤', '🍱', '🍙', '🥪', '🍦', '🍪', '🥛', '🍎'];
-const SHELF_COUNT = 6;
+const ITEM_GROUPS = [
+  ['🥤', '🧃', '🧉', '🍼', '🥛', '☕', '🍵', '🍶'], // Stage 1: Beverages
+  ['🍱', '🍙', '🍛', '🍜', '🍲', '🍳', '🥘', '🥙'], // Stage 2: Lunch boxes
+  ['🥨', '🥐', '🥯', '🥖', '🍞', '🥪', '🍔', '🍟'], // Stage 3: Snacks
+  ['🍫', '🍬', '🍭', '🍮', '🍩', '🍪', '🍰', '🧁'], // Stage 4: Candy
+  ['🍦', '🍧', '🍨', '🧊', '🥤', '🧋', '🥛', '🍓'], // Stage 5: Ice cream
+];
+
+const ROWS = 4;
+const COLS = 4;
+const SHELF_COUNT = ROWS * COLS;
 const SLOT_PER_SHELF = 3;
-const CLICKS_PER_ROUND = 15;
+const STAGE_TIME = 60;
 
-const randomItem = () => ITEMS[Math.floor(Math.random() * ITEMS.length)];
+interface Selection {
+  shelfIdx: number;
+  itemIdx: number;
+}
 
-const makeInitialShelves = (): string[][] => {
-  // Create a pool of items that can be sorted into sets of 3
-  const totalSets = Math.floor((SHELF_COUNT * SLOT_PER_SHELF) / 3) - 1; // Leave some empty space
+const makeInitialShelves = (stage: number): string[][] => {
+  const totalSlots = SHELF_COUNT * SLOT_PER_SHELF;
+  const itemTypesNeeded = totalSlots / 3;
+  
+  // Use a specific group based on stage
+  const groupIdx = (stage - 1) % ITEM_GROUPS.length;
+  const availableItems = ITEM_GROUPS[groupIdx];
+  
   let pool: string[] = [];
-  for (let i = 0; i < totalSets; i++) {
-    const item = randomItem();
+  for (let i = 0; i < itemTypesNeeded; i++) {
+    const item = availableItems[i % availableItems.length];
     pool.push(item, item, item);
   }
   
-  // Fill the rest with random items or leave empty
-  while (pool.length < SHELF_COUNT * SLOT_PER_SHELF - 3) {
-    pool.push(randomItem());
+  // Shuffle pool
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
-  // Shuffle pool
-  pool.sort(() => Math.random() - 0.5);
-
-  const newShelves: string[][] = Array.from({ length: SHELF_COUNT }, () => []);
-  pool.forEach((item, i) => {
-    newShelves[i % SHELF_COUNT].push(item);
-  });
+  const newShelves: string[][] = [];
+  for (let i = 0; i < SHELF_COUNT; i++) {
+    newShelves.push(pool.slice(i * SLOT_PER_SHELF, (i + 1) * SLOT_PER_SHELF));
+  }
 
   return newShelves;
 };
 
 export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
-  const [shelves, setShelves] = useState<string[][]>(makeInitialShelves);
-  const [selectedShelf, setSelectedShelf] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [clicksLeft, setClicksLeft] = useState(CLICKS_PER_ROUND);
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
+  const [stage, setStage] = useState(1);
+  const [shelves, setShelves] = useState<string[][]>(() => makeInitialShelves(1));
   const [closedShelves, setClosedShelves] = useState<number[]>([]);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(STAGE_TIME);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [gameWon, setGameWon] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [quizWrongCount, setQuizWrongCount] = useState(0);
+  const [gameState, setGameState] = useState<'START' | 'PLAYING'>('START');
+  const [isPaused, setIsPaused] = useState(false);
 
-  const restart = useCallback(() => {
-    setShelves(makeInitialShelves());
-    setSelectedShelf(null);
-    setScore(0);
-    setClicksLeft(CLICKS_PER_ROUND);
-    setShowQuiz(false);
-    setGameOver(false);
-    setClosedShelves([]);
-  }, []);
+  const playSound = useCallback((type: 'correct' | 'click' | 'fail') => {
+    if (!soundEnabled) return;
+    let sound = ASSETS.sounds.joyful;
+    if (type === 'correct') sound = ASSETS.sounds.correct;
+    if (type === 'fail') sound = ASSETS.sounds.wrong;
+    
+    const audio = new Audio(sound);
+    audio.volume = 0.2;
+    audio.play().catch(() => {});
+  }, [soundEnabled]);
 
-  const handleShelfClick = (shelfIdx: number) => {
-    if (showQuiz || gameOver || closedShelves.includes(shelfIdx)) return;
+  // Timer logic
+  useEffect(() => {
+    if (gameState !== 'PLAYING' || showQuiz || gameWon || gameOver || isPaused) return;
 
-    if (selectedShelf === null) {
-      // Select top item from shelf
-      if (shelves[shelfIdx].length > 0) {
-        setSelectedShelf(shelfIdx);
-      }
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        const next = prev - 1;
+        
+        // Every 10 seconds, show quiz
+        if (next > 0 && (STAGE_TIME - next) % 10 === 0) {
+          setShowQuiz(true);
+        }
+        
+        if (next <= 0) {
+          clearInterval(timer);
+          setGameOver(true);
+          playSound('fail');
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [gameState, showQuiz, gameWon, gameOver, isPaused, playSound]);
+
+  const checkShelf = (shelf: string[]) => {
+    return shelf.length === SLOT_PER_SHELF && shelf.every(v => v === shelf[0]);
+  };
+
+  const handleItemClick = (shelfIdx: number, itemIdx: number) => {
+    if (showQuiz || gameWon || gameOver || closedShelves.includes(shelfIdx) || gameState !== 'PLAYING') return;
+
+    playSound('click');
+
+    if (!selection) {
+      setSelection({ shelfIdx, itemIdx });
     } else {
-      // Move item from selectedShelf to shelfIdx
-      if (selectedShelf === shelfIdx) {
-        setSelectedShelf(null);
+      if (selection.shelfIdx === shelfIdx && selection.itemIdx === itemIdx) {
+        setSelection(null);
         return;
       }
 
-      const sourceShelf = [...shelves[selectedShelf]];
-      const targetShelf = [...shelves[shelfIdx]];
+      const newShelves = [...shelves.map(s => [...s])];
+      const temp = newShelves[selection.shelfIdx][selection.itemIdx];
+      newShelves[selection.shelfIdx][selection.itemIdx] = newShelves[shelfIdx][itemIdx];
+      newShelves[shelfIdx][itemIdx] = temp;
 
-      if (targetShelf.length < SLOT_PER_SHELF) {
-        const item = sourceShelf.pop()!;
-        targetShelf.push(item);
-
-        const newShelves = [...shelves];
-        newShelves[selectedShelf] = sourceShelf;
-        newShelves[shelfIdx] = targetShelf;
-
-        // Check if target shelf is now closed (3 identical items)
-        if (targetShelf.length === SLOT_PER_SHELF && targetShelf.every(v => v === targetShelf[0])) {
-          setScore(s => s + 500);
-          setClosedShelves(prev => [...prev, shelfIdx]);
-          if (soundEnabled) {
-            const audio = new Audio(ASSETS.sounds.correct);
-            audio.volume = 0.2;
-            audio.play().catch(() => {});
-          }
-        }
-
-        setShelves(newShelves);
-        setSelectedShelf(null);
-        
-        // Click count
-        setClicksLeft(prev => {
-          const next = prev - 1;
-          if (next === 0) setShowQuiz(true);
-          return next;
-        });
-
-        // Check if all items are sorted or no moves left? 
-        // For simplicity, let's just spawn new items if many shelves are closed
-        if (closedShelves.length + 1 >= SHELF_COUNT - 1) {
-           // Win condition or refresh?
-           // Let's just refresh the open shelves with some new items
-           setTimeout(() => {
-             const resetShelves = makeInitialShelves();
-             setShelves(resetShelves);
-             setClosedShelves([]);
-           }, 1000);
-        }
-      } else {
-        // Target full, just change selection
-        if (shelves[shelfIdx].length > 0) {
-          setSelectedShelf(shelfIdx);
-        } else {
-          setSelectedShelf(null);
-        }
+      const newlyClosed: number[] = [];
+      if (checkShelf(newShelves[selection.shelfIdx]) && !closedShelves.includes(selection.shelfIdx)) {
+        newlyClosed.push(selection.shelfIdx);
       }
+      if (checkShelf(newShelves[shelfIdx]) && !closedShelves.includes(shelfIdx)) {
+        newlyClosed.push(shelfIdx);
+      }
+
+      if (newlyClosed.length > 0) {
+        setScore(s => s + (newlyClosed.length * 500 * stage));
+        setClosedShelves(prev => [...prev, ...newlyClosed]);
+        playSound('correct');
+      }
+
+      setShelves(newShelves);
+      setSelection(null);
     }
   };
 
-  return (
-    <div className="w-full h-full bg-emerald-50 flex flex-col p-2 md:p-4 relative overflow-hidden">
+  useEffect(() => {
+    if (closedShelves.length === SHELF_COUNT && SHELF_COUNT > 0) {
+      setGameWon(true);
+      playSound('correct');
+    }
+  }, [closedShelves, playSound]);
 
-      {/* 퀴즈 오버레이 */}
+  const nextStage = () => {
+    const nextS = stage + 1;
+    setStage(nextS);
+    setShelves(makeInitialShelves(nextS));
+    setClosedShelves([]);
+    setSelection(null);
+    setTimeLeft(STAGE_TIME);
+    setGameWon(false);
+    setShowQuiz(false);
+  };
+
+  const restart = () => {
+    setStage(1);
+    setShelves(makeInitialShelves(1));
+    setClosedShelves([]);
+    setSelection(null);
+    setScore(0);
+    setQuizWrongCount(0);
+    setTimeLeft(STAGE_TIME);
+    setShowQuiz(false);
+    setGameWon(false);
+    setGameOver(false);
+    setGameState('PLAYING');
+  };
+
+  if (gameState === 'START') {
+    return (
+      <div className="w-full h-full bg-[#fdf6e3] flex flex-col items-center justify-center p-8 text-center">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl border-8 border-[#8b4513]"
+        >
+          <div className="text-6xl mb-6">🏪</div>
+          <h1 className="text-4xl font-black text-[#5d4037] mb-4">편의점 정리왕</h1>
+          <p className="text-[#8d6e63] mb-8 font-medium leading-relaxed">
+            제한 시간 내에 모든 선반을 정리하세요!<br/>
+            10초마다 퀴즈가 나타납니다.<br/>
+            스테이지를 클리어하면 새로운 물건이 등장합니다!
+          </p>
+          <Button 
+            onClick={() => setGameState('PLAYING')}
+            className="w-full py-6 text-xl bg-[#8b4513] hover:bg-[#5d4037] text-white rounded-2xl shadow-lg"
+          >
+            정리 시작하기
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-[#fdf6e3] flex flex-col p-2 md:p-4 relative overflow-hidden font-sans">
+      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#8b4513 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+
+      {/* Quiz Overlay */}
       {showQuiz && (
         <MiniQuiz
           soundEnabled={soundEnabled}
+          wrongCount={quizWrongCount}
           onCorrect={() => {
             setShowQuiz(false);
-            setClicksLeft(CLICKS_PER_ROUND);
+          }}
+          onWrong={() => {
+            setQuizWrongCount(prev => prev + 1);
+          }}
+          onFail={() => {
+            setShowQuiz(false);
+            restart(); // Reset game
           }}
         />
       )}
 
-      {/* 상단 HUD */}
-      <div className="flex justify-between items-center mb-2 md:mb-4">
-        <div className="text-emerald-600 font-black text-xl md:text-2xl">점수: {score}</div>
-        <div className="bg-white px-3 py-1 rounded-full border-2 border-emerald-200 text-emerald-500 font-black text-sm md:text-base">
-          남은 클릭: {clicksLeft}
+      {/* Stage Clear Overlay */}
+      <AnimatePresence>
+        {gameWon && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white p-8 rounded-[3rem] shadow-2xl border-8 border-yellow-400 text-center max-w-sm w-full"
+            >
+              <Trophy className="w-20 h-20 text-yellow-400 mx-auto mb-4" />
+              <h2 className="text-3xl font-black text-gray-900 mb-2">STAGE {stage} CLEAR!</h2>
+              <p className="text-gray-500 mb-6 font-bold text-lg">현재 점수: {score}</p>
+              <Button onClick={nextStage} className="w-full py-4 bg-yellow-400 hover:bg-yellow-500 text-white font-black rounded-2xl">
+                다음 스테이지로
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Game Over Overlay */}
+      <AnimatePresence>
+        {gameOver && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white p-8 rounded-[3rem] shadow-2xl border-8 border-red-500 text-center max-w-sm w-full"
+            >
+              <div className="text-6xl mb-4">⏰</div>
+              <h2 className="text-3xl font-black text-gray-900 mb-2">TIME OVER</h2>
+              <p className="text-gray-500 mb-6 font-bold text-lg">최종 점수: {score}</p>
+              <Button onClick={restart} className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-black rounded-2xl">
+                다시 도전하기
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header HUD */}
+      <div className="flex justify-between items-center mb-4 z-10">
+        <div className="flex gap-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-[#8b4513] uppercase tracking-widest opacity-60">Stage</span>
+            <div className="text-3xl font-black text-[#5d4037] tabular-nums">{stage}</div>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-[#8b4513] uppercase tracking-widest opacity-60">Score</span>
+            <div className="text-3xl font-black text-[#5d4037] tabular-nums">{score.toLocaleString()}</div>
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl border-2 border-[#8b4513]/20 flex flex-col items-center min-w-[100px]">
+            <span className="text-[8px] font-black text-[#8b4513] uppercase">Time Left</span>
+            <span className={cn(
+              "text-xl font-black tabular-nums",
+              timeLeft <= 10 ? "text-red-500 animate-pulse" : "text-[#5d4037]"
+            )}>{timeLeft}s</span>
+          </div>
+          <Button onClick={restart} variant="outline" size="sm" className="rounded-2xl border-2 border-[#8b4513]/20 bg-white/80 p-2">
+            <RefreshCw className="w-5 h-5 text-[#8b4513]" />
+          </Button>
         </div>
       </div>
 
-      {/* 선반 그리드 */}
-      <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-6 p-2 md:p-4 overflow-y-auto">
-        {shelves.map((shelfItems, idx) => {
-          const isClosed = closedShelves.includes(idx);
-          const isSelected = selectedShelf === idx;
+      {/* Shelf Grid */}
+      <div className="flex-1 bg-[#8b4513]/10 rounded-[1.5rem] p-2 md:p-3 border-4 border-[#8b4513]/20 overflow-hidden">
+        <div className="grid grid-cols-4 gap-1.5 md:gap-2 h-full">
+          {shelves.map((shelfItems, sIdx) => {
+            const isClosed = closedShelves.includes(sIdx);
+            
+            return (
+              <div
+                key={sIdx}
+                className={cn(
+                  "relative rounded-lg border-b-4 border-x-2 border-t transition-all flex flex-row items-center justify-around p-0.5 shadow-inner",
+                  isClosed 
+                    ? "bg-gray-200 border-gray-300 opacity-40 grayscale" 
+                    : "bg-[#f5deb3] border-[#d2b48c] shadow-[inset_0_2px_0_rgba(255,255,255,0.5)]"
+                )}
+              >
+                {/* Shelf Items */}
+                {shelfItems.map((item, iIdx) => {
+                  const isSelected = selection?.shelfIdx === sIdx && selection?.itemIdx === iIdx;
+                  
+                  return (
+                    <motion.div
+                      key={iIdx}
+                      whileHover={!isClosed ? { scale: 1.1, zIndex: 20 } : {}}
+                      whileTap={!isClosed ? { scale: 0.9 } : {}}
+                      onClick={() => handleItemClick(sIdx, iIdx)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center text-xl md:text-2xl cursor-pointer relative select-none h-full",
+                        isSelected && "z-30"
+                      )}
+                    >
+                      <span className={cn(
+                        "transition-transform",
+                        isSelected && "scale-125 drop-shadow-[0_0_8px_rgba(255,255,255,1)]"
+                      )}>
+                        {item}
+                      </span>
+                      {isSelected && (
+                        <motion.div 
+                          layoutId="selection-glow"
+                          className="absolute inset-0 bg-white/40 rounded-md ring-2 ring-white animate-pulse"
+                        />
+                      )}
+                    </motion.div>
+                  );
+                })}
 
-          return (
-            <motion.div
-              key={idx}
-              whileHover={!isClosed ? { scale: 1.02 } : {}}
-              whileTap={!isClosed ? { scale: 0.98 } : {}}
-              onClick={() => handleShelfClick(idx)}
-              className={cn(
-                "relative h-32 md:h-40 rounded-2xl border-4 transition-all flex flex-col-reverse p-2 gap-1",
-                isClosed ? "bg-emerald-100 border-emerald-400 opacity-60" : 
-                isSelected ? "bg-white border-indigo-400 shadow-lg ring-4 ring-indigo-100" :
-                "bg-white border-emerald-100 shadow-sm hover:border-emerald-300"
-              )}
-            >
-              {/* Shelf Slots */}
-              {Array.from({ length: SLOT_PER_SHELF }).map((_, slotIdx) => (
-                <div 
-                  key={slotIdx}
-                  className="flex-1 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center text-2xl md:text-3xl relative"
-                >
-                  {shelfItems[slotIdx] || ''}
-                  {isSelected && slotIdx === shelfItems.length - 1 && (
-                    <motion.div 
-                      layoutId="selection-indicator"
-                      className="absolute inset-0 border-2 border-indigo-500 rounded-lg animate-pulse"
-                    />
-                  )}
-                </div>
-              ))}
-
-              {isClosed && (
-                <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20 rounded-xl">
-                  <motion.span 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="text-white font-black text-2xl drop-shadow-md"
-                  >
-                    CLOSED
-                  </motion.span>
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+                {/* Closed Indicator */}
+                {isClosed && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg pointer-events-none">
+                    <CheckCircle2 className="w-6 h-6 text-green-600 drop-shadow-md" />
+                  </div>
+                )}
+                
+                {/* Shelf Wood Texture Detail */}
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8b4513]/20 rounded-full mx-1 mb-0.5" />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="text-center mt-2 md:mt-4 text-emerald-400 font-bold text-[10px] md:text-xs">
-        선반을 터치해 물건을 옮기세요! • 같은 물건 3개가 모이면 선반이 닫힙니다 • {CLICKS_PER_ROUND}번 이동하면 퀴즈 타임
-      </div>
-
-      <div className="mt-4 flex justify-center">
-        <Button onClick={restart} variant="outline" className="text-emerald-600 border-emerald-200">
-          게임 초기화
-        </Button>
+      <div className="mt-4 text-center">
+        <p className="text-[10px] md:text-xs font-bold text-[#8b4513]/60 uppercase tracking-widest">
+          10초마다 퀴즈가 나옵니다! 시간 내에 모든 선반을 정리하세요.
+        </p>
       </div>
     </div>
   );

@@ -88,7 +88,14 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
           <div className="absolute -top-10 -right-10 opacity-5">
             <Sparkles className="w-40 h-40" />
           </div>
-          <Button variant="ghost" onClick={() => setView('home')} icon={ArrowLeft} className="mb-4">뒤로 가기</Button>
+          <Button 
+            variant="secondary" 
+            onClick={() => setView('home')} 
+            icon={ArrowLeft} 
+            className="mb-4 bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100 shadow-sm"
+          >
+            뒤로 가기
+          </Button>
           <h2 className="text-3xl font-black text-gray-900">플래시카드 탐험</h2>
           <p className="text-gray-500 font-bold mb-4">카드를 뒤집으며 IB 이론을 마스터해보세요!</p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-full border border-indigo-100">
@@ -135,7 +142,14 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
   return (
     <div className="max-w-2xl mx-auto p-4 py-8 space-y-8 min-h-[80vh] flex flex-col">
       <header className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => setSelectedCategory(null)} icon={ArrowLeft}>목록으로</Button>
+        <Button 
+          variant="secondary" 
+          onClick={() => setSelectedCategory(null)} 
+          icon={ArrowLeft}
+          className="bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100 shadow-sm"
+        >
+          목록으로
+        </Button>
         <div className="px-4 py-2 bg-white/80 backdrop-blur-md rounded-full border border-white/20 shadow-sm font-black text-indigo-600">
           {currentIndex + 1} / {currentData.length}
         </div>

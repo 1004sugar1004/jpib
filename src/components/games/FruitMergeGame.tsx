@@ -43,11 +43,13 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'BOOTING' | 'IDLE' | 'QUIZ' | 'AIMING' | 'DROPPING' | 'POPUP' | 'GAMEOVER'>('BOOTING');
   const [discoveryFruit, setDiscoveryFruit] = useState<number | null>(null);
   const [showGameComplete, setShowGameComplete] = useState(false);
+  const [quizWrongCount, setQuizWrongCount] = useState(0);
   
   // Quiz State
   const [currentQuiz, setCurrentQuiz] = useState<any>(null);
   const [quizFeedback, setQuizFeedback] = useState<{ text: string, color: string } | null>(null);
   const [quizAnswerable, setQuizAnswerable] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
 
   const fruits = useMemo(() => {
     if (!gameContainerRef.current) return FRUITS_DATA.map(f => ({ ...f, radius: 20 }));
@@ -276,6 +278,7 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     });
 
     setScore(0);
+    setQuizWrongCount(0);
     setIsGameOver(false);
     setCurrentFruit(null);
     setDiscoveryFruit(null);
@@ -298,6 +301,7 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setCurrentQuiz(q);
     setQuizFeedback(null);
     setQuizAnswerable(true);
+    setShowAnswer(false);
   };
 
   const checkAnswer = (selectedIdx: number) => {
@@ -311,9 +315,16 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       setTimeout(spawnAndActivateFruit, 1000);
     } else {
       setQuizAnswerable(false);
-      setQuizFeedback({ text: "오답! 다시 풀어보세요.", color: 'text-red-600' });
       playSound('wrong');
-      setTimeout(showQuiz, 1500);
+      
+      if (quizWrongCount === 0) {
+        setQuizWrongCount(1);
+        setShowAnswer(true);
+        setQuizFeedback({ text: "틀렸습니다! 정답을 확인하세요.", color: 'text-amber-600' });
+      } else {
+        setQuizFeedback({ text: "두 번 틀렸습니다! 게임이 초기화됩니다.", color: 'text-red-600' });
+        setTimeout(init, 2000);
+      }
     }
   };
 
@@ -397,13 +408,15 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             {currentQuiz && currentQuiz.options.map((opt: string, idx: number) => (
               <motion.button
                 key={idx}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={quizAnswerable ? { scale: 1.05 } : {}}
+                whileTap={quizAnswerable ? { scale: 0.95 } : {}}
                 onClick={() => checkAnswer(idx)}
-                disabled={!quizAnswerable}
+                disabled={!quizAnswerable && !showAnswer}
                 className={cn(
                   "w-full py-3 px-4 rounded-xl font-bold text-sm md:text-lg transition-all shadow-md",
-                  !quizAnswerable ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-sky-400 hover:bg-sky-500 text-white"
+                  showAnswer && idx === currentQuiz.correctAnswer 
+                    ? "bg-emerald-500 text-white animate-pulse border-4 border-white" 
+                    : (!quizAnswerable ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-sky-400 hover:bg-sky-500 text-white")
                 )}
               >
                 {opt}
@@ -425,6 +438,15 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           <p className={cn("mt-4 font-bold h-6 text-center text-lg", quizFeedback?.color)}>
             {quizFeedback?.text}
           </p>
+
+          {showAnswer && (
+            <Button 
+              onClick={spawnAndActivateFruit}
+              className="mt-4 w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-black shadow-lg"
+            >
+              알겠어요! 계속하기
+            </Button>
+          )}
         </div>
       </div>
 

@@ -43,19 +43,21 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
 
   if (selectedGame) {
     return (
-      <div className="w-full h-full min-h-screen flex flex-col bg-gray-50 p-2 md:p-6">
-        <header className="flex items-center justify-between mb-4 px-4">
-          <Button variant="ghost" onClick={() => setSelectedGame(null)} icon={ArrowLeft} className="bg-white/50 backdrop-blur-sm">게임 목록</Button>
-          <h2 className="text-xl md:text-3xl font-black text-gray-900 drop-shadow-sm">{games.find(g => g.id === selectedGame)?.name}</h2>
+      <div className="w-full h-full min-h-screen flex flex-col bg-gray-900/10 p-2 md:p-4">
+        <header className="flex items-center justify-between mb-4 px-4 py-2 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-white/20">
+          <Button variant="ghost" onClick={() => setSelectedGame(null)} icon={ArrowLeft} className="text-gray-600">게임 목록</Button>
+          <h2 className="text-lg md:text-2xl font-black text-gray-900">{games.find(g => g.id === selectedGame)?.name}</h2>
           <div className="w-20 hidden md:block" />
         </header>
         
-        <div className="flex-1 w-full bg-gray-900 rounded-[2rem] md:rounded-[3.5rem] overflow-hidden relative border-4 md:border-8 border-gray-800 shadow-2xl">
-          {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} />}
-          {selectedGame === 'galaga' && <GalagaGame soundEnabled={soundEnabled} />}
-          {selectedGame === 'fruit' && <FruitMergeGame soundEnabled={soundEnabled} />}
-          {selectedGame === 'store' && <StoreSortingGame soundEnabled={soundEnabled} />}
-          {selectedGame === 'mario' && <MarioGame soundEnabled={soundEnabled} />}
+        <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
+          <div className="w-full max-w-4xl aspect-[3/4] md:aspect-video bg-gray-900 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden relative border-4 md:border-8 border-gray-800 shadow-2xl">
+            {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'galaga' && <GalagaGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'fruit' && <FruitMergeGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'store' && <StoreSortingGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'mario' && <MarioGame soundEnabled={soundEnabled} />}
+          </div>
         </div>
       </div>
     );
@@ -67,7 +69,14 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <Gamepad2 className="w-32 h-32" />
         </div>
-        <Button variant="ghost" onClick={() => setView('home')} icon={ArrowLeft} className="mb-4">뒤로 가기</Button>
+        <Button 
+          variant="secondary" 
+          onClick={() => setView('home')} 
+          icon={ArrowLeft} 
+          className="mb-4 bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100 shadow-sm"
+        >
+          뒤로 가기
+        </Button>
         <h2 className="text-3xl font-black text-gray-900">IB 게임 코너</h2>
         <p className="text-gray-500 font-bold">퀴즈를 풀고 얻은 티켓으로 게임을 즐겨보세요!</p>
         

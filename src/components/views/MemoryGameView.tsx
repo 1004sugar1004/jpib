@@ -7,8 +7,6 @@ import confetti from 'canvas-confetti';
 import { ibLearnerProfile, ibThemes, ibKeyConcepts, ibATL } from '../../content';
 import { cn } from '../../lib/utils';
 
-const DEFAULT_EMOJIS = ['🍎', '🍊', '🍇', '🍉', '🍓', '🍒', '🍍', '🥝', '🥑', '🥦', '🥕', '🌽'];
-
 interface MemoryCard {
   id: number;
   pairId: number;
@@ -40,7 +38,6 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
     { id: 'themes', name: '탐구 주제', data: ibThemes },
     { id: 'concepts', name: '핵심 개념', data: ibKeyConcepts },
     { id: 'atl', name: 'ATL 기술', data: ibATL },
-    { id: 'emoji', name: '과일 & 채소', data: DEFAULT_EMOJIS.map(e => ({ title: e, description: '맛있는 과일/채소' })) },
   ];
 
   const initializeGame = useCallback(() => {
@@ -154,7 +151,14 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <Brain className="w-32 h-32" />
         </div>
-        <Button variant="ghost" onClick={() => setView('home')} icon={ArrowLeft} className="mb-4">뒤로 가기</Button>
+        <Button 
+          variant="secondary" 
+          onClick={() => setView('home')} 
+          icon={ArrowLeft} 
+          className="mb-4 bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100 shadow-sm"
+        >
+          뒤로 가기
+        </Button>
         <h2 className="text-3xl font-black text-gray-900">기억력 강화 게임</h2>
         <p className="text-gray-500 font-bold">그림(또는 이름)과 그에 맞는 설명을 찾아 짝을 맞춰보세요!</p>
         

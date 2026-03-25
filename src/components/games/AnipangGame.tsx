@@ -20,6 +20,7 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
+  const [quizWrongCount, setQuizWrongCount] = useState(0);
   const [gameState, setGameState] = useState<'playing' | 'cleared' | 'gameover' | 'quiz'>('playing');
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasShownMidQuiz, setHasShownMidQuiz] = useState(false);
@@ -206,6 +207,7 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
   const restartGame = () => {
     setStage(0);
+    setQuizWrongCount(0);
     initGrid();
   };
 
@@ -215,9 +217,17 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       {gameState === 'quiz' && (
         <MiniQuiz 
           soundEnabled={soundEnabled} 
+          wrongCount={quizWrongCount}
           onCorrect={() => {
             setGameState('playing');
           }} 
+          onWrong={() => {
+            setQuizWrongCount(prev => prev + 1);
+          }}
+          onFail={() => {
+            setGameState('playing');
+            restartGame(); // Reset game
+          }}
         />
       )}
 
