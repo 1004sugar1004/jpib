@@ -11,8 +11,11 @@ const DEFAULT_EMOJIS = ['🍎', '🍊', '🍇', '🍉', '🍓', '🍒', '🍍', 
 
 interface MemoryCard {
   id: number;
+  pairId: number;
   content: string;
+  description?: string;
   image?: string;
+  type: 'visual' | 'text';
   isFlipped: boolean;
   isMatched: boolean;
 }
@@ -25,7 +28,7 @@ interface MemoryGameViewProps {
 }
 
 export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategory }: MemoryGameViewProps) => {
-  const [category, setCategory] = useState<string>(initialCategory || 'emoji');
+  const [category, setCategory] = useState<string>(initialCategory || 'learner');
   const [cards, setCards] = useState<MemoryCard[]>([]);
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -33,28 +36,46 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
   const [bestScore, setBestScore] = useState(() => Number(localStorage.getItem(`memory-best-score-${category}`) || Infinity));
 
   const categories = [
-    { id: 'emoji', name: '과일 & 채소', data: DEFAULT_EMOJIS.map(e => ({ title: e })) },
     { id: 'learner', name: '학습자상', data: ibLearnerProfile },
     { id: 'themes', name: '탐구 주제', data: ibThemes },
     { id: 'concepts', name: '핵심 개념', data: ibKeyConcepts },
     { id: 'atl', name: 'ATL 기술', data: ibATL },
+    { id: 'emoji', name: '과일 & 채소', data: DEFAULT_EMOJIS.map(e => ({ title: e, description: '맛있는 과일/채소' })) },
   ];
 
   const initializeGame = useCallback(() => {
-    const selectedData = categories.find(c => c.id === category)?.data || [];
-    // Take 8 items for a 4x4 grid (16 cards)
+    const selectedCategoryData = categories.find(c => c.id === category);
+    const selectedData = selectedCategoryData?.data || [];
+    
+    // Take 6 items for a 3x4 grid (12 cards) or 8 items for 4x4 (16 cards)
+    // Let's stick to 8 items (16 cards) for a better challenge
     const gameData = [...selectedData].sort(() => Math.random() - 0.5).slice(0, 8);
     
-    const shuffledCards = [...gameData, ...gameData]
-      .sort(() => Math.random() - 0.5)
-      .map((item, index) => ({
-        id: index,
+    const newCards: MemoryCard[] = [];
+    gameData.forEach((item, index) => {
+      // Visual Card (Always Image if available)
+      newCards.push({
+        id: index * 2,
+        pairId: index,
         content: item.title,
         image: (item as any).image,
+        type: 'visual',
         isFlipped: false,
         isMatched: false,
-      }));
-    setCards(shuffledCards);
+      });
+      // Text Card (Title + Description)
+      newCards.push({
+        id: index * 2 + 1,
+        pairId: index,
+        content: item.title,
+        description: (item as any).description,
+        type: 'text',
+        isFlipped: false,
+        isMatched: false,
+      });
+    });
+
+    setCards(newCards.sort(() => Math.random() - 0.5));
     setFlippedIndices([]);
     setMoves(0);
     setIsWon(false);
@@ -79,7 +100,7 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
       setMoves(m => m + 1);
       const [first, second] = newFlipped;
 
-      if (cards[first].content === cards[second].content) {
+      if (cards[first].pairId === cards[second].pairId) {
         // Match
         setTimeout(() => {
           setCards(prev => {
@@ -135,7 +156,7 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
         </div>
         <Button variant="ghost" onClick={() => setView('home')} icon={ArrowLeft} className="mb-4">뒤로 가기</Button>
         <h2 className="text-3xl font-black text-gray-900">기억력 강화 게임</h2>
-        <p className="text-gray-500 font-bold">같은 그림을 찾아 카드를 뒤집어보세요!</p>
+        <p className="text-gray-500 font-bold">그림(또는 이름)과 그에 맞는 설명을 찾아 짝을 맞춰보세요!</p>
         
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           {categories.map(cat => (
@@ -187,11 +208,26 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
               </div>
               
               {/* Back (Content) */}
-              <div className="absolute inset-0 bg-white rounded-xl md:rounded-2xl border-4 border-indigo-100 flex flex-col items-center justify-center backface-hidden rotate-y-180 shadow-lg p-2">
-                {card.image ? (
-                  <img src={card.image} alt={card.content} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-white rounded-xl md:rounded-2xl border-4 border-indigo-100 flex flex-col items-center justify-center backface-hidden rotate-y-180 shadow-lg p-2 overflow-hidden">
+                {card.type === 'visual' ? (
+                  card.image ? (
+                    <img src={card.image} alt={card.content} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="text-2xl md:text-3xl font-black text-indigo-900 text-center leading-tight">{card.content}</span>
+                  )
                 ) : (
-                  <span className="text-xl md:text-2xl font-black text-indigo-900 text-center leading-tight">{card.content}</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center p-1 gap-1">
+                    <span className="text-[10px] md:text-xs font-black text-indigo-600 uppercase tracking-tighter text-center">{card.content}</span>
+                    {card.description && (
+                      <span className={cn(
+                        "font-bold text-indigo-900 text-center leading-tight",
+                        card.description.length > 40 ? "text-[7px] md:text-[8px]" : 
+                        card.description.length > 20 ? "text-[8px] md:text-[10px]" : "text-[10px] md:text-xs"
+                      )}>
+                        {card.description}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </motion.div>
