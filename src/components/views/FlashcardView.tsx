@@ -42,6 +42,7 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
   const currentCard = currentData[currentIndex];
 
   const handleNext = () => {
+    if (showCompletion) return;
     if (currentIndex < currentData.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setIsFlipped(false);

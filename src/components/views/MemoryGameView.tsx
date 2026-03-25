@@ -112,7 +112,7 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
   };
 
   useEffect(() => {
-    if (cards.length > 0 && cards.every(card => card.isMatched)) {
+    if (cards.length > 0 && cards.every(card => card.isMatched) && !isWon) {
       setIsWon(true);
       onEarnXP(50);
       if (moves < bestScore) {
@@ -125,7 +125,7 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
         origin: { y: 0.6 }
       });
     }
-  }, [cards, moves, bestScore, onEarnXP, category]);
+  }, [cards, moves, bestScore, onEarnXP, category, isWon]);
 
   return (
     <div className="max-w-4xl mx-auto p-4 py-8 space-y-8">

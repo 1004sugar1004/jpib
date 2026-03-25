@@ -133,7 +133,7 @@ export default function App() {
     }
   };
 
-  const handleFinishQuiz = async (quizScore: number, maxStreak: number, correctCount: number) => {
+  const handleFinishQuiz = React.useCallback(async (quizScore: number, maxStreak: number, correctCount: number) => {
     if (profile) {
       const oldLevel = getLevel(profile.score).name;
       const newTotalScore = profile.score + quizScore;
@@ -156,9 +156,9 @@ export default function App() {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
     }
-  };
+  }, [profile]);
 
-  const handleEarnXP = async (xp: number) => {
+  const handleEarnXP = React.useCallback(async (xp: number) => {
     if (profile) {
       const oldLevel = getLevel(profile.score).name;
       const newTotalScore = profile.score + xp;
@@ -177,9 +177,9 @@ export default function App() {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
     }
-  };
+  }, [profile]);
 
-  const handleToggleStudyItem = async (itemId: string) => {
+  const handleToggleStudyItem = React.useCallback(async (itemId: string) => {
     if (!profile || !user) return;
     
     const currentCompleted = profile.completedStudyItems || [];
@@ -222,9 +222,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
-  };
+  }, [profile, user, soundEnabled]);
 
-  const handleSaveReflection = async () => {
+  const handleSaveReflection = React.useCallback(async () => {
     if (!user) return;
     try {
       await setDoc(doc(db, 'reflections', user.uid), reflectionData);
@@ -237,9 +237,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `reflections/${user.uid}`);
     }
-  };
+  }, [user, reflectionData]);
 
-  const handleSaveATL = async (key: string, value: number) => {
+  const handleSaveATL = React.useCallback(async (key: string, value: number) => {
     if (!user) return;
     const newData = { ...atlData, [key]: value };
     setAtlData(newData);
@@ -248,9 +248,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `atl/${user.uid}`);
     }
-  };
+  }, [user, atlData]);
 
-  const handleUseTicket = async () => {
+  const handleUseTicket = React.useCallback(async () => {
     if (!profile || !user) return;
     const newTickets = Math.max(0, (profile.gameTickets || 0) - 1);
     try {
@@ -261,7 +261,7 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
-  };
+  }, [profile, user]);
 
   if (!isAuthReady) {
     return (

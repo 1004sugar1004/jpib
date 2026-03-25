@@ -108,6 +108,7 @@ export const QuizView = ({ profile, onFinish, onClose, soundEnabled }: QuizViewP
   };
 
   const finishQuiz = async () => {
+    if (quizFinished) return;
     setQuizFinished(true);
     confetti({
       particleCount: 150,
