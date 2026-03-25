@@ -17,7 +17,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from './firebase';
-import { quizQuestions, musicQuizQuestions } from './content';
+import { quizQuestions, songQuizQuestions } from './content';
 import { ASSETS } from './assets';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
@@ -363,7 +363,7 @@ export default function App() {
             {view === 'music-quiz' && (
               <QuizView 
                 profile={profile}
-                questions={musicQuizQuestions}
+                questions={songQuizQuestions}
                 title="MUSIC QUIZ"
                 onFinish={handleFinishQuiz}
                 onClose={() => setView('home')}

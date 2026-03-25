@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -15,7 +15,11 @@ import {
   Target,
   ChevronRight,
   Sparkles,
-  XCircle
+  XCircle,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { quizQuestions, QuizQuestion } from '../../content';
 import confetti from 'canvas-confetti';
@@ -40,12 +44,71 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
   const [quizScore, setQuizScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [selectedOption, setSelectedOption] = useState<number | string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [timeLeft, setTimeLeft] = useState(15);
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [xpPopups, setXpPopups] = useState<{ id: number; x: number; y: number; amount: number }[]>([]);
+  const [subjectiveInput, setSubjectiveInput] = useState('');
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.5);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const currentQuestion = shuffledQuestions[currentQuestionIdx];
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsAudioPlaying(false);
+    }
+    if (audioTimerRef.current) {
+      clearTimeout(audioTimerRef.current);
+      audioTimerRef.current = null;
+    }
+  };
+
+  const playAudio = () => {
+    if (currentQuestion.audioUrl && !selectedOption && !quizFinished) {
+      stopAudio();
+      
+      const audio = new Audio(currentQuestion.audioUrl);
+      audio.currentTime = currentQuestion.startTime || 0;
+      audio.volume = volume;
+      audioRef.current = audio;
+      
+      setIsAudioPlaying(true);
+      audio.play().catch(e => {
+        console.log('Audio play error:', e);
+        setIsAudioPlaying(false);
+      });
+
+      // Stop after 10 seconds
+      audioTimerRef.current = setTimeout(() => {
+        stopAudio();
+      }, 10000);
+
+      audio.onended = () => setIsAudioPlaying(false);
+      audio.onpause = () => setIsAudioPlaying(false);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
+  // Audio Snippet Effect
+  useEffect(() => {
+    playAudio();
+    return () => {
+      stopAudio();
+    };
+  }, [currentQuestionIdx, quizFinished, selectedOption]);
 
   // Timer Effect
   useEffect(() => {
@@ -57,10 +120,24 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
     }
   }, [quizFinished, selectedOption, timeLeft]);
 
-  const handleAnswer = (optionIdx: number) => {
+  const handleAnswer = (answer: number | string) => {
     if (selectedOption !== null) return;
-    setSelectedOption(optionIdx);
-    const correct = optionIdx === shuffledQuestions[currentQuestionIdx].correctAnswer;
+    setSelectedOption(answer);
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    let correct = false;
+    if (typeof answer === 'number') {
+      correct = answer === currentQuestion.correctAnswer;
+    } else {
+      // Subjective check (case insensitive, trim)
+      const normalizedInput = String(answer).trim().toLowerCase();
+      const normalizedCorrect = String(currentQuestion.correctAnswer).trim().toLowerCase();
+      correct = normalizedInput === normalizedCorrect;
+    }
+
     setIsCorrect(correct);
     
     if (correct) {
@@ -104,6 +181,7 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
       setSelectedOption(null);
       setIsCorrect(null);
       setTimeLeft(15);
+      setSubjectiveInput('');
     } else {
       finishQuiz();
     }
@@ -120,8 +198,6 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
     
     await onFinish(quizScore, maxStreak, correctCount);
   };
-
-  const currentQuestion = shuffledQuestions[currentQuestionIdx];
 
   const mascotImg = isCorrect === true 
     ? "https://i.imgur.com/v7KIyBI.png" // Happy
@@ -287,64 +363,158 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
                     <span className="text-5xl animate-pulse">{currentQuestion.emoji}</span>
                     <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">IB KNOWLEDGE QUEST</span>
                   </div>
-                  <h3 className="text-3xl font-black text-gray-900 mb-10 leading-tight">
+                  <h3 className="text-3xl font-black text-gray-900 mb-6 leading-tight">
                     {currentQuestion.question}
                   </h3>
                   
-                  <div className="grid grid-cols-1 gap-4">
-                    {currentQuestion.options.map((option, idx) => (
-                      <motion.button
-                        key={idx}
-                        whileHover={selectedOption === null ? { scale: 1.02, x: 10 } : {}}
-                        whileTap={selectedOption === null ? { scale: 0.98 } : {}}
-                        onClick={() => handleAnswer(idx)}
-                        disabled={selectedOption !== null}
-                        className={cn(
-                          "w-full p-6 rounded-[2rem] text-left font-bold transition-all border-2 text-lg flex items-center justify-between group relative shadow-sm",
-                          selectedOption === null ? "border-gray-100 bg-white hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-50" : 
-                          idx === currentQuestion.correctAnswer ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-lg shadow-emerald-50" :
-                          selectedOption === idx ? "border-red-500 bg-red-50 text-red-700" : "border-gray-100 opacity-50"
-                        )}
-                      >
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            "w-10 h-10 rounded-2xl flex items-center justify-center text-lg font-black transition-all",
-                            selectedOption === null ? "bg-gray-100 text-gray-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:rotate-12" :
-                            idx === currentQuestion.correctAnswer ? "bg-emerald-500 text-white rotate-12" :
-                            selectedOption === idx ? "bg-red-500 text-white" : "bg-gray-100 text-gray-400"
-                          )}>
-                            {String.fromCharCode(65 + idx)}
-                          </div>
-                          <span className="text-xl">{option}</span>
-                        </div>
-                        
-                        {/* XP Popups */}
-                        <AnimatePresence>
-                          {selectedOption === idx && isCorrect && xpPopups.map(popup => (
-                            <motion.div
-                              key={popup.id}
-                              initial={{ opacity: 0, y: 0 }}
-                              animate={{ opacity: 1, y: -80 }}
-                              exit={{ opacity: 0 }}
-                              className="absolute right-12 top-0 text-3xl font-black text-emerald-500 pointer-events-none drop-shadow-sm"
-                            >
-                              +{popup.amount} XP
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
+                  {currentQuestion.audioUrl && (
+                    <div className="mb-8 p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100/50 flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        <Button 
+                          onClick={() => isAudioPlaying ? stopAudio() : playAudio()} 
+                          disabled={selectedOption !== null}
+                          variant="primary"
+                          className={cn(
+                            "rounded-2xl px-6 py-3 flex items-center gap-2 transition-all",
+                            isAudioPlaying ? "bg-red-500 hover:bg-red-600" : "bg-indigo-600 hover:bg-indigo-700"
+                          )}
+                        >
+                          {isAudioPlaying ? (
+                            <>
+                              <Pause className="w-5 h-5 fill-current" />
+                              <span className="font-black text-sm">멈춤</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-5 h-5 fill-current" />
+                              <span className="font-black text-sm">다시 듣기</span>
+                            </>
+                          )}
+                          
+                          {isAudioPlaying && (
+                            <div className="flex gap-1 items-end h-4 ml-2">
+                              {[1, 2, 3, 4].map((i) => (
+                                <motion.div
+                                  key={i}
+                                  className="w-1 bg-white rounded-full"
+                                  animate={{ height: [4, 12, 4] }}
+                                  transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </Button>
 
-                        {selectedOption !== null && idx === currentQuestion.correctAnswer && (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1.2 }}>
-                            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                          </motion.div>
+                        <div className="flex-1 flex items-center gap-3 bg-white/50 p-3 rounded-2xl border border-indigo-100/30">
+                          {volume === 0 ? <VolumeX className="w-5 h-5 text-indigo-400" /> : <Volume2 className="w-5 h-5 text-indigo-600" />}
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="1" 
+                            step="0.01" 
+                            value={volume} 
+                            onChange={handleVolumeChange}
+                            className="flex-1 h-2 bg-indigo-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                          />
+                          <span className="text-[10px] font-black text-indigo-600 w-8">{Math.round(volume * 100)}%</span>
+                        </div>
+                      </div>
+                      
+                      {isAudioPlaying && (
+                        <div className="text-[10px] font-bold text-indigo-400 animate-pulse flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          가사를 잘 들어보세요! (최대 10초 재생)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    {currentQuestion.type === 'subjective' ? (
+                      <div className="space-y-4">
+                        <input
+                          type="text"
+                          value={subjectiveInput}
+                          onChange={(e) => setSubjectiveInput(e.target.value)}
+                          disabled={selectedOption !== null}
+                          placeholder="정답을 입력하세요..."
+                          className={cn(
+                            "w-full p-6 rounded-[2rem] font-bold transition-all border-4 text-xl outline-none",
+                            selectedOption === null ? "border-gray-100 bg-white focus:border-indigo-400" :
+                            isCorrect ? "border-emerald-500 bg-emerald-50 text-emerald-700" :
+                            "border-red-500 bg-red-50 text-red-700"
+                          )}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && selectedOption === null) {
+                              handleAnswer(subjectiveInput);
+                            }
+                          }}
+                        />
+                        {selectedOption === null && (
+                          <Button 
+                            onClick={() => handleAnswer(subjectiveInput)}
+                            className="w-full py-4 text-lg bg-indigo-600"
+                            disabled={subjectiveInput.trim() === ''}
+                          >
+                            정답 확인
+                          </Button>
                         )}
-                        {selectedOption === idx && idx !== currentQuestion.correctAnswer && (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1.2 }}>
-                            <XCircle className="w-8 h-8 text-red-500" />
-                          </motion.div>
-                        )}
-                      </motion.button>
-                    ))}
+                      </div>
+                    ) : (
+                      currentQuestion.options?.map((option, idx) => (
+                        <motion.button
+                          key={idx}
+                          whileHover={selectedOption === null ? { scale: 1.02, x: 10 } : {}}
+                          whileTap={selectedOption === null ? { scale: 0.98 } : {}}
+                          onClick={() => handleAnswer(idx)}
+                          disabled={selectedOption !== null}
+                          className={cn(
+                            "w-full p-6 rounded-[2rem] text-left font-bold transition-all border-2 text-lg flex items-center justify-between group relative shadow-sm",
+                            selectedOption === null ? "border-gray-100 bg-white hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-50" : 
+                            idx === currentQuestion.correctAnswer ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-lg shadow-emerald-50" :
+                            selectedOption === idx ? "border-red-500 bg-red-50 text-red-700" : "border-gray-100 opacity-50"
+                          )}
+                        >
+                          <div className="flex items-center gap-5">
+                            <div className={cn(
+                              "w-10 h-10 rounded-2xl flex items-center justify-center text-lg font-black transition-all",
+                              selectedOption === null ? "bg-gray-100 text-gray-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:rotate-12" :
+                              idx === currentQuestion.correctAnswer ? "bg-emerald-500 text-white rotate-12" :
+                              selectedOption === idx ? "bg-red-500 text-white" : "bg-gray-100 text-gray-400"
+                            )}>
+                              {String.fromCharCode(65 + idx)}
+                            </div>
+                            <span className="text-xl">{option}</span>
+                          </div>
+                          
+                          {/* XP Popups */}
+                          <AnimatePresence>
+                            {selectedOption === idx && isCorrect && xpPopups.map(popup => (
+                              <motion.div
+                                key={popup.id}
+                                initial={{ opacity: 0, y: 0 }}
+                                animate={{ opacity: 1, y: -80 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute right-12 top-0 text-3xl font-black text-emerald-500 pointer-events-none drop-shadow-sm"
+                              >
+                                +{popup.amount} XP
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+
+                          {selectedOption !== null && idx === currentQuestion.correctAnswer && (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1.2 }}>
+                              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                            </motion.div>
+                          )}
+                          {selectedOption === idx && idx !== currentQuestion.correctAnswer && (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1.2 }}>
+                              <XCircle className="w-8 h-8 text-red-500" />
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      ))
+                    )}
                   </div>
                 </div>
               </Card>
@@ -378,6 +548,13 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
                     <p className="font-bold text-lg leading-relaxed bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
                       {currentQuestion.explanation}
                     </p>
+                    {!isCorrect && currentQuestion.type === 'subjective' && (
+                      <div className="mt-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                        <p className="text-emerald-800 font-black text-center">
+                          정답: <span className="text-2xl">{currentQuestion.correctAnswer}</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   <Button onClick={nextQuestion} className="w-full py-6 text-2xl shadow-2xl bg-indigo-600 hover:bg-indigo-700" variant="primary" icon={ChevronRight}>

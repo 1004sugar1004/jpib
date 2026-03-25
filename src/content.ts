@@ -320,11 +320,122 @@ export const ibReflectionQuestions = [
 export interface QuizQuestion {
   id: number;
   question: string;
-  options: string[];
-  correctAnswer: number;
+  options?: string[];
+  correctAnswer: number | string;
   explanation: string;
   emoji?: string;
+  audioUrl?: string;
+  startTime?: number;
+  type?: 'multiple' | 'subjective';
 }
+
+export const songQuizQuestions: QuizQuestion[] = [
+  {
+    id: 1,
+    question: "개념송 가사 중 빈칸에 들어갈 말은? '형태는 (      )이야. 그게 뭔지 말해 주는 이름표'",
+    correctAnswer: "모습",
+    explanation: "개념송의 첫 부분! '형태는 모습이야'라고 노래해요.",
+    emoji: "🎹",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/%EA%B0%9C%EB%85%90%EC%86%A1%20(Remastered).mp3",
+    startTime: 5,
+    type: 'subjective'
+  },
+  {
+    id: 2,
+    question: "ATL 송에서 '궁금한 건 크게 물어봐'라고 하는 기능은 무엇일까요?",
+    options: ["사고기능", "조사기능", "의사소통기능", "자기관리기능"],
+    correctAnswer: 0,
+    explanation: "사고기능은 궁금한 것을 크게 물어보고 새로운 생각을 반짝이는 힘이에요!",
+    emoji: "💡",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/ATL%20%EB%8B%A4%EC%84%AF%20%EA%B0%80%EC%A7%80%20%ED%9E%98.mp3",
+    startTime: 8,
+    type: 'multiple'
+  },
+  {
+    id: 3,
+    question: "초학문적 주제송에서 '내 신념과 가치'를 탐구하는 주제는?",
+    options: ["우리가 사는 시간과 공간", "우리는 누구인가", "우리 자신을 표현하는 방법", "우리 모두의 지구"],
+    correctAnswer: 1,
+    explanation: "'우리는 누구인가(Who we are)'는 내 신념과 가치, 정체성을 탐구하는 주제예요.",
+    emoji: "🌍",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/6%EA%B0%80%EC%A7%80%20%EC%9A%B0%EC%A3%BC.mp3",
+    startTime: 6,
+    type: 'multiple'
+  },
+  {
+    id: 4,
+    question: "학습자송 가사 중 빈칸은? '약속은 꼭꼭 지켜, (      )이 최고!'",
+    correctAnswer: "정직",
+    explanation: "원칙을 지키는 사람의 핵심 가치! '정직이 최고'라고 노래해요.",
+    emoji: "🦸",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/%EC%9A%B0%EB%A6%AC%EB%93%A4%EC%9D%98%20Super%20Power.mp3?updatedAt=1773797977356",
+    startTime: 48,
+    type: 'subjective'
+  },
+  {
+    id: 5,
+    question: "개념송에서 '왜 그런지 궁금해서 묻는 말'은 어떤 개념일까요?",
+    correctAnswer: "인과관계",
+    explanation: "인과관계는 이유를 찾는 질문이에요. '왜 그런지' 궁금해하는 것이 시작이죠!",
+    emoji: "❓",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/%EA%B0%9C%EB%85%90%EC%86%A1%20(Remastered).mp3",
+    startTime: 25,
+    type: 'subjective'
+  },
+  {
+    id: 6,
+    question: "ATL 송에서 '친구 말은 끝까지 들어 줘'라고 강조하는 기능은?",
+    options: ["사고기능", "의사소통기능", "대인관계기능", "자기관리기능"],
+    correctAnswer: 2,
+    explanation: "대인관계기능은 친구의 말을 경청하고 서로를 존중하며 협업하는 힘이에요.",
+    emoji: "🤝",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/ATL%20%EB%8B%A4%EC%84%AF%20%EA%B0%80%EC%A7%80%20%ED%9E%98.mp3",
+    startTime: 60,
+    type: 'multiple'
+  },
+  {
+    id: 7,
+    question: "초학문적 주제송에서 '에너지와 디지털'을 다루는 주제는?",
+    options: ["세계가 돌아가는 방식", "우리 자신을 조직하는 방식", "우리 모두의 지구", "우리 자신을 표현하는 방법"],
+    correctAnswer: 0,
+    explanation: "'세계가 돌아가는 방식(How the world works)'은 에너지, 디지털, 질서와 시스템을 탐구해요.",
+    emoji: "⚙️",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/6%EA%B0%80%EC%A7%80%20%EC%9A%B0%EC%A3%BC.mp3",
+    startTime: 45,
+    type: 'multiple'
+  },
+  {
+    id: 8,
+    question: "학습자송에서 '공부도 운동도, 골고루 튼튼하게' 하는 모습은?",
+    options: ["배려하는 사람", "도전하는 사람", "균형 잡힌 사람", "성찰하는 사람"],
+    correctAnswer: 2,
+    explanation: "균형 잡힌 사람은 몸과 마음을 골고루 튼튼하게 가꾸는 사람이에요.",
+    emoji: "⚖️",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/%EC%9A%B0%EB%A6%AC%EB%93%A4%EC%9D%98%20Super%20Power.mp3?updatedAt=1773797977356",
+    startTime: 85,
+    type: 'multiple'
+  },
+  {
+    id: 9,
+    question: "개념송에서 '내가 해야 할 몫'을 뜻하는 핵심개념은?",
+    correctAnswer: "책임",
+    explanation: "책임은 내가 할 수 있는 일을 그냥 지나치지 않고 실천하는 것이에요.",
+    emoji: "✅",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/%EA%B0%9C%EB%85%90%EC%86%A1%20(Remastered).mp3",
+    startTime: 100,
+    type: 'subjective'
+  },
+  {
+    id: 10,
+    question: "ATL 송에서 '실수해도 다시 일어나는 힘'을 무엇이라고 하나요?",
+    correctAnswer: "회복탄력성",
+    explanation: "자기관리기능의 중요한 부분인 회복탄력성은 실수해도 다시 일어나는 마음의 힘이에요.",
+    emoji: "🛡️",
+    audioUrl: "https://ik.imagekit.io/foefnjeua/ATL%20%EB%8B%A4%EC%84%AF%20%EA%B0%80%EC%A7%80%20%ED%9E%98.mp3",
+    startTime: 110,
+    type: 'subjective'
+  }
+];
 
 export const musicQuizQuestions: QuizQuestion[] = [
   {
