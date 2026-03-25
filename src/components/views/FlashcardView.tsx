@@ -204,8 +204,8 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
                 <Card className="w-full h-full p-10 flex flex-col items-center justify-center text-center space-y-6 bg-indigo-600 text-white border-4 border-white/20 overflow-visible">
                   {/* Pair: Image + Description */}
                   {currentCard.image && (
-                    <div className="w-24 h-24 bg-white/10 rounded-2xl p-3 border border-white/20">
-                      <img src={currentCard.image} alt={currentCard.title} className="w-full h-full object-contain brightness-0 invert" referrerPolicy="no-referrer" />
+                    <div className="w-28 h-28 bg-white rounded-2xl p-3 shadow-lg transform -rotate-3">
+                      <img src={currentCard.image} alt={currentCard.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                     </div>
                   )}
                   <div className="space-y-2">

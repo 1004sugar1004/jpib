@@ -218,7 +218,7 @@ export const StudyView = ({
                     key={idx}
                     className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-4 hover:shadow-2xl transition-all"
                   >
-                    <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-2 p-3">
+                    <div className="w-24 h-24 bg-emerald-50 rounded-3xl flex items-center justify-center mb-4 p-2 group-hover:scale-110 transition-transform shadow-inner">
                       <img src={theme.image} alt={theme.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                     </div>
                     <h3 className="text-xl font-black text-gray-900">{theme.title}</h3>
@@ -249,15 +249,13 @@ export const StudyView = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {ibKeyConcepts.map((concept, idx) => {
-                  const icons = [Box, RefreshCcw, Target, AlertCircle, Link, Compass, Eye];
-                  const Icon = icons[idx % icons.length];
                   return (
                     <motion.div 
                       key={idx}
                       className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-4 hover:shadow-2xl transition-all"
                     >
-                      <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
-                        <Icon className="w-8 h-8" />
+                      <div className="w-24 h-24 bg-amber-50 rounded-3xl flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-inner">
+                        <img src={concept.image} alt={concept.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                       </div>
                       <h3 className="text-xl font-black text-gray-900">{concept.title}</h3>
                       <p className="text-gray-500 text-sm leading-relaxed flex-1">{concept.description}</p>
@@ -313,8 +311,8 @@ export const StudyView = ({
                           />
                         </div>
                       </div>
-                      <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-xl relative z-20 shrink-0">
-                        <RefreshCcw className="w-10 h-10" />
+                      <div className="w-28 h-28 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-2xl relative z-20 shrink-0 border-4 border-white">
+                        <img src={step.image} alt={step.title} className="w-20 h-20 object-contain brightness-0 invert" referrerPolicy="no-referrer" />
                       </div>
                       <div className="flex-1 hidden lg:block" />
                     </motion.div>
@@ -339,18 +337,16 @@ export const StudyView = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {ibATL.map((atl, idx) => {
-                  const icons = [MessageSquare, Globe, Search, ShieldCheck, Settings];
-                  const Icon = icons[idx % icons.length];
                   return (
                     <motion.div 
                       key={idx}
                       className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-6 hover:shadow-2xl transition-all"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
-                          <Icon className="w-8 h-8" />
+                      <div className="flex items-center gap-6">
+                        <div className="w-24 h-24 bg-purple-50 rounded-3xl flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-inner">
+                          <img src={atl.image} alt={atl.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                         </div>
-                        <h3 className="text-xl font-black text-gray-900">{atl.title}</h3>
+                        <h3 className="text-2xl font-black text-gray-900">{atl.title}</h3>
                       </div>
                       <div className="space-y-4 flex-1">
                         <p className="text-gray-500 text-sm leading-relaxed">{atl.description}</p>
