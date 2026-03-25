@@ -138,7 +138,8 @@ export default function App() {
       const oldLevel = getLevel(profile.score).name;
       const newTotalScore = profile.score + quizScore;
       const newLevel = getLevel(newTotalScore).name;
-      const newTickets = (profile.gameTickets || 0) + (correctCount * 2);
+      // 10 questions -> 3 tickets (proportional)
+      const newTickets = (profile.gameTickets || 0) + Math.floor((correctCount / 10) * 3);
 
       if (oldLevel !== newLevel) {
         setShowLevelUp(true);
@@ -196,10 +197,10 @@ export default function App() {
     
     if (isCompleted) {
       newCompleted = currentCompleted.filter(id => id !== itemId);
-      scoreChange = -10;
+      scoreChange = -30;
     } else {
       newCompleted = [...currentCompleted, itemId];
-      scoreChange = 10;
+      scoreChange = 30;
     }
     
     const newScore = Math.max(0, profile.score + scoreChange);
@@ -228,6 +229,7 @@ export default function App() {
     if (!user) return;
     try {
       await setDoc(doc(db, 'reflections', user.uid), reflectionData);
+      handleEarnXP(50);
       confetti({
         particleCount: 100,
         spread: 70,

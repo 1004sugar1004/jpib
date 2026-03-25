@@ -90,7 +90,7 @@ export const StudyView = ({
       )}
     >
       {completed ? <CheckCircle2 className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border-2 border-gray-200" />}
-      {completed ? "이해했습니다! (+10 XP)" : "읽고 이해했습니다"}
+      {completed ? "이해했습니다! (+30 XP)" : "읽고 이해했습니다"}
     </motion.button>
   );
 
@@ -426,7 +426,7 @@ export const StudyView = ({
                   className="px-12 py-5 text-xl bg-rose-500 hover:bg-rose-600 shadow-2xl shadow-rose-100"
                   icon={CheckCircle2}
                 >
-                  성찰 일지 저장하기 (+20 XP)
+                  성찰 일지 저장하기 (+50 XP)
                 </Button>
               </div>
             </section>

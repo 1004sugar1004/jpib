@@ -75,7 +75,7 @@ export const QuizView = ({ profile, onFinish, onClose, soundEnabled }: QuizViewP
       // Bonus points for streak and speed
       const timeBonus = Math.floor(timeLeft / 2);
       const streakBonus = Math.floor(newStreak * 5);
-      const points = 20 + timeBonus + streakBonus;
+      const points = 50 + timeBonus + streakBonus;
       setQuizScore(prev => prev + points);
 
       // XP Popup
@@ -162,7 +162,7 @@ export const QuizView = ({ profile, onFinish, onClose, soundEnabled }: QuizViewP
               </div>
               <div className="bg-pink-50 p-4 rounded-3xl border border-pink-100 shadow-sm">
                 <p className="text-[10px] font-bold text-pink-400 mb-1 uppercase tracking-tighter">게임 티켓</p>
-                <p className="text-2xl font-black text-pink-600">+{correctCount * 2}</p>
+                <p className="text-2xl font-black text-pink-600">+{Math.floor((correctCount / 10) * 3)}</p>
               </div>
             </div>
             

@@ -35,10 +35,10 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
 
   const games = [
     { id: 'anipang', name: 'IB 애니팡', icon: Grid3X3, color: 'bg-pink-500', unlockXp: 0, description: '3개를 맞춰보세요!' },
-    { id: 'galaga', name: 'IB 갤러그', icon: Rocket, color: 'bg-blue-600', unlockXp: 300, description: '우주선을 조종하세요!' },
-    { id: 'fruit', name: 'IB 지식 머지', icon: Apple, color: 'bg-orange-500', unlockXp: 600, description: '과일을 합치며 IB 핵심 지식을 쌓아요!' },
-    { id: 'store', name: 'IB 편의점 정리', icon: ShoppingCart, color: 'bg-emerald-500', unlockXp: 1000, description: '선반을 정리하세요!' },
-    { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 1500, description: '장애물을 뛰어넘으세요!' },
+    { id: 'galaga', name: 'IB 갤러그', icon: Rocket, color: 'bg-blue-600', unlockXp: 1000, description: '우주선을 조종하세요!' },
+    { id: 'fruit', name: 'IB 지식 머지', icon: Apple, color: 'bg-orange-500', unlockXp: 2000, description: '과일을 합치며 IB 핵심 지식을 쌓아요!' },
+    { id: 'store', name: 'IB 편의점 정리', icon: ShoppingCart, color: 'bg-emerald-500', unlockXp: 3500, description: '선반을 정리하세요!' },
+    { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 5000, description: '장애물을 뛰어넘으세요!' },
   ];
 
   if (selectedGame) {

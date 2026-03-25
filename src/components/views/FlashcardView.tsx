@@ -64,7 +64,7 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
       }
     } else {
       setShowCompletion(true);
-      onEarnXP(50); // Reward for completing a set
+      onEarnXP(150); // Reward for completing a set
       confetti({
         particleCount: 100,
         spread: 70,
@@ -93,7 +93,7 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
           <p className="text-gray-500 font-bold mb-4">카드를 뒤집으며 IB 이론을 마스터해보세요!</p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-full border border-indigo-100">
             <Star className="w-4 h-4 text-indigo-600 fill-indigo-600" />
-            <span className="text-sm font-black text-indigo-900">한 세트 완료 시 50 XP 획득!</span>
+            <span className="text-sm font-black text-indigo-900">한 세트 완료 시 150 XP 획득!</span>
           </div>
         </header>
 
@@ -116,7 +116,7 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
                 <div className="absolute top-4 right-4">
                   <div className="flex items-center gap-1 px-2 py-1 bg-indigo-50 rounded-lg text-[10px] font-black text-indigo-600 border border-indigo-100">
                     <Star className="w-3 h-3 fill-indigo-600" />
-                    50 XP
+                    150 XP
                   </div>
                 </div>
                 <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mb-6 text-white shadow-lg", cat.color)}>
@@ -153,7 +153,7 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
           <h2 className="text-3xl font-black text-gray-900">탐험 완료!</h2>
           <p className="text-gray-600 font-bold">
             {categories.find(c => c.id === selectedCategory)?.name} 마스터!<br />
-            <span className="text-indigo-600">+50 XP를 획득했습니다.</span>
+            <span className="text-indigo-600">+150 XP를 획득했습니다.</span>
           </p>
           <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
             <Button 
