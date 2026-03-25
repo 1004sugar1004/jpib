@@ -76,7 +76,9 @@ export const HomeView = ({
               </span>
             </div>
             <p className="text-gray-500 font-medium mb-4">
-              {profile?.role === 'teacher' ? '교사' : `${profile?.grade} ${profile?.class}`} • 증평초등학교
+              {profile?.role === 'teacher' ? '교사' : (
+                `${profile?.grade.includes('학년') ? profile?.grade : profile?.grade + '학년'} ${profile?.class.includes('반') ? profile?.class : profile?.class + '반'}`
+              )} • 증평초등학교
             </p>
             
             <div className="space-y-2">
@@ -150,7 +152,7 @@ export const HomeView = ({
             </div>
             <div>
               <h4 className="font-black text-blue-900">지식 탐험</h4>
-              <p className="text-sm text-blue-700 font-bold">항목당 +10 XP</p>
+              <p className="text-sm text-blue-700 font-bold">항목당 +30 XP</p>
               <p className="text-xs text-blue-500 mt-1">IB 핵심 개념을 학습하고 체크하세요!</p>
             </div>
           </div>
@@ -161,7 +163,7 @@ export const HomeView = ({
             </div>
             <div>
               <h4 className="font-black text-amber-900">플래시카드</h4>
-              <p className="text-sm text-amber-700 font-bold">세트당 +50 XP</p>
+              <p className="text-sm text-amber-700 font-bold">세트당 +150 XP</p>
               <p className="text-xs text-amber-500 mt-1">한 세트를 모두 학습하면 보너스 XP!</p>
             </div>
           </div>
@@ -183,8 +185,8 @@ export const HomeView = ({
             </div>
             <div>
               <h4 className="font-black text-purple-900">퀴즈 챌린지</h4>
-              <p className="text-sm text-purple-700 font-bold">정답당 +20 XP & 티켓 2장</p>
-              <p className="text-xs text-purple-500 mt-1">1문제 맞힐 때마다 게임 2판 가능!</p>
+              <p className="text-sm text-purple-700 font-bold">정답당 +50 XP</p>
+              <p className="text-xs text-purple-500 mt-1">10문제 만점 시 티켓 3장 획득!</p>
             </div>
           </div>
         </div>
@@ -238,7 +240,7 @@ export const HomeView = ({
             <p className="text-gray-500 text-sm font-medium mb-2">카드를 뒤집으며 재미있게 익혀요!</p>
             <div className="flex items-center gap-1 px-3 py-1 bg-amber-50 rounded-full text-[10px] font-black text-amber-600 border border-amber-100">
               <Star className="w-3 h-3 fill-amber-600" />
-              완료 시 50 XP
+              완료 시 150 XP
             </div>
             <div className="mt-6 flex items-center gap-1 text-amber-600 font-bold text-sm">
               학습 시작하기 <ChevronRight className="w-4 h-4" />
@@ -282,7 +284,7 @@ export const HomeView = ({
             <p className="text-gray-500 text-sm font-medium mb-2">도전! 퀴즈를 풀고 XP와 티켓을 얻으세요.</p>
             <div className="flex items-center gap-1 px-3 py-1 bg-emerald-50 rounded-full text-[10px] font-black text-emerald-600 border border-emerald-100">
               <Gamepad2 className="w-3 h-3" />
-              1문제당 티켓 2장!
+              10문제 만점 시 티켓 3장!
             </div>
             <div className="mt-6 flex items-center gap-1 text-emerald-600 font-bold text-sm">
               도전하기 <ChevronRight className="w-4 h-4" />

@@ -18,7 +18,9 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
       if (user.role === 'student') {
         const classKey = `${user.grade}-${user.class}`;
         if (!classMap[classKey]) {
-          classMap[classKey] = { name: `${user.grade}학년 ${user.class}반`, score: 0, count: 0 };
+          const gradeStr = user.grade.includes('학년') ? user.grade : `${user.grade}학년`;
+          const classStr = user.class.includes('반') ? user.class : `${user.class}반`;
+          classMap[classKey] = { name: `${gradeStr} ${classStr}`, score: 0, count: 0 };
         }
         classMap[classKey].score += user.score;
         classMap[classKey].count += 1;
@@ -54,7 +56,11 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
                 </div>
                 <div>
                   <div className="font-bold text-gray-900">{rank.name} {rank.role === 'teacher' ? '선생님' : ''}</div>
-                  <div className="text-xs text-gray-500">{rank.role === 'teacher' ? '교사' : `${rank.grade} ${rank.class}`}</div>
+                  <div className="text-xs text-gray-500">
+                    {rank.role === 'teacher' ? '교사' : (
+                      `${rank.grade.includes('학년') ? rank.grade : rank.grade + '학년'} ${rank.class.includes('반') ? rank.class : rank.class + '반'}`
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="text-xl font-black text-indigo-600">{rank.score}점</div>
@@ -82,10 +88,13 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
                 </div>
                 <div>
                   <div className="font-bold text-gray-900">{cls.name}</div>
-                  <div className="text-xs text-gray-500">학생 수: {cls.count}명</div>
+                  <div className="text-xs text-gray-500">총 참여 학생: {cls.count}명</div>
                 </div>
               </div>
-              <div className="text-xl font-black text-indigo-600">{cls.score}점</div>
+              <div className="text-right">
+                <div className="text-xl font-black text-indigo-600">{cls.score}점</div>
+                <div className="text-[10px] font-bold text-gray-400 uppercase">총 점수</div>
+              </div>
             </div>
           ))}
           {classRankings.length === 0 && (

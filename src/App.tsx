@@ -94,7 +94,7 @@ export default function App() {
   // Ranking Listener
   useEffect(() => {
     if (!isAuthReady || !user) return;
-    const q = query(collection(db, 'users'), orderBy('score', 'desc'), limit(10));
+    const q = query(collection(db, 'users'), orderBy('score', 'desc'), limit(30));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as UserProfile);
       setRankings(data);
