@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { MiniQuiz } from './MiniQuiz';
 import { ASSETS } from '../../assets';
 import { cn } from '../../lib/utils';
 import confetti from 'canvas-confetti';
@@ -19,8 +20,9 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
-  const [gameState, setGameState] = useState<'playing' | 'cleared' | 'gameover'>('playing');
+  const [gameState, setGameState] = useState<'playing' | 'cleared' | 'gameover' | 'quiz'>('playing');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [hasShownMidQuiz, setHasShownMidQuiz] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentStage = STAGE_CONFIGS[stage % STAGE_CONFIGS.length];
@@ -133,6 +135,7 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setScore(0);
     setTimeLeft(60);
     setGameState('playing');
+    setHasShownMidQuiz(false);
     setSelected(null);
   }, [emojis]);
 
@@ -144,6 +147,11 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     if (gameState === 'playing' && timeLeft > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
+          if (prev === 31 && !hasShownMidQuiz) {
+            setGameState('quiz');
+            setHasShownMidQuiz(true);
+            return 30;
+          }
           if (prev <= 1) {
             setGameState('gameover');
             return 0;
@@ -157,7 +165,7 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [gameState, timeLeft]);
+  }, [gameState, timeLeft, hasShownMidQuiz]);
 
   const handleCellClick = async (r: number, c: number) => {
     if (gameState !== 'playing' || isProcessing) return;
@@ -204,6 +212,15 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   return (
     <div className={cn("w-full h-full flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden transition-colors duration-500", currentStage.color)}>
       
+      {gameState === 'quiz' && (
+        <MiniQuiz 
+          soundEnabled={soundEnabled} 
+          onCorrect={() => {
+            setGameState('playing');
+          }} 
+        />
+      )}
+
       <div className="w-full max-w-md mb-6 space-y-4">
         <div className="flex items-center justify-between bg-white/80 backdrop-blur-md p-4 rounded-3xl shadow-lg border-2 border-white/50">
           <div className="flex flex-col">
