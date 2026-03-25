@@ -17,22 +17,24 @@ import {
   Sparkles,
   XCircle
 } from 'lucide-react';
-import { quizQuestions } from '../../content';
+import { quizQuestions, QuizQuestion } from '../../content';
 import confetti from 'canvas-confetti';
 
 import { UserProfile } from '../../types';
 
 interface QuizViewProps {
   profile: UserProfile | null;
+  questions: QuizQuestion[];
+  title: string;
   onFinish: (score: number, maxStreak: number, correctCount: number) => Promise<void>;
   onClose: () => void;
   soundEnabled: boolean;
 }
 
-export const QuizView = ({ profile, onFinish, onClose, soundEnabled }: QuizViewProps) => {
+export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEnabled }: QuizViewProps) => {
   const shuffledQuestions = useMemo(() => {
-    return [...quizQuestions].sort(() => Math.random() - 0.5).slice(0, 10);
-  }, []);
+    return [...questions].sort(() => Math.random() - 0.5).slice(0, 10);
+  }, [questions]);
 
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
@@ -205,10 +207,10 @@ export const QuizView = ({ profile, onFinish, onClose, soundEnabled }: QuizViewP
               <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-200">
                 {currentQuestionIdx + 1}
               </div>
-              <div className="hidden sm:block">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CURRENT QUEST</p>
-                <p className="text-lg font-bold text-gray-900">탐구 질문 {currentQuestionIdx + 1} / {shuffledQuestions.length}</p>
-              </div>
+            <div className="hidden sm:block">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</p>
+              <p className="text-lg font-bold text-gray-900">탐구 질문 {currentQuestionIdx + 1} / {shuffledQuestions.length}</p>
+            </div>
             </div>
           </div>
           

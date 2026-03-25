@@ -18,6 +18,7 @@ export const ASSETS = {
     ranking_icon: 'https://i.imgur.com/EhA2HQZ.png',
     flashcard_icon: 'https://i.imgur.com/Kq3J8uq.png',
     memory_icon: 'https://i.imgur.com/bqaks8U.png',
+    music_icon: 'https://i.imgur.com/EhA2HQZ.png', // Placeholder
     game_icon: 'https://i.imgur.com/aq9XF3j.png',
   },
   games: {

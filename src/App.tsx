@@ -17,7 +17,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from './firebase';
-import { quizQuestions } from './content';
+import { quizQuestions, musicQuizQuestions } from './content';
 import { ASSETS } from './assets';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
@@ -40,7 +40,7 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'ranking' | 'flashcards' | 'games' | 'memory'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -353,6 +353,18 @@ export default function App() {
             {view === 'quiz' && (
               <QuizView 
                 profile={profile}
+                questions={quizQuestions}
+                title="IB QUIZ"
+                onFinish={handleFinishQuiz}
+                onClose={() => setView('home')}
+                soundEnabled={soundEnabled}
+              />
+            )}
+            {view === 'music-quiz' && (
+              <QuizView 
+                profile={profile}
+                questions={musicQuizQuestions}
+                title="MUSIC QUIZ"
                 onFinish={handleFinishQuiz}
                 onClose={() => setView('home')}
                 soundEnabled={soundEnabled}
@@ -389,6 +401,21 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Footer */}
+      <footer className="relative z-10 py-12 text-center">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-8" />
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm px-6 py-2 rounded-full border border-white/20 shadow-sm">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Developer</span>
+              <div className="w-1 h-1 bg-indigo-400 rounded-full" />
+              <span className="text-sm font-bold text-gray-600">증평초 김혜진</span>
+            </div>
+            <p className="text-[10px] font-medium text-gray-400">© 2026 IB Explorer. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

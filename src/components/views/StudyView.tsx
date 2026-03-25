@@ -343,8 +343,16 @@ export const StudyView = ({
                       className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-6 hover:shadow-2xl transition-all"
                     >
                       <div className="flex items-center gap-6">
-                        <div className="w-24 h-24 bg-purple-50 rounded-3xl flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-inner">
-                          <img src={atl.image} alt={atl.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                        <div className="w-28 h-28 bg-purple-50 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner overflow-hidden">
+                          <img 
+                            src={atl.image} 
+                            alt={atl.title} 
+                            className={cn(
+                              "w-full h-full object-contain",
+                              (atl.title.includes("의사소통") || atl.title.includes("자기 관리")) ? "scale-125" : "scale-110"
+                            )} 
+                            referrerPolicy="no-referrer" 
+                          />
                         </div>
                         <h3 className="text-2xl font-black text-gray-900">{atl.title}</h3>
                       </div>

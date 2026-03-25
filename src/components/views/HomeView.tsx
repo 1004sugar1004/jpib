@@ -26,7 +26,7 @@ import { getLevel } from '../../lib/utils';
 interface HomeViewProps {
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'ranking' | 'flashcards' | 'games' | 'memory') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory') => void;
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
   bgMusicPlaying: boolean;
@@ -287,6 +287,28 @@ export const HomeView = ({
               10문제 만점 시 티켓 3장!
             </div>
             <div className="mt-6 flex items-center gap-1 text-emerald-600 font-bold text-sm">
+              도전하기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('music-quiz')}
+          className="group"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-rose-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-rose-50/30">
+            <div className="w-20 h-20 bg-rose-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-rose-100 overflow-hidden p-2">
+              <img src={ASSETS.quiz.music_icon} alt="Music Quiz" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">음악 퀴즈</h3>
+            <p className="text-gray-500 text-sm font-medium mb-2">음악 지식을 뽐내보세요!</p>
+            <div className="flex items-center gap-1 px-3 py-1 bg-rose-50 rounded-full text-[10px] font-black text-rose-600 border border-rose-100">
+              <Music className="w-3 h-3" />
+              정답당 +50 XP
+            </div>
+            <div className="mt-6 flex items-center gap-1 text-rose-600 font-bold text-sm">
               도전하기 <ChevronRight className="w-4 h-4" />
             </div>
           </Card>

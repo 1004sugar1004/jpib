@@ -326,6 +326,89 @@ export interface QuizQuestion {
   emoji?: string;
 }
 
+export const musicQuizQuestions: QuizQuestion[] = [
+  {
+    id: 1,
+    question: "높은음자리표에서 '솔' 자리는 어디일까요?",
+    options: ["첫 번째 줄", "두 번째 줄", "세 번째 줄", "네 번째 줄"],
+    correctAnswer: 1,
+    explanation: "높은음자리표의 시작점인 두 번째 줄이 바로 '솔' 자리예요!",
+    emoji: "🎼"
+  },
+  {
+    id: 2,
+    question: "4분음표는 몇 박자일까요?",
+    options: ["반 박자", "한 박자", "두 박자", "네 박자"],
+    correctAnswer: 1,
+    explanation: "4분음표는 사과 한 개처럼 '한 박자'를 나타내요.",
+    emoji: "🎵"
+  },
+  {
+    id: 3,
+    question: "피아노 건반에서 검은 건반이 2개 있는 곳 바로 왼쪽 아래에 있는 음은?",
+    options: ["도", "레", "미", "파"],
+    correctAnswer: 0,
+    explanation: "검은 건반 2개 묶음의 왼쪽 아래는 항상 '도' 자리랍니다!",
+    emoji: "🎹"
+  },
+  {
+    id: 4,
+    question: "매우 여리게 연주하라는 뜻의 음악 기호는?",
+    options: ["p (피아노)", "pp (피아니시모)", "f (포르테)", "ff (포르티시모)"],
+    correctAnswer: 1,
+    explanation: "pp는 '피아니시모'라고 읽고 아주 작은 소리로 연주하라는 뜻이에요.",
+    emoji: "🤫"
+  },
+  {
+    id: 5,
+    question: "리코더를 불 때 가장 낮은 '도' 음을 내려면 구멍을 몇 개 막아야 할까요?",
+    options: ["0개", "4개", "7개", "모두 다"],
+    correctAnswer: 3,
+    explanation: "리코더의 모든 구멍을 정성껏 막으면 가장 낮은 '도' 소리가 나요.",
+    emoji: "🎺"
+  },
+  {
+    id: 6,
+    question: "음악의 3요소가 아닌 것은 무엇일까요?",
+    options: ["리듬", "가사", "선율(멜로디)", "화성(하모니)"],
+    correctAnswer: 1,
+    explanation: "음악의 3요소는 리듬, 선율, 화성이에요. 가사는 노래의 요소랍니다!",
+    emoji: "🎶"
+  },
+  {
+    id: 7,
+    question: "점4분음표는 몇 박자일까요?",
+    options: ["1박자", "1박자 반", "2박자", "3박자"],
+    correctAnswer: 1,
+    explanation: "점은 원래 박자의 절반을 더해줘요. 1 + 0.5 = 1.5박자가 됩니다!",
+    emoji: "📝"
+  },
+  {
+    id: 8,
+    question: "오케스트라에서 악기들의 음을 맞춰주는 기준이 되는 악기는?",
+    options: ["피아노", "바이올린", "오보에", "플루트"],
+    correctAnswer: 2,
+    explanation: "오보에의 맑고 곧은 소리를 듣고 다른 악기들이 음을 맞춘답니다.",
+    emoji: "🎻"
+  },
+  {
+    id: 9,
+    question: "빠르기말 중 '보통 빠르기로'라는 뜻을 가진 말은?",
+    options: ["안단테", "모데라토", "알레그로", "프레스토"],
+    correctAnswer: 1,
+    explanation: "모데라토(Moderato)는 걷는 속도보다 조금 더 활기찬 보통 빠르기예요.",
+    emoji: "🚶"
+  },
+  {
+    id: 10,
+    question: "현악기 중에서 가장 크고 낮은 소리를 내는 악기는?",
+    options: ["바이올린", "비올라", "첼로", "더블베이스(콘트라베이스)"],
+    correctAnswer: 3,
+    explanation: "더블베이스는 사람 키만큼 크고 아주 웅장하고 낮은 소리를 내요.",
+    emoji: "🎸"
+  }
+];
+
 export const quizQuestions: QuizQuestion[] = [
   {
     id: 1,
