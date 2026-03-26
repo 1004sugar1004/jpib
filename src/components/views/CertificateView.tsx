@@ -1,10 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { Trophy, Download, Share2, ArrowLeft, Award, Star, ShieldCheck } from 'lucide-react';
+import { Trophy, Download, ArrowLeft, Award, Star, ShieldCheck, Loader2 } from 'lucide-react';
 import { UserProfile } from '../../types';
-import { getLevel, formatGradeClass } from '../../lib/utils';
+import { getLevel, formatGradeClass, cn } from '../../lib/utils';
+import { toPng } from 'html-to-image';
 
 interface CertificateViewProps {
   profile: UserProfile | null;
@@ -14,11 +15,32 @@ interface CertificateViewProps {
 export const CertificateView = ({ profile, onClose }: CertificateViewProps) => {
   const level = getLevel(profile?.score || 0);
   const certificateRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleDownload = () => {
-    // In a real app, we might use html2canvas or similar
-    // For now, we'll just alert that it's a demo
-    alert('자격증 이미지를 생성 중입니다... (데모 버전)');
+  const handleDownload = async () => {
+    if (!certificateRef.current) return;
+    
+    setIsDownloading(true);
+    try {
+      // Small delay to ensure everything is rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const dataUrl = await toPng(certificateRef.current, {
+        cacheBust: true,
+        pixelRatio: 2, // Higher quality
+        backgroundColor: '#fdfcf0',
+      });
+      
+      const link = document.createElement('a');
+      link.download = `IB_Explorer_Certificate_${profile?.name || 'Explorer'}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to download certificate:', err);
+      alert('자격증 이미지를 저장하는 중 오류가 발생했습니다.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -162,18 +184,11 @@ export const CertificateView = ({ profile, onClose }: CertificateViewProps) => {
             <div className="space-y-3">
               <Button 
                 className="w-full justify-start gap-3 bg-indigo-600 hover:bg-indigo-700 text-white" 
-                icon={Download}
+                icon={isDownloading ? (props: any) => <Loader2 {...props} className={cn(props.className, "animate-spin")} /> : Download}
                 onClick={handleDownload}
+                disabled={isDownloading}
               >
-                이미지로 저장하기
-              </Button>
-              <Button 
-                className="w-full justify-start gap-3" 
-                variant="secondary" 
-                icon={Share2}
-                onClick={() => alert('공유 기능은 준비 중입니다.')}
-              >
-                친구들에게 공유하기
+                {isDownloading ? '이미지 생성 중...' : '이미지로 저장하기'}
               </Button>
             </div>
           </Card>

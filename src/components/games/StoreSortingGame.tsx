@@ -327,7 +327,7 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
                       whileTap={!isClosed ? { scale: 0.9 } : {}}
                       onClick={() => handleItemClick(sIdx, iIdx)}
                       className={cn(
-                        "flex-1 flex items-center justify-center text-xl md:text-2xl cursor-pointer relative select-none h-full",
+                        "flex-1 flex items-center justify-center text-3xl md:text-4xl cursor-pointer relative select-none h-full",
                         isSelected && "z-30"
                       )}
                     >

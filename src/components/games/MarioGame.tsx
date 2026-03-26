@@ -46,7 +46,6 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const gameStateRef = useRef<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
   const coinsRef = useRef<{ id: number, x: number, y: number, vy: number }[]>([]);
   const keysPressed = useRef<Set<string>>(new Set());
-  const coinAudioRef = useRef<HTMLAudioElement | null>(null);
   const gameSpeedRef = useRef(3);
 
   const synthRef = useRef<Tone.PolySynth | null>(null);
@@ -54,11 +53,6 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   useEffect(() => {
     gameSpeedRef.current = gameSpeed;
   }, [gameSpeed]);
-
-  useEffect(() => {
-    coinAudioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
-    coinAudioRef.current.volume = 0.3;
-  }, []);
 
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -79,8 +73,8 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     gameStateRef.current = 'PLAYING';
     setScore(0);
     scoreRef.current = 0;
-    setLife(10);
-    lifeRef.current = 10;
+    setLife(3);
+    lifeRef.current = 3;
     setQuizCount(0);
     quizCountRef.current = 0;
     setQuizWrongCount(0);
@@ -100,14 +94,25 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const playSound = (type: 'jump' | 'correct' | 'wrong' | 'coin') => {
     if (!soundEnabled) return;
     try {
-      if (type === 'coin' && coinAudioRef.current) {
-        coinAudioRef.current.currentTime = 0;
-        coinAudioRef.current.play().catch(() => {});
+      if (type === 'coin') {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+        return;
+      }
+      if (type === 'correct') {
+        const audio = new Audio(ASSETS.sounds.correct);
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+        return;
+      }
+      if (type === 'wrong') {
+        const audio = new Audio(ASSETS.sounds.wrong);
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
         return;
       }
       if (type === 'jump' && synthRef.current) synthRef.current.triggerAttackRelease("C4", "16n");
-      if (type === 'correct' && synthRef.current) synthRef.current.triggerAttackRelease(["E4", "G4", "C5"], "8n");
-      if (type === 'wrong' && synthRef.current) synthRef.current.triggerAttackRelease("G2", "4n");
     } catch (e) {}
   };
 
@@ -154,8 +159,6 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         
         // Optional: slow auto-scroll to keep the game moving forward
         worldXRef.current += (gameSpeedRef.current * 0.5); 
-        
-        setWorldX(worldXRef.current);
 
         // 2. Mario Physics (Jump only)
         let nextY = marioYRef.current + velocityYRef.current;
@@ -200,16 +203,19 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 scoreRef.current += 500;
                 setScore(scoreRef.current);
                 playSound('coin');
+                playSound('correct');
                 addFloatingText(150, 100 + marioYRef.current, 'CORRECT! +500', 'text-green-400');
                 
                 // Add coin effect
                 const coinX = (150 - relativeX) + (hitIdx - 1) * 184;
-                coinsRef.current.push({
+                const newCoin = {
                   id: Date.now() + Math.random(),
                   x: coinX,
                   y: 100 + marioYRef.current + 40,
                   vy: 10
-                });
+                };
+                coinsRef.current.push(newCoin);
+                setCoins([...coinsRef.current]);
 
                 // Jump again for joy
                 velocityYRef.current = 15;
@@ -263,10 +269,13 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         if (gatesRef.current.length < 2) {
           spawnGate();
         }
+      }
 
-        // 6. Sync to state
+      // 6. Sync to state (Move outside the !showQuizRef block so updates like 'solved' are visible immediately)
+      if (gameStateRef.current === 'PLAYING') {
         setMarioY(marioYRef.current);
         setGates([...gatesRef.current]);
+        setWorldX(worldXRef.current);
       }
 
       // Coin Physics - Outside the quiz-pause block so they keep moving
@@ -387,6 +396,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           onCorrect={() => { 
             setShowQuiz(false); 
             showQuizRef.current = false;
+            setQuizWrongCount(0); // Reset for next time
             // Correct effect: Mario jumps!
             if (!isJumpingRef.current) {
               velocityYRef.current = 18;
@@ -394,15 +404,20 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               playSound('jump');
             }
             setScore(prev => prev + 500);
+            scoreRef.current += 500;
             addFloatingText(150, 100 + marioYRef.current, 'CORRECT! +500', 'text-green-400');
             
             // Add coin effect for quiz success too
-            coinsRef.current.push({
+            const newCoin = {
               id: Date.now() + Math.random(),
               x: 150,
               y: 100 + marioYRef.current + 40,
               vy: 12
-            });
+            };
+            coinsRef.current.push(newCoin);
+            setCoins([...coinsRef.current]);
+            
+            playSound('correct');
             playSound('coin');
           }} 
           onWrong={() => {
@@ -417,15 +432,11 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               }
               return next;
             });
-            if (soundEnabled) {
-              const audio = new Audio(ASSETS.sounds.wrong);
-              audio.volume = 0.3;
-              audio.play().catch(() => {});
-            }
           }}
           onFail={() => {
             setShowQuiz(false);
             showQuizRef.current = false;
+            setQuizWrongCount(0); // Reset for next time
             setGameState('GAMEOVER');
             gameStateRef.current = 'GAMEOVER';
           }}

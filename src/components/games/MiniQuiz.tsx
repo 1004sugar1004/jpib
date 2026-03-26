@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Card } from '../ui/Card';
 import { quizQuestions } from '../../content';
@@ -14,16 +14,19 @@ export const MiniQuiz = ({ onCorrect, onWrong, onFail, soundEnabled, wrongCount 
 }) => {
   const question = useMemo(() => quizQuestions[Math.floor(Math.random() * quizQuestions.length)], []);
   const [selected, setSelected] = useState<number | null>(null);
+  const isHandlingRef = useRef(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [isGameOver, setIsGameOver] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
 
   const handleAnswer = (idx: number) => {
-    if (selected !== null) return;
+    if (selected !== null || isHandlingRef.current || isGameOver) return;
+    isHandlingRef.current = true;
     setSelected(idx);
     const correct = idx === question.correctAnswer;
-    setIsCorrect(correct);
-
+    
     if (correct) {
+      setIsCorrect(true);
       if (soundEnabled) {
         const audio = new Audio(ASSETS.sounds.correct);
         audio.volume = 0.3;
@@ -31,6 +34,7 @@ export const MiniQuiz = ({ onCorrect, onWrong, onFail, soundEnabled, wrongCount 
       }
       setTimeout(onCorrect, 1000);
     } else {
+      setIsCorrect(false);
       if (soundEnabled) {
         const audio = new Audio(ASSETS.sounds.wrong);
         audio.volume = 0.3;
@@ -41,10 +45,11 @@ export const MiniQuiz = ({ onCorrect, onWrong, onFail, soundEnabled, wrongCount 
         // First time: Show the answer and let them continue
         setShowAnswer(true);
         onWrong(); // Notify parent of first mistake
+        isHandlingRef.current = false; // Allow clicking "Continue" button
       } else {
         // Second time: Show reset message and then fail
-        setIsCorrect(false);
-        setTimeout(onFail, 2000);
+        setIsGameOver(true);
+        setTimeout(onFail, 2500);
       }
     }
   };
@@ -81,7 +86,7 @@ export const MiniQuiz = ({ onCorrect, onWrong, onFail, soundEnabled, wrongCount 
           ))}
         </div>
 
-        {showAnswer && isCorrect !== false && (
+        {showAnswer && !isGameOver && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -97,7 +102,7 @@ export const MiniQuiz = ({ onCorrect, onWrong, onFail, soundEnabled, wrongCount 
           </motion.div>
         )}
 
-        {isCorrect === false && (
+        {isGameOver && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
