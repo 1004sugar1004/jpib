@@ -38,7 +38,7 @@ import {
 } from '../../content';
 
 interface StudyViewProps {
-  setView: (view: 'home' | 'study' | 'quiz' | 'ranking' | 'flashcards' | 'games') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
   atlData: Record<string, number>;
   onSaveATL: (key: string, value: number) => void;
   reflectionData: Record<string, string>;

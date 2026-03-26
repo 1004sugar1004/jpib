@@ -9,10 +9,13 @@ import { cn } from '../../lib/utils';
 export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
   const [shipPos, setShipPos] = useState(50);
-  const [enemies, setEnemies] = useState<{ id: number; x: number; y: number }[]>([]);
-  const [bullets, setBullets] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [enemies, setEnemies] = useState<{ id: number; x: number; y: number; type: number }[]>([]);
+  const [bullets, setBullets] = useState<{ id: number; x: number; y: number; type?: 'normal' | 'power' }[]>([]);
   const [score, setScore] = useState(0);
-  const [shotsLeft, setShotsLeft] = useState(10);
+  const [combo, setCombo] = useState(0);
+  const [powerUp, setPowerUp] = useState<'NONE' | 'TRIPLE' | 'RAPID' | 'SHIELD'>('NONE');
+  const [powerUpTime, setPowerUpTime] = useState(0);
+  const [explosions, setExplosions] = useState<{ id: number; x: number; y: number }[]>([]);
   const [quizWrongCount, setQuizWrongCount] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
 
@@ -20,10 +23,13 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const requestRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const shipPosRef = useRef(50);
-  const enemiesRef = useRef<{ id: number; x: number; y: number }[]>([]);
-  const bulletsRef = useRef<{ id: number; x: number; y: number }[]>([]);
-  const shotsLeftRef = useRef(10);
+  const enemiesRef = useRef<{ id: number; x: number; y: number; type: number }[]>([]);
+  const bulletsRef = useRef<{ id: number; x: number; y: number; type?: 'normal' | 'power' }[]>([]);
+  const lastShotTimeRef = useRef(0);
   const scoreRef = useRef(0);
+  const comboRef = useRef(0);
+  const powerUpRef = useRef<'NONE' | 'TRIPLE' | 'RAPID' | 'SHIELD'>('NONE');
+  const powerUpTimeRef = useRef(0);
   const gameStateRef = useRef<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
 
   useEffect(() => {
@@ -34,40 +40,58 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   // Sync state to refs
   useEffect(() => {
     gameStateRef.current = gameState;
-    shotsLeftRef.current = shotsLeft;
-  }, [gameState, shotsLeft]);
+  }, [gameState]);
 
   const startGame = () => {
     setGameState('PLAYING');
     gameStateRef.current = 'PLAYING';
     setScore(0);
     scoreRef.current = 0;
+    setCombo(0);
+    comboRef.current = 0;
+    setPowerUp('NONE');
+    powerUpRef.current = 'NONE';
+    setPowerUpTime(0);
+    powerUpTimeRef.current = 0;
     setQuizWrongCount(0);
-    setShotsLeft(10);
-    shotsLeftRef.current = 10;
     setEnemies([]);
     enemiesRef.current = [];
     setBullets([]);
     bulletsRef.current = [];
+    setExplosions([]);
     shipPosRef.current = 50;
     setShipPos(50);
   };
 
   const shoot = useCallback(() => {
-    if (gameStateRef.current !== 'PLAYING' || shotsLeftRef.current <= 0) return;
+    if (gameStateRef.current !== 'PLAYING') return;
 
-    const newBullet = { id: Date.now() + Math.random(), x: shipPosRef.current, y: 82 };
-    bulletsRef.current.push(newBullet);
-    
-    shotsLeftRef.current -= 1;
-    setShotsLeft(shotsLeftRef.current);
-    
-    if (shotsLeftRef.current === 0) {
-      setGameState('QUIZ');
-      gameStateRef.current = 'QUIZ';
-      setShowQuiz(true);
+    const now = Date.now();
+    const cooldown = powerUpRef.current === 'RAPID' ? 80 : 250;
+    if (now - lastShotTimeRef.current < cooldown) return;
+    lastShotTimeRef.current = now;
+
+    const x = shipPosRef.current;
+    const y = 82;
+
+    if (powerUpRef.current === 'TRIPLE') {
+      bulletsRef.current.push(
+        { id: Date.now() + Math.random(), x: x - 4, y, type: 'power' },
+        { id: Date.now() + Math.random(), x: x, y, type: 'power' },
+        { id: Date.now() + Math.random(), x: x + 4, y, type: 'power' }
+      );
+    } else {
+      bulletsRef.current.push({ id: Date.now() + Math.random(), x, y });
     }
-  }, []);
+
+    if (soundEnabled) {
+      try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1667/1667-preview.mp3');
+        audio.volume = 0.05;
+        audio.play().catch(() => {});
+      } catch (e) {}
+    }
+  }, [soundEnabled]);
 
   // Game Loop
   useEffect(() => {
@@ -79,23 +103,36 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
       if (deltaTime > 16) {
         if (gameStateRef.current === 'PLAYING') {
+          // 0. Update Power-up
+          if (powerUpTimeRef.current > 0) {
+            powerUpTimeRef.current -= 16;
+            if (powerUpTimeRef.current <= 0) {
+              powerUpTimeRef.current = 0;
+              powerUpRef.current = 'NONE';
+              setPowerUp('NONE');
+            }
+            setPowerUpTime(powerUpTimeRef.current);
+          }
+
           // 1. Move Enemies
           enemiesRef.current = enemiesRef.current
-            .map(e => ({ ...e, y: e.y + 0.5 + (scoreRef.current / 5000), x: e.x + Math.sin(e.y / 15) * 1.2 }))
+            .map(e => ({ ...e, y: e.y + 0.6 + (scoreRef.current / 10000), x: e.x + Math.sin(e.y / 15) * 1.5 }))
             .filter(e => e.y < 105);
 
           // 2. Spawn Enemies
-          if (Math.random() > 0.96) {
+          const spawnRate = 0.94 - (scoreRef.current / 50000);
+          if (Math.random() > Math.max(0.85, spawnRate)) {
             enemiesRef.current.push({ 
               id: Date.now() + Math.random(), 
               x: Math.random() * 80 + 10, 
-              y: -5 
+              y: -5,
+              type: Math.floor(Math.random() * 4)
             });
           }
 
           // 3. Move Bullets
           bulletsRef.current = bulletsRef.current
-            .map(b => ({ ...b, y: b.y - 4 }))
+            .map(b => ({ ...b, y: b.y - 5 }))
             .filter(b => b.y > -5);
 
           // 4. Collision Detection
@@ -104,7 +141,7 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
           bulletsRef.current.forEach(bullet => {
             enemiesRef.current.forEach(enemy => {
-              if (Math.abs(bullet.x - enemy.x) < 5 && Math.abs(bullet.y - enemy.y) < 6) {
+              if (Math.abs(bullet.x - enemy.x) < 6 && Math.abs(bullet.y - enemy.y) < 7) {
                 hitEnemyIds.add(enemy.id);
                 hitBulletIds.add(bullet.id);
               }
@@ -114,25 +151,57 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           // Check if enemy hit player
           enemiesRef.current.forEach(enemy => {
             if (enemy.y > 80 && Math.abs(enemy.x - shipPosRef.current) < 8) {
-              setGameState('GAMEOVER');
-              gameStateRef.current = 'GAMEOVER';
+              if (powerUpRef.current === 'SHIELD') {
+                powerUpRef.current = 'NONE';
+                setPowerUp('NONE');
+                powerUpTimeRef.current = 0;
+                hitEnemyIds.add(enemy.id); // Destroy enemy that hit shield
+              } else {
+                setGameState('QUIZ');
+                gameStateRef.current = 'QUIZ';
+                setShowQuiz(true);
+              }
             }
           });
 
           if (hitEnemyIds.size > 0) {
+            const newExplosions: { id: number; x: number; y: number }[] = [];
+            enemiesRef.current.forEach(e => {
+              if (hitEnemyIds.has(e.id)) {
+                newExplosions.push({ id: Date.now() + Math.random(), x: e.x, y: e.y });
+                
+                // Random Power-up Drop
+                if (Math.random() > 0.9) {
+                  const types: ('TRIPLE' | 'RAPID' | 'SHIELD')[] = ['TRIPLE', 'RAPID', 'SHIELD'];
+                  const type = types[Math.floor(Math.random() * types.length)];
+                  powerUpRef.current = type;
+                  setPowerUp(type);
+                  powerUpTimeRef.current = 8000; // 8 seconds
+                }
+              }
+            });
+            setExplosions(prev => [...prev, ...newExplosions].slice(-10));
+            setTimeout(() => setExplosions(prev => prev.filter(ex => !newExplosions.find(ne => ne.id === ex.id))), 500);
+
             enemiesRef.current = enemiesRef.current.filter(e => !hitEnemyIds.has(e.id));
             bulletsRef.current = bulletsRef.current.filter(b => !hitBulletIds.has(b.id));
             
-            scoreRef.current += hitEnemyIds.size * 100;
+            comboRef.current += hitEnemyIds.size;
+            setCombo(comboRef.current);
+            
+            scoreRef.current += hitEnemyIds.size * 100 * (1 + Math.floor(comboRef.current / 10));
             setScore(scoreRef.current);
 
             if (soundEnabled) {
               try {
-                const audio = new Audio(ASSETS.sounds.correct);
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1667/1667-preview.mp3');
                 audio.volume = 0.1;
                 audio.play().catch(() => {});
               } catch (e) {}
             }
+          } else if (enemiesRef.current.some(e => e.y > 100)) {
+            comboRef.current = 0;
+            setCombo(0);
           }
 
           // 5. Sync to state for rendering
@@ -204,7 +273,7 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             <h2 className="text-4xl font-black text-white tracking-tighter">IB 갤러그</h2>
             <p className="text-white/60 font-bold max-w-xs">
               우주선을 조종하여 적을 물리치세요!<br />
-              에너지가 떨어지면 퀴즈를 풀어야 합니다.
+              콤보를 쌓아 더 높은 점수를 획득하세요!
             </p>
             <Button 
               onClick={startGame}
@@ -243,8 +312,10 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             setShowQuiz(false);
             setGameState('PLAYING');
             gameStateRef.current = 'PLAYING';
-            setShotsLeft(10);
-            shotsLeftRef.current = 10;
+            // Bonus for correct quiz
+            powerUpRef.current = 'TRIPLE';
+            setPowerUp('TRIPLE');
+            powerUpTimeRef.current = 10000;
           }}
           onWrong={() => {
             setQuizWrongCount(prev => prev + 1);
@@ -257,26 +328,38 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       )}
 
       {/* 상단 HUD */}
-      <div className="absolute top-4 left-4 text-white font-black text-xl z-20 flex items-center gap-4">
-        <span>점수: {score}</span>
-        <div className="hidden sm:flex items-center gap-2">
-          <span className="text-xs text-white/60">에너지:</span>
-          <div className="flex gap-1">
-            {Array(10).fill(0).map((_, i) => (
-              <div 
-                key={i} 
-                className={cn(
-                  "w-2 h-4 rounded-sm transition-colors",
-                  i < shotsLeft ? "bg-yellow-400" : "bg-white/10"
-                )}
-              />
-            ))}
-          </div>
+      <div className="absolute top-4 left-4 text-white font-black z-20 flex flex-col gap-1">
+        <div className="flex items-center gap-4">
+          <span className="text-2xl tracking-tighter italic">SCORE: {score.toLocaleString()}</span>
+          {combo > 1 && (
+            <motion.span 
+              key={combo}
+              initial={{ scale: 1.5, color: '#facc15' }}
+              animate={{ scale: 1, color: '#ffffff' }}
+              className="text-xl text-yellow-400"
+            >
+              {combo} COMBO!
+            </motion.span>
+          )}
         </div>
+        
+        {powerUp !== 'NONE' && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-blue-400 font-bold uppercase tracking-widest">
+              {powerUp} ACTIVE
+            </span>
+            <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
+              <motion.div 
+                className="h-full bg-blue-500"
+                style={{ width: `${(powerUpTime / 8000) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="absolute top-4 right-4 text-white/40 text-[10px] z-20 text-right leading-tight">
-        에너지가 떨어지면<br />퀴즈로 충전하세요!
+        화살표 키로 이동<br />스페이스바로 공격
       </div>
 
       {/* 우주선 */}
@@ -285,14 +368,41 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         className="absolute bottom-24 -translate-x-1/2 text-5xl z-10 select-none"
       >
-        🚀
+        <div className="relative">
+          🚀
+          {powerUp === 'SHIELD' && (
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 1, repeat: Infinity }}
+              className="absolute inset-0 -m-2 border-4 border-blue-400 rounded-full bg-blue-400/20 blur-sm"
+            />
+          )}
+        </div>
       </motion.div>
+
+      {/* 폭발 효과 */}
+      {explosions.map(ex => (
+        <motion.div
+          key={ex.id}
+          initial={{ scale: 0, opacity: 1 }}
+          animate={{ scale: 2, opacity: 0 }}
+          className="absolute text-2xl z-20 pointer-events-none"
+          style={{ left: `${ex.x}%`, top: `${ex.y}%`, transform: 'translate(-50%, -50%)' }}
+        >
+          💥
+        </motion.div>
+      ))}
 
       {/* 총알 */}
       {bullets.map(b => (
         <div
           key={b.id}
-          className="absolute w-1 h-4 bg-yellow-300 rounded-full shadow-[0_0_8px_rgba(253,224,71,0.8)] z-10"
+          className={cn(
+            "absolute w-1 h-4 rounded-full z-10",
+            b.type === 'power' 
+              ? "bg-blue-400 w-1.5 h-6 shadow-[0_0_12px_rgba(96,165,250,0.8)]" 
+              : "bg-yellow-300 shadow-[0_0_8px_rgba(253,224,71,0.8)]"
+          )}
           style={{ left: `${b.x}%`, top: `${b.y}%`, transform: 'translateX(-50%)' }}
         />
       ))}
@@ -304,7 +414,7 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           className="absolute text-3xl z-10 select-none"
           style={{ left: `${e.x}%`, top: `${e.y}%`, transform: 'translateX(-50%)' }}
         >
-          👾
+          {['👾', '👽', '🛸', '🐙'][e.type || 0]}
         </div>
       ))}
 

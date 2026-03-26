@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { UserProfile } from '../../types';
 
 interface RankingViewProps {
-  setView: (view: 'home' | 'study' | 'quiz' | 'ranking' | 'flashcards' | 'games') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
   rankings: UserProfile[];
 }
 

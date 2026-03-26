@@ -46,8 +46,19 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const gameStateRef = useRef<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
   const coinsRef = useRef<{ id: number, x: number, y: number, vy: number }[]>([]);
   const keysPressed = useRef<Set<string>>(new Set());
+  const coinAudioRef = useRef<HTMLAudioElement | null>(null);
+  const gameSpeedRef = useRef(3);
 
   const synthRef = useRef<Tone.PolySynth | null>(null);
+
+  useEffect(() => {
+    gameSpeedRef.current = gameSpeed;
+  }, [gameSpeed]);
+
+  useEffect(() => {
+    coinAudioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+    coinAudioRef.current.volume = 0.3;
+  }, []);
 
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -89,10 +100,9 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const playSound = (type: 'jump' | 'correct' | 'wrong' | 'coin') => {
     if (!soundEnabled) return;
     try {
-      if (type === 'coin') {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
+      if (type === 'coin' && coinAudioRef.current) {
+        coinAudioRef.current.currentTime = 0;
+        coinAudioRef.current.play().catch(() => {});
         return;
       }
       if (type === 'jump' && synthRef.current) synthRef.current.triggerAttackRelease("C4", "16n");
@@ -134,7 +144,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     if (deltaTime > 16) {
       if (gameStateRef.current === 'PLAYING' && !showQuizRef.current) {
         // 1. World Movement (Manual Control)
-        const moveSpeed = 6;
+        const moveSpeed = 4 + gameSpeedRef.current;
         if (keysPressed.current.has('ArrowRight') || keysPressed.current.has('KeyD')) {
           worldXRef.current += moveSpeed;
         }
@@ -143,7 +153,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         }
         
         // Optional: slow auto-scroll to keep the game moving forward
-        worldXRef.current += 1; 
+        worldXRef.current += (gameSpeedRef.current * 0.5); 
         
         setWorldX(worldXRef.current);
 
@@ -172,7 +182,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           // Option 2: 20 to 180
           // (Adjusted for 3 bricks of w-40 with gap-6)
           
-          if (!g.solved && Math.abs(relativeX) < 250 && marioYRef.current > 140 && marioYRef.current < 220 && velocityYRef.current > 0) {
+          if (!g.solved && Math.abs(relativeX) < 250 && marioYRef.current > 80 && marioYRef.current < 160 && velocityYRef.current > 0) {
             // Determine which option was hit
             let hitIdx = -1;
             if (relativeX < -80) hitIdx = 0;
@@ -282,7 +292,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [gameSpeed]);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -434,6 +444,19 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             <span className="text-red-500">❤️</span>
             <span className="ml-1">{life}</span>
           </div>
+        </div>
+        
+        {/* Speed Control */}
+        <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border-2 border-white/20 text-white shadow-xl flex flex-col justify-center">
+          <div className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Speed</div>
+          <input 
+            type="range" 
+            min="1" 
+            max="10" 
+            value={gameSpeed} 
+            onChange={(e) => setGameSpeed(parseInt(e.target.value))}
+            className="w-24 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-red-500"
+          />
         </div>
       </div>
 

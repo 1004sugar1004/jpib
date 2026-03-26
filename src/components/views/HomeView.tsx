@@ -26,7 +26,7 @@ import { getLevel, formatGradeClass } from '../../lib/utils';
 interface HomeViewProps {
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
   rankings: UserProfile[];
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
@@ -159,6 +159,15 @@ export const HomeView = ({
             </Button>
             <Button variant="ghost" onClick={onLogout} icon={LogOut} className="text-gray-400 hover:text-red-500">
               로그아웃
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => setView('plan')}
+              className="bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 mt-2"
+              icon={BookOpen}
+            >
+              활용계획서
             </Button>
           </div>
         </div>

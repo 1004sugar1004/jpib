@@ -19,7 +19,7 @@ interface MemoryCard {
 }
 
 interface MemoryGameViewProps {
-  setView: (view: 'home' | 'study' | 'quiz' | 'ranking' | 'flashcards' | 'games' | 'memory') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
   onEarnXP: (xp: number) => void;
   soundEnabled: boolean;
   initialCategory?: string;

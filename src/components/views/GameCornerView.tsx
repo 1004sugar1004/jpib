@@ -23,7 +23,7 @@ import { UserProfile } from '../../types';
 
 interface GameCornerViewProps {
   profile: UserProfile | null;
-  setView: (view: 'home' | 'study' | 'quiz' | 'ranking' | 'flashcards' | 'games') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
   onUseTicket: () => void;
   soundEnabled: boolean;
 }

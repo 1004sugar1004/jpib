@@ -32,6 +32,7 @@ import { MemoryGameView } from './components/views/MemoryGameView';
 import { GameCornerView } from './components/views/GameCornerView';
 import { MusicQuizView } from './components/views/MusicQuizView';
 import { CertificateView } from './components/views/CertificateView';
+import { PlanView } from './components/views/PlanView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
 import { UserProfile } from './types';
@@ -42,7 +43,7 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -450,6 +451,11 @@ export default function App() {
             {view === 'certificate' && (
               <CertificateView 
                 profile={profile} 
+                onClose={() => setView('home')} 
+              />
+            )}
+            {view === 'plan' && (
+              <PlanView 
                 onClose={() => setView('home')} 
               />
             )}

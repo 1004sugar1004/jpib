@@ -19,7 +19,7 @@ import { ibLearnerProfile, ibThemes, ibKeyConcepts, ibATL } from '../../content'
 import confetti from 'canvas-confetti';
 
 interface FlashcardViewProps {
-  setView: (view: 'home' | 'study' | 'quiz' | 'ranking' | 'flashcards' | 'games' | 'memory') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
   onEarnXP: (xp: number) => void;
   soundEnabled: boolean;
 }
