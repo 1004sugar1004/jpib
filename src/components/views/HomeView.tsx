@@ -14,6 +14,8 @@ import {
   Zap, 
   Trophy, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   Gamepad2,
   Flame,
   Brain
@@ -50,6 +52,7 @@ export const HomeView = ({
   setBgMusicVolume,
   onLogout,
 }: HomeViewProps) => {
+  const [showLevelGuide, setShowLevelGuide] = React.useState(false);
   const level = getLevel(profile?.score || 0);
   const studyProgress = Math.floor((Object.keys(reflectionData).length / ibReflectionQuestions.length) * 100);
 
@@ -374,6 +377,66 @@ export const HomeView = ({
             <p className="text-xs text-rose-700 font-bold mt-1">+50 XP</p>
           </div>
         </div>
+      </motion.div>
+
+      {/* Explorer Level Guide */}
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-white/60 backdrop-blur-md rounded-[2.5rem] border-2 border-white shadow-xl overflow-hidden"
+      >
+        <button 
+          onClick={() => setShowLevelGuide(!showLevelGuide)}
+          className="w-full flex items-center justify-between p-8 hover:bg-white/40 transition-colors text-left"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200">
+              <Star className="w-6 h-6 text-white fill-current" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-gray-900">🗺️ 탐험가 단계 안내</h3>
+              <p className="text-amber-600 font-bold text-sm uppercase tracking-widest">EXPLORER LEVEL GUIDE</p>
+            </div>
+          </div>
+          <div className={cn(
+            "w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-transform duration-300",
+            showLevelGuide ? "rotate-180" : ""
+          )}>
+            <ChevronDown className="w-6 h-6 text-gray-400" />
+          </div>
+        </button>
+
+        <motion.div 
+          initial={false}
+          animate={{ 
+            height: showLevelGuide ? 'auto' : 0,
+            opacity: showLevelGuide ? 1 : 0
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="px-8 pb-8"
+        >
+          <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[0, 200, 600, 1200, 2000, 3000, 4500, 6000, 8000, 10000].map((threshold) => {
+              const lv = getLevel(threshold);
+              return (
+                <div key={threshold} className="flex items-center gap-4 p-4 bg-white/80 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center shrink-0", lv.bg)}>
+                    <img src={lv.img} alt={lv.name} className="w-12 h-12 object-contain" referrerPolicy="no-referrer" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h4 className="font-black text-gray-900 truncate">{lv.name}</h4>
+                      <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full shrink-0">
+                        {threshold.toLocaleString()} XP+
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium line-clamp-1">{lv.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
       </motion.div>
 
       <div className="space-y-6">
