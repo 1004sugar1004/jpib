@@ -99,17 +99,27 @@ export const CertificateView = ({ profile, onClose }: CertificateViewProps) => {
               </div>
 
               {/* Main Title */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <h1 className="text-6xl font-black text-[#1a237e] tracking-tight mb-2">IB 탐험가</h1>
                 <p className="text-[#b8860b] text-xs tracking-[0.4em] font-bold uppercase">International Baccalaureate · Explorer</p>
               </div>
 
-              {/* Central Seal */}
-              <div className="mb-8">
-                <div className="w-28 h-28 rounded-full bg-[#1a237e] border-4 border-[#d4af37] flex flex-col items-center justify-center shadow-lg">
-                  <span className="text-[#d4af37] text-2xl font-black leading-none">IB</span>
-                  <div className="w-12 h-px bg-[#d4af37] my-1" />
-                  <span className="text-[#d4af37] text-[8px] font-bold tracking-widest uppercase">PYP · Explorer</span>
+              {/* Central Level Image */}
+              <div className="mb-6 relative">
+                <div className="w-32 h-32 rounded-3xl bg-white border-4 border-[#d4af37] flex items-center justify-center shadow-xl overflow-hidden">
+                  <img 
+                    src={level.img} 
+                    alt={level.name} 
+                    className="w-28 h-28 object-contain" 
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className={cn(
+                  "absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-black shadow-lg border-2 border-white whitespace-nowrap",
+                  level.bg,
+                  level.color
+                )}>
+                  {level.name}
                 </div>
               </div>
 

@@ -196,7 +196,7 @@ export const HomeView = ({
             <Button variant="ghost" onClick={onLogout} icon={LogOut} className="text-gray-400 hover:text-red-500">
               로그아웃
             </Button>
-            {profile?.role === 'teacher' && (
+            {profile?.name === '김혜진' && (
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -317,40 +317,52 @@ export const HomeView = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {rankings.slice(0, 3).map((rank, index) => (
-            <div 
-              key={rank.uid}
-              className={cn(
-                "relative p-6 rounded-3xl border-2 flex flex-col items-center text-center transition-all hover:scale-105",
-                index === 0 ? "bg-gradient-to-b from-yellow-50 to-white border-yellow-200 shadow-yellow-100 shadow-lg" :
-                index === 1 ? "bg-gradient-to-b from-slate-50 to-white border-slate-200" :
-                "bg-gradient-to-b from-orange-50 to-white border-orange-200"
-              )}
-            >
-              <div className={cn(
-                "absolute -top-4 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md",
-                index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
-              )}>
-                {index + 1}
+          {rankings.slice(0, 3).map((rank, index) => {
+            const level = getLevel(rank.score);
+            return (
+              <div 
+                key={rank.uid}
+                className={cn(
+                  "relative p-6 rounded-3xl border-2 flex flex-col items-center text-center transition-all hover:scale-105",
+                  index === 0 ? "bg-gradient-to-b from-yellow-50 to-white border-yellow-200 shadow-yellow-100 shadow-lg" :
+                  index === 1 ? "bg-gradient-to-b from-slate-50 to-white border-slate-200" :
+                  "bg-gradient-to-b from-orange-50 to-white border-orange-200"
+                )}
+              >
+                <div className={cn(
+                  "absolute -top-4 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md z-20",
+                  index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
+                )}>
+                  {index + 1}
+                </div>
+                
+                <div className="relative mb-4">
+                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white flex items-center justify-center">
+                    <img 
+                      src={level.img} 
+                      alt={rank.name}
+                      className="w-20 h-20 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className={cn(
+                    "absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black shadow-md border-2 border-white whitespace-nowrap z-30",
+                    level.bg,
+                    level.color
+                  )}>
+                    {level.name}
+                  </div>
+                </div>
+                
+                <h4 className="text-xl font-black text-gray-900">{rank.name}</h4>
+                <p className="text-gray-500 font-bold text-xs mb-3">{formatGradeClass(rank.grade, rank.class, rank.role)}</p>
+                
+                <div className="px-4 py-1.5 bg-white rounded-full border border-gray-100 shadow-sm">
+                  <span className="text-indigo-600 font-black">{rank.score.toLocaleString()} XP</span>
+                </div>
               </div>
-              
-              <div className="w-20 h-20 rounded-full border-4 border-white shadow-inner mb-4 overflow-hidden bg-gray-100">
-                <img 
-                  src={rank.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${rank.uid}`} 
-                  alt={rank.name}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              
-              <h4 className="text-xl font-black text-gray-900">{rank.name}</h4>
-              <p className="text-gray-500 font-bold text-xs mb-3">{formatGradeClass(rank.grade, rank.class, rank.role)}</p>
-              
-              <div className="px-4 py-1.5 bg-white rounded-full border border-gray-100 shadow-sm">
-                <span className="text-indigo-600 font-black">{rank.score.toLocaleString()} XP</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {rankings.length === 0 && (
             <div className="col-span-3 py-12 text-center text-gray-400 font-bold italic">
               아직 탐험가가 없습니다. 첫 번째 주인공이 되어보세요!
@@ -378,39 +390,61 @@ export const HomeView = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {classRankings.map((cls, index) => (
-            <div 
-              key={cls.name}
-              className={cn(
-                "relative p-6 rounded-3xl border-2 flex flex-col items-center text-center bg-white shadow-sm",
-                index === 0 ? "border-yellow-400 ring-4 ring-yellow-50" : "border-gray-100"
-              )}
-            >
-              <div className={cn(
-                "absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-white font-black text-xs shadow-md",
-                index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
-              )}>
-                {index + 1}위
-              </div>
-              
-              <h4 className="text-xl font-black text-gray-900 mt-2">{cls.name}</h4>
-              <p className="text-gray-500 font-bold text-xs mb-4">참여 학생: {cls.count}명</p>
-              
-              <div className="w-full space-y-2">
-                <div className="flex justify-between text-[10px] font-black text-indigo-400 uppercase">
-                  <span>TOTAL SCORE</span>
-                  <span>{cls.score.toLocaleString()} XP</span>
+          {classRankings.map((cls, index) => {
+            const avgScore = Math.round(cls.score / cls.count);
+            const level = getLevel(avgScore);
+            return (
+              <div 
+                key={cls.name}
+                className={cn(
+                  "relative p-6 rounded-3xl border-2 flex flex-col items-center text-center bg-white shadow-sm transition-all hover:scale-105",
+                  index === 0 ? "border-yellow-400 ring-4 ring-yellow-50" : "border-gray-100"
+                )}
+              >
+                <div className={cn(
+                  "absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-white font-black text-xs shadow-md z-20",
+                  index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
+                )}>
+                  {index + 1}위
                 </div>
-                <div className="h-2 bg-indigo-50 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((cls.score / (classRankings[0]?.score || 1)) * 100, 100)}%` }}
-                    className="h-full bg-indigo-500"
-                  />
+                
+                <div className="relative mb-4">
+                  <div className="w-20 h-20 rounded-2xl bg-gray-50 border-2 border-white shadow-inner overflow-hidden flex items-center justify-center">
+                    <img 
+                      src={level.img} 
+                      alt={cls.name}
+                      className="w-16 h-16 object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className={cn(
+                    "absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[8px] font-black shadow-md border-2 border-white whitespace-nowrap z-30",
+                    level.bg,
+                    level.color
+                  )}>
+                    {level.name.split(' ')[0]} 반
+                  </div>
+                </div>
+                
+                <h4 className="text-xl font-black text-gray-900 mt-2">{cls.name}</h4>
+                <p className="text-gray-500 font-bold text-xs mb-4">참여 학생: {cls.count}명</p>
+                
+                <div className="w-full space-y-2">
+                  <div className="flex justify-between text-[10px] font-black text-indigo-400 uppercase">
+                    <span>TOTAL SCORE</span>
+                    <span>{cls.score.toLocaleString()} XP</span>
+                  </div>
+                  <div className="h-2 bg-indigo-50 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((cls.score / (classRankings[0]?.score || 1)) * 100, 100)}%` }}
+                      className="h-full bg-indigo-500"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {classRankings.length === 0 && (
             <div className="col-span-3 py-12 text-center text-gray-400 font-bold italic">
               아직 학급 데이터가 없습니다.

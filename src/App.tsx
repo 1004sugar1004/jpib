@@ -587,7 +587,7 @@ export default function App() {
                 rankings={rankings} 
               />
             )}
-            {view === 'dashboard' && profile?.role === 'teacher' && (
+            {view === 'dashboard' && profile?.name === '김혜진' && (
               <TeacherDashboardView 
                 setView={setView} 
               />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { cn, formatGradeClass } from '../../lib/utils';
+import { cn, formatGradeClass, getLevel } from '../../lib/utils';
 import { ArrowLeft } from 'lucide-react';
 
 import { UserProfile } from '../../types';
@@ -141,34 +141,56 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
           개인 순위 {rankingType === 'monthly' ? '(월간)' : '(누적)'} TOP 30
         </h3>
         <Card className="divide-y divide-gray-100 bg-white/80 backdrop-blur-md rounded-[2.5rem] border-white/20 shadow-xl overflow-hidden">
-          {top30Rankings.map((rank, idx) => (
-            <div key={rank.uid} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg",
-                  idx === 0 ? "bg-yellow-100 text-yellow-700" :
-                  idx === 1 ? "bg-gray-100 text-gray-700" :
-                  idx === 2 ? "bg-orange-100 text-orange-700" : "text-gray-400"
-                )}>
-                  {idx + 1}
-                </div>
-                <div>
-                  <div className="font-bold text-gray-900">{rank.name} {rank.role === 'teacher' ? '선생님' : ''}</div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-black border border-indigo-100">
-                      {rank.class}반
-                    </span>
-                    <span className="text-[10px] text-gray-500 font-medium">
-                      {formatGradeClass(rank.grade, rank.class, rank.role)}
-                    </span>
+          {top30Rankings.map((rank, idx) => {
+            const level = getLevel(rank.score);
+            return (
+              <div key={rank.uid} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg",
+                    idx === 0 ? "bg-yellow-100 text-yellow-700" :
+                    idx === 1 ? "bg-gray-100 text-gray-700" :
+                    idx === 2 ? "bg-orange-100 text-orange-700" : "text-gray-400"
+                  )}>
+                    {idx + 1}
+                  </div>
+                  
+                  <div className="relative shrink-0">
+                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shadow-sm overflow-hidden">
+                      <img 
+                        src={level.img} 
+                        alt={rank.name} 
+                        className="w-10 h-10 object-contain" 
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className={cn(
+                      "absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7px] font-black shadow-sm border border-white whitespace-nowrap z-10",
+                      level.bg,
+                      level.color
+                    )}>
+                      {level.name.split(' ')[0]}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-bold text-gray-900">{rank.name} {rank.role === 'teacher' ? '선생님' : ''}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-black border border-indigo-100">
+                        {rank.class}반
+                      </span>
+                      <span className="text-[10px] text-gray-500 font-medium">
+                        {formatGradeClass(rank.grade, rank.class, rank.role)}
+                      </span>
+                    </div>
                   </div>
                 </div>
+                <div className="text-xl font-black text-indigo-600">
+                  {(rankingType === 'monthly' ? (rank.monthlyScore || 0) : rank.score).toLocaleString()}점
+                </div>
               </div>
-              <div className="text-xl font-black text-indigo-600">
-                {(rankingType === 'monthly' ? (rank.monthlyScore || 0) : rank.score).toLocaleString()}점
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {top30Rankings.length === 0 && (
             <div className="p-12 text-center text-gray-500">아직 등록된 탐험가가 없습니다.</div>
           )}
@@ -180,28 +202,51 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
           학급 순위 {rankingType === 'monthly' ? '(월간)' : '(누적)'}
         </h3>
         <Card className="divide-y divide-gray-100 bg-white/80 backdrop-blur-md rounded-[2.5rem] border-white/20 shadow-xl overflow-hidden">
-          {classRankings.map((cls, idx) => (
-            <div key={cls.name} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg",
-                  idx === 0 ? "bg-yellow-100 text-yellow-700" :
-                  idx === 1 ? "bg-gray-100 text-gray-700" :
-                  idx === 2 ? "bg-orange-100 text-orange-700" : "text-gray-400"
-                )}>
-                  {idx + 1}
+          {classRankings.map((cls, idx) => {
+            const avgScore = Math.round(cls.score / cls.count);
+            const level = getLevel(avgScore);
+            return (
+              <div key={cls.name} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg",
+                    idx === 0 ? "bg-yellow-100 text-yellow-700" :
+                    idx === 1 ? "bg-gray-100 text-gray-700" :
+                    idx === 2 ? "bg-orange-100 text-orange-700" : "text-gray-400"
+                  )}>
+                    {idx + 1}
+                  </div>
+                  
+                  <div className="relative shrink-0">
+                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shadow-sm overflow-hidden">
+                      <img 
+                        src={level.img} 
+                        alt={cls.name} 
+                        className="w-10 h-10 object-contain" 
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className={cn(
+                      "absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7px] font-black shadow-sm border border-white whitespace-nowrap z-10",
+                      level.bg,
+                      level.color
+                    )}>
+                      {level.name.split(' ')[0]}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-bold text-gray-900">{cls.name}</div>
+                    <div className="text-xs text-gray-500">참여 학생: {cls.count}명 (평균: {avgScore.toLocaleString()}점)</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-bold text-gray-900">{cls.name}</div>
-                  <div className="text-xs text-gray-500">참여 학생: {cls.count}명 (평균: {Math.round(cls.score / cls.count).toLocaleString()}점)</div>
+                <div className="text-right">
+                  <div className="text-xl font-black text-indigo-600">{cls.score.toLocaleString()}점</div>
+                  <div className="text-[10px] font-bold text-gray-400 uppercase">총 점수</div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-xl font-black text-indigo-600">{cls.score.toLocaleString()}점</div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase">총 점수</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {classRankings.length === 0 && (
             <div className="p-12 text-center text-gray-500">아직 등록된 학급이 없습니다.</div>
           )}
