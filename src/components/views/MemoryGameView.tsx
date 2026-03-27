@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -20,7 +20,7 @@ interface MemoryCard {
 
 interface MemoryGameViewProps {
   setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
-  onEarnXP: (xp: number) => void;
+  onEarnXP: (xp: number, activityType: 'memory', accuracy: number, duration: number) => void;
   soundEnabled: boolean;
   initialCategory?: string;
 }
@@ -32,6 +32,7 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
   const [moves, setMoves] = useState(0);
   const [isWon, setIsWon] = useState(false);
   const [bestScore, setBestScore] = useState(() => Number(localStorage.getItem(`memory-best-score-${category}`) || Infinity));
+  const startTimeRef = useRef(Date.now());
 
   const categories = [
     { id: 'learner', name: '학습자상', data: ibLearnerProfile },
@@ -132,7 +133,11 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
   useEffect(() => {
     if (cards.length > 0 && cards.every(card => card.isMatched) && !isWon) {
       setIsWon(true);
-      onEarnXP(50);
+      const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      // Accuracy for memory game can be calculated as (min possible moves / actual moves)
+      const minMoves = 8;
+      const accuracy = Math.min(1, minMoves / moves);
+      onEarnXP(50, 'memory', accuracy, duration);
       if (moves < bestScore) {
         setBestScore(moves);
         localStorage.setItem(`memory-best-score-${category}`, moves.toString());

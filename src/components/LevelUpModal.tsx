@@ -6,11 +6,11 @@ import { cn } from '../lib/utils';
 import { UserProfile } from '../types';
 
 const getLevel = (score: number) => {
-  if (score < 100) return { name: '초보 탐험가', color: 'text-gray-500', bg: 'bg-gray-100', img: ASSETS.characters.explorer_beginner };
-  if (score < 300) return { name: '견습 탐험가', color: 'text-emerald-500', bg: 'bg-emerald-100', img: ASSETS.characters.explorer_apprentice };
-  if (score < 600) return { name: '숙련 탐험가', color: 'text-blue-500', bg: 'bg-blue-100', img: ASSETS.characters.explorer_skilled };
-  if (score < 1000) return { name: '베테랑 탐험가', color: 'text-purple-500', bg: 'bg-purple-100', img: ASSETS.characters.explorer_veteran };
-  return { name: '전설의 탐험가', color: 'text-yellow-500', bg: 'bg-yellow-100', img: ASSETS.characters.explorer_legend };
+  if (score < 100) return { name: '초보 탐험가', color: 'text-gray-500', bg: 'bg-gray-100', img: ASSETS.characters.explorer_lv1 };
+  if (score < 300) return { name: '견습 탐험가', color: 'text-emerald-500', bg: 'bg-emerald-100', img: ASSETS.characters.explorer_lv2 };
+  if (score < 600) return { name: '숙련 탐험가', color: 'text-blue-500', bg: 'bg-blue-100', img: ASSETS.characters.explorer_lv3 };
+  if (score < 1000) return { name: '베테랑 탐험가', color: 'text-purple-500', bg: 'bg-purple-100', img: ASSETS.characters.explorer_lv4 };
+  return { name: '전설의 탐험가', color: 'text-yellow-500', bg: 'bg-yellow-100', img: ASSETS.characters.explorer_lv10 };
 };
 
 interface LevelUpModalProps {

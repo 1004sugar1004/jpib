@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
@@ -63,6 +63,7 @@ export const StudyView = ({
   soundEnabled
 }: StudyViewProps) => {
   const [activeTab, setActiveTab] = useState(0);
+  const lastClickTimeRef = useRef<number>(0);
   
   const randomQuestions = useMemo(() => {
     return [...ibReflectionQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
@@ -77,11 +78,21 @@ export const StudyView = ({
     { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
   ];
 
+  const handleToggle = (id: string) => {
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 2000) { // 2 seconds cooldown for study items
+      alert("천천히 내용을 읽고 확인해 주세요! (2초 후에 다시 시도 가능)");
+      return;
+    }
+    lastClickTimeRef.current = now;
+    onToggleItem(id);
+  };
+
   const StudyCheck = ({ id, completed, onToggle }: { id: string, completed: boolean, onToggle: (id: string) => void }) => (
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      onClick={() => onToggle(id)}
+      onClick={() => handleToggle(id)}
       className={cn(
         "flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold transition-all border-2 w-fit",
         completed 

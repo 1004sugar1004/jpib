@@ -44,7 +44,7 @@ const BASE_QUESTIONS: Question[] = [
 ];
 
 interface MusicQuizViewProps {
-  onFinish: (score: number, maxStreak: number, correctCount: number) => void;
+  onFinish: (score: number, maxStreak: number, correctCount: number, totalCount: number, duration: number) => void;
   onClose: () => void;
   soundEnabled: boolean;
 }
@@ -67,6 +67,7 @@ export const MusicQuizView = ({ onFinish, onClose, soundEnabled }: MusicQuizView
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef(Date.now());
 
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
@@ -168,7 +169,8 @@ export const MusicQuizView = ({ onFinish, onClose, soundEnabled }: MusicQuizView
   const handleNext = () => {
     if (qi + 1 >= BASE_QUESTIONS.length) {
       setScreen('final');
-      onFinish(score, 0, score / 10);
+      const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      onFinish(score, 0, score / 10, BASE_QUESTIONS.length, duration);
       if (score >= 60) {
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
       }

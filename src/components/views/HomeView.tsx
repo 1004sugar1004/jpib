@@ -18,7 +18,10 @@ import {
   ChevronUp,
   Gamepad2,
   Flame,
-  Brain
+  Brain,
+  CheckCircle2,
+  ListTodo,
+  Activity
 } from 'lucide-react';
 import { ibReflectionQuestions } from '../../content';
 
@@ -28,7 +31,7 @@ import { getLevel, formatGradeClass } from '../../lib/utils';
 interface HomeViewProps {
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard') => void;
   rankings: UserProfile[];
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
@@ -37,6 +40,7 @@ interface HomeViewProps {
   bgMusicVolume: number;
   setBgMusicVolume: (volume: number) => void;
   onLogout: () => void;
+  onUpdateQuests?: () => void;
 }
 
 export const HomeView = ({ 
@@ -51,10 +55,13 @@ export const HomeView = ({
   bgMusicVolume,
   setBgMusicVolume,
   onLogout,
+  onUpdateQuests
 }: HomeViewProps) => {
   const [showLevelGuide, setShowLevelGuide] = React.useState(false);
   const level = getLevel(profile?.score || 0);
   const studyProgress = Math.floor((Object.keys(reflectionData).length / ibReflectionQuestions.length) * 100);
+
+  const DAILY_XP_LIMIT = 500; // Should match App.tsx
 
   // Calculate class rankings
   const classRankings = React.useMemo(() => {
@@ -126,11 +133,37 @@ export const HomeView = ({
               </div>
               <div className="h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-50">
                 <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((profile?.score || 0) / 10, 100)}%` }}
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                   initial={{ width: 0 }}
+                   animate={{ width: `${Math.min((profile?.score || 0) / 10, 100)}%` }}
+                   className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
                 />
               </div>
+            </div>
+
+            {/* Daily XP Limit Progress */}
+            <div className="mt-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  <span className="text-xs font-black text-indigo-900 uppercase tracking-tighter">오늘의 경험치 상한</span>
+                </div>
+                <span className="text-xs font-black text-indigo-600">
+                  {profile?.dailyXP || 0} / {DAILY_XP_LIMIT} XP
+                </span>
+              </div>
+              <div className="h-2 bg-white rounded-full overflow-hidden border border-indigo-50">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(((profile?.dailyXP || 0) / DAILY_XP_LIMIT) * 100, 100)}%` }}
+                  className={cn(
+                    "h-full transition-colors",
+                    (profile?.dailyXP || 0) >= DAILY_XP_LIMIT ? "bg-green-500" : "bg-amber-400"
+                  )}
+                />
+              </div>
+              {(profile?.dailyXP || 0) >= DAILY_XP_LIMIT && (
+                <p className="text-[10px] text-green-600 font-bold mt-1">✨ 오늘의 목표 경험치를 모두 달성했습니다! 내일 또 만나요!</p>
+              )}
             </div>
           </div>
           
@@ -163,6 +196,17 @@ export const HomeView = ({
             <Button variant="ghost" onClick={onLogout} icon={LogOut} className="text-gray-400 hover:text-red-500">
               로그아웃
             </Button>
+            {profile?.role === 'teacher' && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setView('dashboard')}
+                className="bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-100 mt-2"
+                icon={Activity}
+              >
+                활동 로그 (교사용)
+              </Button>
+            )}
             <Button 
               variant="secondary" 
               size="sm" 
@@ -175,6 +219,76 @@ export const HomeView = ({
           </div>
         </div>
       </header>
+
+      {/* Daily Quests Section */}
+      {profile?.dailyQuests && profile.dailyQuests.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/80 backdrop-blur-md rounded-[40px] p-8 border border-white/40 shadow-xl"
+        >
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                <ListTodo className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-gray-900">🎯 오늘의 일일 퀘스트</h3>
+                <p className="text-emerald-600 font-bold text-sm uppercase tracking-widest">DAILY MISSIONS</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {profile.dailyQuests.map((quest) => (
+              <div 
+                key={quest.id}
+                className={cn(
+                  "p-5 rounded-3xl border-2 transition-all flex flex-col gap-3",
+                  quest.completed 
+                    ? "bg-emerald-50 border-emerald-200 shadow-inner" 
+                    : "bg-white border-gray-100 shadow-sm"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter",
+                    quest.completed ? "bg-emerald-200 text-emerald-700" : "bg-gray-100 text-gray-400"
+                  )}>
+                    {quest.completed ? "COMPLETED" : "IN PROGRESS"}
+                  </span>
+                  {quest.completed && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                </div>
+                
+                <div>
+                  <h4 className={cn("font-black text-sm", quest.completed ? "text-emerald-900" : "text-gray-900")}>
+                    {quest.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 font-medium mt-1">{quest.description}</p>
+                </div>
+
+                <div className="mt-auto pt-3 border-t border-gray-100/50">
+                  <div className="flex items-center justify-between text-[10px] font-black mb-1">
+                    <span className="text-gray-400">PROGRESS</span>
+                    <span className="text-indigo-600">{quest.progress} / {quest.target}</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((quest.progress / quest.target) * 100, 100)}%` }}
+                      className={cn("h-full", quest.completed ? "bg-emerald-500" : "bg-indigo-500")}
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-[10px] font-black text-amber-600">
+                    <Star className="w-3 h-3 fill-amber-600" />
+                    +{quest.xpReward} XP
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Top 3 Rankings Section */}
       <motion.div 

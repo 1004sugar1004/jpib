@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -20,7 +20,7 @@ import confetti from 'canvas-confetti';
 
 interface FlashcardViewProps {
   setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
-  onEarnXP: (xp: number) => void;
+  onEarnXP: (xp: number, activityType: 'flashcards', accuracy: number, duration: number) => void;
   soundEnabled: boolean;
 }
 
@@ -38,11 +38,19 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
   const [hasFlipped, setHasFlipped] = useState(false);
   const [learnedCount, setLearnedCount] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
+  const startTimeRef = useRef(Date.now());
+  const lastClickTimeRef = useRef(Date.now());
 
   const currentData = categories.find(c => c.id === selectedCategory)?.data || [];
   const currentCard = currentData[currentIndex];
 
   const handleFlip = () => {
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 800) {
+      alert("너무 빨리 클릭했어요! 내용을 천천히 읽어보세요.");
+      return;
+    }
+    lastClickTimeRef.current = now;
     const nextFlipped = !isFlipped;
     setIsFlipped(nextFlipped);
     if (nextFlipped) setHasFlipped(true);
@@ -64,7 +72,8 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
       }
     } else {
       setShowCompletion(true);
-      onEarnXP(150); // Reward for completing a set
+      const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      onEarnXP(150, 'flashcards', 1, duration); // Reward for completing a set
       confetti({
         particleCount: 100,
         spread: 70,

@@ -30,7 +30,7 @@ interface QuizViewProps {
   profile: UserProfile | null;
   questions: QuizQuestion[];
   title: string;
-  onFinish: (score: number, maxStreak: number, correctCount: number) => Promise<void>;
+  onFinish: (score: number, maxStreak: number, correctCount: number, totalCount: number, duration: number) => Promise<void>;
   onClose: () => void;
   soundEnabled: boolean;
 }
@@ -55,6 +55,7 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
   const [volume, setVolume] = useState(0.5);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef(Date.now());
 
   const currentQuestion = shuffledQuestions[currentQuestionIdx];
 
@@ -190,13 +191,14 @@ export const QuizView = ({ profile, questions, title, onFinish, onClose, soundEn
   const finishQuiz = async () => {
     if (quizFinished) return;
     setQuizFinished(true);
+    const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
     confetti({
       particleCount: 150,
       spread: 70,
       origin: { y: 0.6 }
     });
     
-    await onFinish(quizScore, maxStreak, correctCount);
+    await onFinish(quizScore, maxStreak, correctCount, shuffledQuestions.length, duration);
   };
 
   const mascotImg = isCorrect === true 

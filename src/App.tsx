@@ -27,6 +27,7 @@ import { HomeView } from './components/views/HomeView';
 import { StudyView } from './components/views/StudyView';
 import { QuizView } from './components/views/QuizView';
 import { RankingView } from './components/views/RankingView';
+import { TeacherDashboardView } from './components/views/TeacherDashboardView';
 import { FlashcardView } from './components/views/FlashcardView';
 import { MemoryGameView } from './components/views/MemoryGameView';
 import { GameCornerView } from './components/views/GameCornerView';
@@ -35,15 +36,23 @@ import { CertificateView } from './components/views/CertificateView';
 import { PlanView } from './components/views/PlanView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
-import { UserProfile } from './types';
+import { UserProfile, ActivityLog, DailyQuest } from './types';
 import { getLevel } from './lib/utils';
 import { backgrounds } from './constants';
+
+const DAILY_XP_LIMIT = 500;
+
+const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
+  { id: 'q1', title: '지식탐험 2회 완료', description: '지식 탐험에서 2개의 항목을 읽고 확인하세요.', type: 'study', target: 2, progress: 0, completed: false, xpReward: 50 },
+  { id: 'q2', title: '플래시카드 10개 학습', description: '플래시카드를 10번 뒤집어 학습하세요.', type: 'flashcards', target: 10, progress: 0, completed: false, xpReward: 30 },
+  { id: 'q3', title: '메모리 게임 1회 승리', description: '메모리 게임을 한 판 완료하세요.', type: 'memory', target: 1, progress: 0, completed: false, xpReward: 40 },
+];
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -77,6 +86,46 @@ export default function App() {
     }
   }, [user]);
 
+  const getCurrentDate = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+
+  const logActivity = async (log: Omit<ActivityLog, 'uid' | 'userName' | 'grade' | 'class' | 'timestamp'>) => {
+    if (!profile) return;
+    const fullLog: ActivityLog = {
+      ...log,
+      uid: profile.uid,
+      userName: profile.name,
+      grade: profile.grade,
+      class: profile.class,
+      timestamp: Date.now(),
+      // Simple suspicious check: if duration is very short for the activity
+      isSuspicious: log.duration < 5 && log.activityType === 'quiz'
+    };
+    try {
+      await setDoc(doc(collection(db, 'activityLogs')), fullLog);
+    } catch (error) {
+      console.error("Failed to log activity", error);
+    }
+  };
+
+  const updateDailyQuests = (type: DailyQuest['type'], amount: number = 1) => {
+    if (!profile) return profile;
+    const quests = profile.dailyQuests || DEFAULT_DAILY_QUESTS;
+    let questXP = 0;
+    const newQuests = quests.map(q => {
+      if (q.type === type && !q.completed) {
+        const newCurrent = q.current + amount;
+        const completed = newCurrent >= q.target;
+        if (completed) questXP += q.xpReward;
+        return { ...q, current: newCurrent, completed };
+      }
+      return q;
+    });
+    return { newQuests, questXP };
+  };
+
   // Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -86,7 +135,26 @@ export default function App() {
           const docRef = doc(db, 'users', firebaseUser.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setProfile(docSnap.data() as UserProfile);
+            let userData = docSnap.data() as UserProfile;
+            const today = getCurrentDate();
+            
+            // Reset daily stats if it's a new day
+            if (userData.lastXPDate !== today) {
+              userData = {
+                ...userData,
+                dailyXP: 0,
+                lastXPDate: today,
+                activityCounts: {},
+                dailyQuests: DEFAULT_DAILY_QUESTS
+              };
+              await updateDoc(docRef, {
+                dailyXP: 0,
+                lastXPDate: today,
+                activityCounts: {},
+                dailyQuests: DEFAULT_DAILY_QUESTS
+              });
+            }
+            setProfile(userData);
           }
         } catch (error) {
           handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
@@ -156,19 +224,47 @@ export default function App() {
     }
   };
 
-  const handleFinishQuiz = React.useCallback(async (quizScore: number, maxStreak: number, correctCount: number) => {
+  const handleFinishQuiz = React.useCallback(async (quizScore: number, maxStreak: number, correctCount: number, totalCount: number, duration: number) => {
     if (profile) {
+      const accuracy = correctCount / totalCount;
+      const today = getCurrentDate();
+      const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
+      
+      // Check for anti-spam (if duration is too short)
+      if (duration < 3) {
+        alert("너무 빨리 풀었어요! 잠시 쉬어 가세요.");
+        return;
+      }
+
+      // Accuracy check: Only give XP if accuracy >= 80%
+      let xpToGain = quizScore;
+      if (accuracy < 0.8) {
+        xpToGain = 0;
+        alert("정답률이 80% 미만이라 경험치를 획득하지 못했습니다. 다시 도전해보세요!");
+      }
+
+      // Daily XP limit check
+      if (currentDailyXP >= DAILY_XP_LIMIT) {
+        xpToGain = 0;
+        alert("오늘 획득할 수 있는 경험치 상한선(500XP)에 도달했습니다. 내일 다시 만나요!");
+      } else if (currentDailyXP + xpToGain > DAILY_XP_LIMIT) {
+        xpToGain = DAILY_XP_LIMIT - currentDailyXP;
+      }
+
+      const { newQuests, questXP } = updateDailyQuests('quiz');
+      const finalXP = xpToGain + questXP;
+
       const currentMonth = getCurrentMonth();
       const oldLevel = getLevel(profile.score).name;
-      const newTotalScore = profile.score + quizScore;
+      const newTotalScore = profile.score + finalXP;
       const newLevel = getLevel(newTotalScore).name;
       
       // Handle monthly score
       let newMonthlyScore = (profile.monthlyScore || 0);
       if (profile.lastActiveMonth !== currentMonth) {
-        newMonthlyScore = quizScore;
+        newMonthlyScore = finalXP;
       } else {
-        newMonthlyScore += quizScore;
+        newMonthlyScore += finalXP;
       }
 
       // 10 questions -> 3 tickets (proportional)
@@ -185,14 +281,28 @@ export default function App() {
           lastActiveMonth: currentMonth,
           lastQuizDate: new Date().toISOString(),
           streak: maxStreak,
-          gameTickets: newTickets
+          gameTickets: newTickets,
+          dailyXP: currentDailyXP + xpToGain,
+          lastXPDate: today,
+          dailyQuests: newQuests
         });
+        
+        await logActivity({
+          activityType: 'quiz',
+          duration,
+          accuracy,
+          xpGained: finalXP
+        });
+
         setProfile({ 
           ...profile, 
           score: newTotalScore, 
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
-          gameTickets: newTickets 
+          gameTickets: newTickets,
+          dailyXP: currentDailyXP + xpToGain,
+          lastXPDate: today,
+          dailyQuests: newQuests
         });
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
@@ -200,19 +310,34 @@ export default function App() {
     }
   }, [profile]);
 
-  const handleEarnXP = React.useCallback(async (xp: number) => {
+  const handleEarnXP = React.useCallback(async (xp: number, activityType: DailyQuest['type'] = 'study', accuracy: number = 1, duration: number = 10) => {
     if (profile) {
+      const today = getCurrentDate();
+      const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
+
+      let xpToGain = xp;
+
+      // Daily XP limit check
+      if (currentDailyXP >= DAILY_XP_LIMIT) {
+        xpToGain = 0;
+      } else if (currentDailyXP + xpToGain > DAILY_XP_LIMIT) {
+        xpToGain = DAILY_XP_LIMIT - currentDailyXP;
+      }
+
+      const { newQuests, questXP } = updateDailyQuests(activityType, activityType === 'flashcards' ? 1 : 1);
+      const finalXP = xpToGain + questXP;
+
       const currentMonth = getCurrentMonth();
       const oldLevel = getLevel(profile.score).name;
-      const newTotalScore = profile.score + xp;
+      const newTotalScore = profile.score + finalXP;
       const newLevel = getLevel(newTotalScore).name;
 
       // Handle monthly score
       let newMonthlyScore = (profile.monthlyScore || 0);
       if (profile.lastActiveMonth !== currentMonth) {
-        newMonthlyScore = xp;
+        newMonthlyScore = finalXP;
       } else {
-        newMonthlyScore += xp;
+        newMonthlyScore += finalXP;
       }
 
       if (oldLevel !== newLevel) {
@@ -223,13 +348,27 @@ export default function App() {
         await updateDoc(doc(db, 'users', profile.uid), {
           score: newTotalScore,
           monthlyScore: newMonthlyScore,
-          lastActiveMonth: currentMonth
+          lastActiveMonth: currentMonth,
+          dailyXP: currentDailyXP + xpToGain,
+          lastXPDate: today,
+          dailyQuests: newQuests
         });
+
+        await logActivity({
+          activityType,
+          duration,
+          accuracy,
+          xpGained: finalXP
+        });
+
         setProfile({ 
           ...profile, 
           score: newTotalScore, 
           monthlyScore: newMonthlyScore,
-          lastActiveMonth: currentMonth 
+          lastActiveMonth: currentMonth,
+          dailyXP: currentDailyXP + xpToGain,
+          lastXPDate: today,
+          dailyQuests: newQuests
         });
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
@@ -446,6 +585,11 @@ export default function App() {
               <RankingView 
                 setView={setView} 
                 rankings={rankings} 
+              />
+            )}
+            {view === 'dashboard' && profile?.role === 'teacher' && (
+              <TeacherDashboardView 
+                setView={setView} 
               />
             )}
             {view === 'certificate' && (

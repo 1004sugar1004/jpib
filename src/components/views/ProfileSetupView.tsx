@@ -11,6 +11,8 @@ interface ProfileSetupViewProps {
 export const ProfileSetupView = ({ onCreateProfile }: ProfileSetupViewProps) => {
   const [role, setRole] = useState<'student' | 'teacher'>('student');
 
+  console.log('Current role selection:', role);
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-10 bg-white/90 backdrop-blur-md rounded-[3rem] border-white/20 shadow-2xl">
@@ -19,23 +21,29 @@ export const ProfileSetupView = ({ onCreateProfile }: ProfileSetupViewProps) => 
         <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-2xl">
           <button
             type="button"
-            onClick={() => setRole('student')}
+            onClick={() => {
+              console.log('Setting role to student');
+              setRole('student');
+            }}
             className={cn(
               "flex-1 py-2 rounded-xl font-bold transition-all",
               role === 'student' ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             )}
           >
-            학생
+            학생(Student)
           </button>
           <button
             type="button"
-            onClick={() => setRole('teacher')}
+            onClick={() => {
+              console.log('Setting role to teacher');
+              setRole('teacher');
+            }}
             className={cn(
               "flex-1 py-2 rounded-xl font-bold transition-all",
               role === 'teacher' ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             )}
           >
-            교사
+            교사(Teacher)
           </button>
         </div>
 
