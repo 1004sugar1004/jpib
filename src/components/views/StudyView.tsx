@@ -46,7 +46,7 @@ interface StudyViewProps {
   onSaveReflection: () => void;
   completedItems: string[];
   onToggleItem: (itemId: string) => void;
-  onEarnXP: (amount: number) => void;
+  onEarnXP: (xp: number, activityType?: any, accuracy?: number, duration?: number, questAmount?: number) => void;
   soundEnabled: boolean;
 }
 

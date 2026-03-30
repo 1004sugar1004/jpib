@@ -20,7 +20,7 @@ import confetti from 'canvas-confetti';
 
 interface FlashcardViewProps {
   setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
-  onEarnXP: (xp: number, activityType: 'flashcards', accuracy: number, duration: number) => void;
+  onEarnXP: (xp: number, activityType: 'flashcards', accuracy: number, duration: number, questAmount?: number) => void;
   soundEnabled: boolean;
 }
 
@@ -73,7 +73,7 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
     } else {
       setShowCompletion(true);
       const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-      onEarnXP(150, 'flashcards', 1, duration); // Reward for completing a set
+      onEarnXP(150, 'flashcards', 1, duration, learnedCount); // Reward for completing a set, passing count for quest
       confetti({
         particleCount: 100,
         spread: 70,

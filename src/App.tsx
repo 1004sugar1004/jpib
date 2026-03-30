@@ -111,15 +111,15 @@ export default function App() {
   };
 
   const updateDailyQuests = (type: DailyQuest['type'], amount: number = 1) => {
-    if (!profile) return profile;
+    if (!profile) return { newQuests: [], questXP: 0 };
     const quests = profile.dailyQuests || DEFAULT_DAILY_QUESTS;
     let questXP = 0;
     const newQuests = quests.map(q => {
       if (q.type === type && !q.completed) {
-        const newCurrent = q.current + amount;
-        const completed = newCurrent >= q.target;
+        const newProgress = q.progress + amount;
+        const completed = newProgress >= q.target;
         if (completed) questXP += q.xpReward;
-        return { ...q, current: newCurrent, completed };
+        return { ...q, progress: newProgress, completed };
       }
       return q;
     });
@@ -310,7 +310,7 @@ export default function App() {
     }
   }, [profile]);
 
-  const handleEarnXP = React.useCallback(async (xp: number, activityType: DailyQuest['type'] = 'study', accuracy: number = 1, duration: number = 10) => {
+  const handleEarnXP = React.useCallback(async (xp: number, activityType: DailyQuest['type'] = 'study', accuracy: number = 1, duration: number = 10, questAmount: number = 1) => {
     if (profile) {
       const today = getCurrentDate();
       const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
@@ -324,7 +324,7 @@ export default function App() {
         xpToGain = DAILY_XP_LIMIT - currentDailyXP;
       }
 
-      const { newQuests, questXP } = updateDailyQuests(activityType, activityType === 'flashcards' ? 1 : 1);
+      const { newQuests, questXP } = updateDailyQuests(activityType, questAmount);
       const finalXP = xpToGain + questXP;
 
       const currentMonth = getCurrentMonth();
@@ -399,33 +399,67 @@ export default function App() {
       scoreChange = 30;
     }
     
-    const newScore = Math.max(0, profile.score + scoreChange);
+    const today = getCurrentDate();
     const currentMonth = getCurrentMonth();
+    const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
+
+    let xpToGain = scoreChange;
+
+    // Daily XP limit check
+    if (currentDailyXP >= DAILY_XP_LIMIT) {
+      xpToGain = 0;
+    } else if (currentDailyXP + xpToGain > DAILY_XP_LIMIT) {
+      xpToGain = DAILY_XP_LIMIT - currentDailyXP;
+    }
+
+    // Update daily quests for study
+    let newQuests = profile.dailyQuests || DEFAULT_DAILY_QUESTS;
+    let questXP = 0;
+    if (!isCompleted) {
+      const result = updateDailyQuests('study', 1);
+      newQuests = result.newQuests;
+      questXP = result.questXP;
+    }
+
+    const finalXP = xpToGain + questXP;
+    const finalNewScore = Math.max(0, profile.score + finalXP);
     
     // Handle monthly score update
     let newMonthlyScore = (profile.monthlyScore || 0);
     if (profile.lastActiveMonth !== currentMonth) {
-      newMonthlyScore = Math.max(0, scoreChange);
+      newMonthlyScore = Math.max(0, finalXP);
     } else {
-      newMonthlyScore = Math.max(0, newMonthlyScore + scoreChange);
+      newMonthlyScore = Math.max(0, newMonthlyScore + finalXP);
     }
     
     try {
       await updateDoc(doc(db, 'users', user.uid), {
         completedStudyItems: newCompleted,
-        score: newScore,
+        score: finalNewScore,
         monthlyScore: newMonthlyScore,
-        lastActiveMonth: currentMonth
+        lastActiveMonth: currentMonth,
+        dailyXP: currentDailyXP + xpToGain,
+        lastXPDate: today,
+        dailyQuests: newQuests
       });
       setProfile({ 
         ...profile, 
         completedStudyItems: newCompleted, 
-        score: newScore,
+        score: finalNewScore,
         monthlyScore: newMonthlyScore,
-        lastActiveMonth: currentMonth
+        lastActiveMonth: currentMonth,
+        dailyXP: currentDailyXP + xpToGain,
+        lastXPDate: today,
+        dailyQuests: newQuests
       });
       
-      if (!isCompleted) {
+      if (!isCompleted && xpToGain > 0) {
+        await logActivity({
+          activityType: 'study',
+          xpGained: finalXP,
+          accuracy: 1,
+          duration: 10
+        });
         confetti({
           particleCount: 30,
           spread: 50,
