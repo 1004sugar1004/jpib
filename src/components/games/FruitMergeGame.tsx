@@ -344,8 +344,22 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setGameState('AIMING');
   };
 
-  const dropFruit = () => {
+  const dropFruit = (e?: React.MouseEvent | React.TouchEvent) => {
     if (gameState !== 'AIMING' || !currentFruit) return;
+    
+    // If an event is passed, update position one last time before dropping
+    if (e && gameContainerRef.current) {
+      const rect = gameContainerRef.current.getBoundingClientRect();
+      const clientX = 'touches' in e 
+        ? (e.touches.length > 0 ? e.touches[0].clientX : e.changedTouches[0].clientX) 
+        : e.clientX;
+      const x = clientX - rect.left;
+      const level = parseInt(currentFruit.label.split('_')[1]);
+      const radius = fruits[level].radius;
+      const clampedX = Math.max(radius + 10, Math.min(rect.width - radius - 10, x));
+      Matter.Body.setPosition(currentFruit, { x: clampedX, y: currentFruit.position.y });
+    }
+
     setGameState('DROPPING');
     Matter.Body.setStatic(currentFruit, false);
     Matter.Sleeping.set(currentFruit, false);
@@ -372,7 +386,43 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
   useEffect(() => {
     init();
+    
+    // Resize observer to handle container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      if (gameContainerRef.current && engineRef.current && renderRef.current) {
+        const width = gameContainerRef.current.clientWidth;
+        const height = gameContainerRef.current.clientHeight;
+        
+        renderRef.current.options.width = width;
+        renderRef.current.options.height = height;
+        renderRef.current.canvas.width = width;
+        renderRef.current.canvas.height = height;
+        
+        // Update boundaries
+        const bodies = Matter.Composite.allBodies(engineRef.current.world);
+        bodies.forEach(body => {
+          if (body.isStatic) {
+            if (body.position.y > height - 50) { // Bottom wall
+              Matter.Body.setPosition(body, { x: width / 2, y: height });
+              Matter.Body.setVertices(body, Matter.Bodies.rectangle(width / 2, height, width, 50).vertices);
+            } else if (body.position.x < 50) { // Left wall
+              Matter.Body.setPosition(body, { x: 10, y: height / 2 });
+              Matter.Body.setVertices(body, Matter.Bodies.rectangle(10, height / 2, 20, height).vertices);
+            } else if (body.position.x > width - 50) { // Right wall
+              Matter.Body.setPosition(body, { x: width - 10, y: height / 2 });
+              Matter.Body.setVertices(body, Matter.Bodies.rectangle(width - 10, height / 2, 20, height).vertices);
+            }
+          }
+        });
+      }
+    });
+
+    if (gameContainerRef.current) {
+      resizeObserver.observe(gameContainerRef.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       if (renderRef.current) Matter.Render.stop(renderRef.current);
       if (runnerRef.current) Matter.Runner.stop(runnerRef.current);
       if (engineRef.current) Matter.World.clear(engineRef.current.world, false);
@@ -475,12 +525,12 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         <div 
           ref={gameContainerRef}
           className="relative flex-grow min-h-0 cursor-crosshair bg-gradient-to-b from-yellow-50/30 to-white"
-          onMouseDown={dropFruit}
-          onTouchEnd={dropFruit}
+          onMouseDown={(e) => dropFruit(e)}
+          onTouchEnd={(e) => dropFruit(e)}
           onMouseMove={handleMouseMove}
           onTouchMove={handleMouseMove}
         >
-          <canvas className="w-full h-full" />
+          {/* Matter.js canvas will be appended here */}
           
           <AnimatePresence>
             {gameState !== 'AIMING' && gameState !== 'DROPPING' && (
