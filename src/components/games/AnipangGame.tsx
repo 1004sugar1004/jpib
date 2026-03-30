@@ -55,18 +55,88 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     return matches;
   };
 
+  const hasPossibleMoves = (currentGrid: string[][]) => {
+    const rows = currentGrid.length;
+    const cols = currentGrid[0].length;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        // Try horizontal swap
+        if (c < cols - 1) {
+          const tempGrid = currentGrid.map(row => [...row]);
+          const temp = tempGrid[r][c];
+          tempGrid[r][c] = tempGrid[r][c + 1];
+          tempGrid[r][c + 1] = temp;
+          if (checkMatches(tempGrid).length > 0) return true;
+        }
+        // Try vertical swap
+        if (r < rows - 1) {
+          const tempGrid = currentGrid.map(row => [...row]);
+          const temp = tempGrid[r][c];
+          tempGrid[r][c] = tempGrid[r + 1][c];
+          tempGrid[r + 1][c] = temp;
+          if (checkMatches(tempGrid).length > 0) return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const reshuffle = async () => {
+    setIsProcessing(true);
+    let newGrid = grid.map(row => [...row]);
+    
+    // Flatten, shuffle, and rebuild
+    const flat = newGrid.flat();
+    for (let i = flat.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [flat[i], flat[j]] = [flat[j], flat[i]];
+    }
+    
+    let k = 0;
+    for (let r = 0; r < 6; r++) {
+      for (let c = 0; c < 6; c++) {
+        newGrid[r][c] = flat[k++];
+      }
+    }
+    
+    // Ensure no immediate matches and at least one possible move
+    while (checkMatches(newGrid).length > 0 || !hasPossibleMoves(newGrid)) {
+      for (let i = flat.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [flat[i], flat[j]] = [flat[j], flat[i]];
+      }
+      k = 0;
+      for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 6; c++) {
+          newGrid[r][c] = flat[k++];
+        }
+      }
+    }
+    
+    setGrid(newGrid);
+    setIsProcessing(false);
+    alert('움직일 수 있는 칸이 없어 보드를 섞었습니다!');
+  };
+
   const resolveMatches = async (currentGrid: string[][]) => {
     let matches = checkMatches(currentGrid);
     if (matches.length === 0) return currentGrid;
 
     setIsProcessing(true);
-    let workingGrid = [...currentGrid.map(row => [...row])];
+    let workingGrid = currentGrid.map(row => [...row]);
     let totalMatches = 0;
+    const rows = workingGrid.length;
+    const cols = workingGrid[0].length;
 
     while (matches.length > 0) {
+      // Unique matches to avoid double counting if needed, though here we just clear them
+      const uniqueMatches = Array.from(new Set(matches.map(m => `${m[0]},${m[1]}`)))
+        .map(s => s.split(',').map(Number) as [number, number]);
+
       // Confetti burst at center of matches
-      const avgR = matches.reduce((acc, [r]) => acc + r, 0) / matches.length;
-      const avgC = matches.reduce((acc, [_, c]) => acc + c, 0) / matches.length;
+      const avgR = uniqueMatches.reduce((acc, [r]) => acc + r, 0) / uniqueMatches.length;
+      const avgC = uniqueMatches.reduce((acc, [_, c]) => acc + c, 0) / uniqueMatches.length;
       
       confetti({
         particleCount: 40,
@@ -83,53 +153,70 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         audio.play().catch(() => {});
       }
 
-      matches.forEach(([r, c]) => {
+      // Clear matches
+      uniqueMatches.forEach(([r, c]) => {
         workingGrid[r][c] = '';
       });
-      totalMatches += matches.length;
-      setGrid([...workingGrid]);
+      totalMatches += uniqueMatches.length;
       
+      // Show empty spaces briefly
+      setGrid(workingGrid.map(row => [...row]));
       await new Promise(r => setTimeout(r, 300));
 
-      for (let c = 0; c < 6; c++) {
-        let emptyRow = 5;
-        for (let r = 5; r >= 0; r--) {
+      // Gravity and Refill
+      for (let c = 0; c < cols; c++) {
+        let columnItems = [];
+        for (let r = rows - 1; r >= 0; r--) {
           if (workingGrid[r][c] !== '') {
-            const temp = workingGrid[r][c];
-            workingGrid[r][c] = '';
-            workingGrid[emptyRow][c] = temp;
-            emptyRow--;
+            columnItems.push(workingGrid[r][c]);
           }
         }
-        for (let r = emptyRow; r >= 0; r--) {
-          workingGrid[r][c] = emojis[Math.floor(Math.random() * emojis.length)];
+        
+        // Fill the rest with random emojis
+        while (columnItems.length < rows) {
+          columnItems.push(emojis[Math.floor(Math.random() * emojis.length)]);
+        }
+        
+        // Put back into workingGrid (from bottom to top)
+        for (let r = 0; r < rows; r++) {
+          workingGrid[rows - 1 - r][c] = columnItems[r];
         }
       }
       
-      setGrid([...workingGrid]);
+      // Update grid state with refilled items
+      setGrid(workingGrid.map(row => [...row]));
       await new Promise(r => setTimeout(r, 250));
+      
+      // Check for cascading matches
       matches = checkMatches(workingGrid);
     }
 
-    const newScore = score + totalMatches * 10;
-    setScore(newScore);
-    
-    if (newScore >= currentStage.target) {
-      setGameState('cleared');
-      confetti({
-        particleCount: 200,
-        spread: 100,
-        origin: { y: 0.6 }
-      });
-    }
+    setScore(prev => {
+      const newScore = prev + totalMatches * 10;
+      if (newScore >= currentStage.target) {
+        setGameState('cleared');
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+      }
+      return newScore;
+    });
 
     setIsProcessing(false);
+    
+    // Check if any moves are possible, if not reshuffle
+    if (!hasPossibleMoves(workingGrid)) {
+      await reshuffle();
+    }
+    
     return workingGrid;
   };
 
   const initGrid = useCallback(() => {
     let initialGrid = Array(6).fill(0).map(() => Array(6).fill(0).map(() => emojis[Math.floor(Math.random() * emojis.length)]));
-    while (checkMatches(initialGrid).length > 0) {
+    while (checkMatches(initialGrid).length > 0 || !hasPossibleMoves(initialGrid)) {
       initialGrid = Array(6).fill(0).map(() => Array(6).fill(0).map(() => emojis[Math.floor(Math.random() * emojis.length)]));
     }
     setGrid(initialGrid);
