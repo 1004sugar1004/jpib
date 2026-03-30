@@ -145,13 +145,15 @@ export default function App() {
                 dailyXP: 0,
                 lastXPDate: today,
                 activityCounts: {},
-                dailyQuests: DEFAULT_DAILY_QUESTS
+                dailyQuests: DEFAULT_DAILY_QUESTS,
+                completedStudyItems: [] // Reset study items daily
               };
               await updateDoc(docRef, {
                 dailyXP: 0,
                 lastXPDate: today,
                 activityCounts: {},
-                dailyQuests: DEFAULT_DAILY_QUESTS
+                dailyQuests: DEFAULT_DAILY_QUESTS,
+                completedStudyItems: []
               });
             }
             setProfile(userData);
@@ -246,7 +248,7 @@ export default function App() {
       // Daily XP limit check
       if (currentDailyXP >= DAILY_XP_LIMIT) {
         xpToGain = 0;
-        alert("오늘 획득할 수 있는 경험치 상한선(500XP)에 도달했습니다. 내일 다시 만나요!");
+        alert(`오늘 획득할 수 있는 기본 경험치 상한선(${DAILY_XP_LIMIT}XP)에 도달했습니다. 일일 퀘스트 보상은 계속 받을 수 있습니다!`);
       } else if (currentDailyXP + xpToGain > DAILY_XP_LIMIT) {
         xpToGain = DAILY_XP_LIMIT - currentDailyXP;
       }
