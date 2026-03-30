@@ -241,27 +241,45 @@ export const HomeView = ({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {profile.dailyQuests.map((quest) => (
-              <div 
+              <motion.div 
                 key={quest.id}
+                whileHover={!quest.completed ? { y: -5, scale: 1.02 } : {}}
+                whileTap={!quest.completed ? { scale: 0.98 } : {}}
+                onClick={() => {
+                  if (quest.completed) return;
+                  const viewMap: Record<string, any> = {
+                    'study': 'study',
+                    'flashcards': 'flashcards',
+                    'memory': 'memory',
+                    'quiz': 'quiz'
+                  };
+                  if (viewMap[quest.type]) {
+                    setView(viewMap[quest.type]);
+                  }
+                }}
                 className={cn(
-                  "p-5 rounded-3xl border-2 transition-all flex flex-col gap-3",
+                  "p-5 rounded-3xl border-2 transition-all flex flex-col gap-3 cursor-pointer group",
                   quest.completed 
-                    ? "bg-emerald-50 border-emerald-200 shadow-inner" 
-                    : "bg-white border-gray-100 shadow-sm"
+                    ? "bg-emerald-50 border-emerald-200 shadow-inner cursor-default" 
+                    : "bg-white border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md"
                 )}
               >
                 <div className="flex items-center justify-between">
                   <span className={cn(
                     "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter",
-                    quest.completed ? "bg-emerald-200 text-emerald-700" : "bg-gray-100 text-gray-400"
+                    quest.completed ? "bg-emerald-200 text-emerald-700" : "bg-gray-100 text-gray-400 group-hover:bg-indigo-100 group-hover:text-indigo-600"
                   )}>
                     {quest.completed ? "COMPLETED" : "IN PROGRESS"}
                   </span>
-                  {quest.completed && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                  {quest.completed ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition-colors" />
+                  )}
                 </div>
                 
                 <div>
-                  <h4 className={cn("font-black text-sm", quest.completed ? "text-emerald-900" : "text-gray-900")}>
+                  <h4 className={cn("font-black text-sm", quest.completed ? "text-emerald-900" : "text-gray-900 group-hover:text-indigo-900")}>
                     {quest.title}
                   </h4>
                   <p className="text-xs text-gray-500 font-medium mt-1">{quest.description}</p>
@@ -284,7 +302,7 @@ export const HomeView = ({
                     +{quest.xpReward} XP
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </motion.div>

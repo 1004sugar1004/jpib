@@ -34,11 +34,11 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
   const tickets = profile?.gameTickets || 0;
 
   const games = [
-    { id: 'anipang', name: 'IB 애니팡', icon: Grid3X3, color: 'bg-pink-500', unlockXp: 0, description: '3개를 맞춰보세요!' },
-    { id: 'galaga', name: 'IB 갤러그', icon: Rocket, color: 'bg-blue-600', unlockXp: 1000, description: '우주선을 조종하세요!' },
-    { id: 'fruit', name: 'IB 지식 머지', icon: Apple, color: 'bg-orange-500', unlockXp: 2000, description: '과일을 합치며 IB 핵심 지식을 쌓아요!' },
-    { id: 'store', name: 'IB 편의점 정리', icon: ShoppingCart, color: 'bg-emerald-500', unlockXp: 3500, description: '선반을 정리하세요!' },
-    { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 5000, description: '장애물을 뛰어넘으세요!' },
+    { id: 'anipang', name: 'IB 애니팡', icon: Grid3X3, color: 'bg-pink-500', unlockXp: 0, description: '3개를 맞춰보세요!', bgImage: 'https://i.imgur.com/UMcVNRB.png' },
+    { id: 'galaga', name: 'IB 갤러그', icon: Rocket, color: 'bg-blue-600', unlockXp: 1000, description: '우주선을 조종하세요!', bgImage: 'https://i.imgur.com/jHXUiJ7.png' },
+    { id: 'fruit', name: 'IB 지식 머지', icon: Apple, color: 'bg-orange-500', unlockXp: 2000, description: '과일을 합치며 IB 핵심 지식을 쌓아요!', bgImage: 'https://i.imgur.com/DrD9Hmx.png' },
+    { id: 'store', name: 'IB 편의점 정리', icon: ShoppingCart, color: 'bg-emerald-500', unlockXp: 3500, description: '선반을 정리하세요!', bgImage: 'https://i.imgur.com/QKpwzWZ.png' },
+    { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 5000, description: '장애물을 뛰어넘으세요!', bgImage: 'https://i.imgur.com/xBUw4hj.png' },
   ];
 
   if (selectedGame) {
@@ -64,8 +64,12 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 py-8 space-y-8">
-      <header className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl border border-white/20 text-center relative overflow-hidden">
+    <div 
+      className="min-h-screen w-full bg-cover bg-center bg-no-repeat p-4 py-8 space-y-8"
+      style={{ backgroundImage: 'url("https://i.imgur.com/lkIt81k.png")' }}
+    >
+      <div className="max-w-4xl mx-auto space-y-8">
+        <header className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl border border-white/20 text-center relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <Gamepad2 className="w-32 h-32" />
         </div>
@@ -109,10 +113,17 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
                 isLocked && "cursor-not-allowed opacity-75"
               )}
             >
-              <Card className={cn(
-                "p-8 h-full flex flex-col items-center text-center transition-all border-4",
-                isLocked ? "bg-gray-50 border-gray-200" : "hover:border-indigo-400 border-transparent"
-              )}>
+              <Card 
+                className={cn(
+                  "p-8 h-full flex flex-col items-center text-center transition-all border-4 relative overflow-hidden",
+                  isLocked ? "bg-gray-50 border-gray-200" : "hover:border-indigo-400 border-transparent"
+                )}
+                style={!isLocked ? { 
+                  backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)), url("${game.bgImage}")`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                } : {}}
+              >
                 <div className={cn(
                   "w-20 h-20 rounded-3xl flex items-center justify-center mb-6 text-white shadow-lg relative",
                   isLocked ? "bg-gray-400" : game.color
@@ -141,5 +152,6 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         })}
       </div>
     </div>
+  </div>
   );
 };

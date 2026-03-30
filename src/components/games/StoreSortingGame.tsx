@@ -205,6 +205,11 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
 
   return (
     <div className="w-full h-full bg-[#fdf6e3] flex flex-col p-2 md:p-4 relative overflow-hidden font-sans">
+      {/* Blurry Background Image */}
+      <div 
+        className="absolute inset-0 z-0 opacity-25 pointer-events-none bg-cover bg-center bg-no-repeat blur-md"
+        style={{ backgroundImage: 'url("https://i.imgur.com/QKpwzWZ.png")' }}
+      />
       <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#8b4513 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
       {/* Quiz Overlay */}

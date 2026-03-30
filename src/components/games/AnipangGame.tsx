@@ -300,6 +300,11 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
   return (
     <div className={cn("w-full h-full flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden transition-colors duration-500", currentStage.color)}>
+      {/* Blurry Background Image */}
+      <div 
+        className="absolute inset-0 z-0 opacity-25 pointer-events-none bg-cover bg-center bg-no-repeat blur-md"
+        style={{ backgroundImage: 'url("https://i.imgur.com/UMcVNRB.png")' }}
+      />
       
       {gameState === 'quiz' && (
         <MiniQuiz 

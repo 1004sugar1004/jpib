@@ -388,23 +388,28 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   }, [score]);
 
   return (
-    <div className="w-full h-full bg-green-50 flex flex-col md:flex-row p-2 sm:p-4 gap-4 font-jua">
+    <div className="w-full h-full bg-green-50 flex flex-col md:flex-row p-2 sm:p-4 gap-4 font-jua relative overflow-hidden">
+      {/* Blurry Background Image */}
+      <div 
+        className="absolute inset-0 z-0 opacity-25 pointer-events-none bg-cover bg-center bg-no-repeat blur-md"
+        style={{ backgroundImage: 'url("https://i.imgur.com/DrD9Hmx.png")' }}
+      />
       {/* Quiz Panel */}
-      <div className="w-full md:w-1/3 h-1/2 md:h-full bg-white rounded-3xl shadow-xl flex flex-col p-4 border-4 border-green-100">
-        <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center flex items-center justify-center gap-2">
+      <div className="w-full md:w-1/3 h-[55%] md:h-full bg-white rounded-3xl shadow-xl flex flex-col p-3 md:p-4 border-4 border-green-100 overflow-y-auto">
+        <h2 className="text-lg md:text-2xl font-bold text-slate-800 mb-2 md:mb-4 text-center flex items-center justify-center gap-2">
           ✨ IB 핵심 지식 퀴즈 ✨
         </h2>
         
         <div className="flex-grow flex flex-col justify-center">
-          <p className="text-slate-500 mb-2 text-xs md:text-sm text-center uppercase tracking-widest font-black">IB KNOWLEDGE QUEST</p>
+          <p className="text-slate-500 mb-1 md:mb-2 text-[10px] md:text-sm text-center uppercase tracking-widest font-black">IB KNOWLEDGE QUEST</p>
           
-          <div className="bg-green-50 rounded-2xl p-4 md:p-6 my-2 md:my-4 min-h-[6rem] md:min-h-[10rem] flex items-center justify-center border-2 border-green-100 shadow-inner">
-            <p className="text-slate-800 text-lg md:text-2xl font-bold text-center leading-tight">
+          <div className="bg-green-50 rounded-2xl p-3 md:p-6 my-1 md:my-4 min-h-[4rem] md:min-h-[10rem] flex items-center justify-center border-2 border-green-100 shadow-inner">
+            <p className="text-slate-800 text-base md:text-2xl font-bold text-center leading-tight">
               {currentQuiz ? currentQuiz.question : '준비됐나요?'}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
             {currentQuiz && currentQuiz.options.map((opt: string, idx: number) => (
               <motion.button
                 key={idx}
@@ -413,7 +418,7 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 onClick={() => checkAnswer(idx)}
                 disabled={!quizAnswerable && !showAnswer}
                 className={cn(
-                  "w-full py-3 px-4 rounded-xl font-bold text-sm md:text-lg transition-all shadow-md",
+                  "w-full py-2 md:py-3 px-2 md:px-4 rounded-xl font-bold text-xs md:text-lg transition-all shadow-md",
                   showAnswer && idx === currentQuiz.correctAnswer 
                     ? "bg-emerald-500 text-white animate-pulse border-4 border-white" 
                     : (!quizAnswerable ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-sky-400 hover:bg-sky-500 text-white")
@@ -428,21 +433,21 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                   await Tone.start();
                   showQuiz();
                 }}
-                className="col-span-2 w-full bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl text-xl shadow-lg"
+                className="col-span-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 md:py-4 rounded-xl text-lg md:text-xl shadow-lg"
               >
                 퀴즈 시작!
               </Button>
             )}
           </div>
 
-          <p className={cn("mt-4 font-bold h-6 text-center text-lg", quizFeedback?.color)}>
+          <p className={cn("mt-2 md:mt-4 font-bold h-5 md:h-6 text-center text-sm md:text-lg", quizFeedback?.color)}>
             {quizFeedback?.text}
           </p>
 
           {showAnswer && (
             <Button 
               onClick={spawnAndActivateFruit}
-              className="mt-4 w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-black shadow-lg"
+              className="mt-2 md:mt-4 w-full bg-amber-500 hover:bg-amber-600 text-white py-2 md:py-3 rounded-xl font-black shadow-lg text-sm md:text-base"
             >
               알겠어요! 계속하기
             </Button>
@@ -451,7 +456,7 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       </div>
 
       {/* Game Panel */}
-      <div className="w-full md:w-2/3 h-1/2 md:h-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col border-4 border-green-100">
+      <div className="w-full md:w-2/3 h-[45%] md:h-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col border-4 border-green-100">
         <header className="p-3 md:p-4 bg-green-500 text-white text-center flex-shrink-0">
           <h1 className="text-xl md:text-3xl font-bold">IB 지식 머지</h1>
           <div className="flex justify-between items-center mt-1 text-xs md:text-lg font-black uppercase tracking-tighter">
