@@ -172,12 +172,11 @@ export default function App() {
   // Ranking Listener
   useEffect(() => {
     if (!isAuthReady || !user) return;
-    // Fetch all users to ensure everyone is counted, even if score field is missing
-    const q = query(collection(db, 'users'), limit(3000));
+    // Fetch from publicProfiles instead of users to avoid permission errors and PII leaks
+    const q = query(collection(db, 'publicProfiles'), limit(3000));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => {
-        const userData = doc.data() as UserProfile;
-        // Ensure scores are at least 0
+        const userData = doc.data() as any;
         return { 
           ...userData, 
           score: userData.score || 0,
@@ -187,9 +186,9 @@ export default function App() {
       // Sort by score descending in memory
       data.sort((a, b) => b.score - a.score);
       console.log(`Fetched ${data.length} users for ranking.`);
-      setRankings(data);
+      setRankings(data as UserProfile[]);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'users');
+      handleFirestoreError(error, OperationType.LIST, 'publicProfiles');
     });
     return () => unsubscribe();
   }, [isAuthReady, user]);
@@ -220,6 +219,16 @@ export default function App() {
     };
     try {
       await setDoc(doc(db, 'users', user.uid), newProfile);
+      // Also create public profile for rankings
+      await setDoc(doc(db, 'publicProfiles', user.uid), {
+        uid: newProfile.uid,
+        name: newProfile.name,
+        grade: newProfile.grade,
+        class: newProfile.class,
+        score: newProfile.score,
+        monthlyScore: newProfile.monthlyScore,
+        photoURL: newProfile.photoURL
+      });
       setProfile(newProfile);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
@@ -277,7 +286,10 @@ export default function App() {
       }
 
       try {
-        await updateDoc(doc(db, 'users', profile.uid), {
+        const userRef = doc(db, 'users', profile.uid);
+        const publicRef = doc(db, 'publicProfiles', profile.uid);
+        
+        await updateDoc(userRef, {
           score: newTotalScore,
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
@@ -288,6 +300,12 @@ export default function App() {
           lastXPDate: today,
           dailyQuests: newQuests
         });
+
+        // Sync to public profile
+        await setDoc(publicRef, {
+          score: newTotalScore,
+          monthlyScore: newMonthlyScore
+        }, { merge: true });
         
         await logActivity({
           activityType: 'quiz',
@@ -347,7 +365,10 @@ export default function App() {
       }
 
       try {
-        await updateDoc(doc(db, 'users', profile.uid), {
+        const userRef = doc(db, 'users', profile.uid);
+        const publicRef = doc(db, 'publicProfiles', profile.uid);
+
+        await updateDoc(userRef, {
           score: newTotalScore,
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
@@ -355,6 +376,12 @@ export default function App() {
           lastXPDate: today,
           dailyQuests: newQuests
         });
+
+        // Sync to public profile
+        await setDoc(publicRef, {
+          score: newTotalScore,
+          monthlyScore: newMonthlyScore
+        }, { merge: true });
 
         await logActivity({
           activityType,
@@ -435,7 +462,10 @@ export default function App() {
     }
     
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      const userRef = doc(db, 'users', user.uid);
+      const publicRef = doc(db, 'publicProfiles', user.uid);
+
+      await updateDoc(userRef, {
         completedStudyItems: newCompleted,
         score: finalNewScore,
         monthlyScore: newMonthlyScore,
@@ -444,6 +474,13 @@ export default function App() {
         lastXPDate: today,
         dailyQuests: newQuests
       });
+
+      // Sync to public profile
+      await setDoc(publicRef, {
+        score: finalNewScore,
+        monthlyScore: newMonthlyScore
+      }, { merge: true });
+
       setProfile({ 
         ...profile, 
         completedStudyItems: newCompleted, 
@@ -517,7 +554,24 @@ export default function App() {
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {
     if (!user || !profile) return;
     try {
-      await updateDoc(doc(db, 'users', user.uid), data);
+      const userRef = doc(db, 'users', user.uid);
+      const publicRef = doc(db, 'publicProfiles', user.uid);
+
+      await updateDoc(userRef, data);
+      
+      // Update public profile if relevant fields changed
+      const publicData: any = {};
+      if (data.name) publicData.name = data.name;
+      if (data.grade) publicData.grade = data.grade;
+      if (data.class) publicData.class = data.class;
+      if (data.score !== undefined) publicData.score = data.score;
+      if (data.monthlyScore !== undefined) publicData.monthlyScore = data.monthlyScore;
+      if (data.photoURL) publicData.photoURL = data.photoURL;
+
+      if (Object.keys(publicData).length > 0) {
+        await setDoc(publicRef, publicData, { merge: true });
+      }
+
       setProfile({ ...profile, ...data });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);

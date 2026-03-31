@@ -2,42 +2,79 @@
   "entities": {
     "users": {
       "title": "User Profile",
-      "description": "Stores user-specific information like grade and class.",
+      "description": "Stores private user-specific information.",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "The unique identifier for the user."
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's display name."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address."
-        },
-        "grade": {
-          "type": "integer",
-          "description": "The user's grade level."
-        },
-        "class": {
-          "type": "integer",
-          "description": "The user's class number."
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The last time the profile was updated."
-        }
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "grade": { "type": "string" },
+        "class": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher"] },
+        "score": { "type": "integer" },
+        "monthlyScore": { "type": "integer" },
+        "lastActiveMonth": { "type": "string" },
+        "completedStudyItems": { "type": "array", "items": { "type": "string" } },
+        "photoURL": { "type": "string" },
+        "dailyXP": { "type": "integer" },
+        "lastXPDate": { "type": "string" },
+        "gameTickets": { "type": "integer" }
       },
-      "required": ["uid", "email"]
+      "required": ["uid", "name", "grade", "class", "role"]
+    },
+    "publicProfiles": {
+      "title": "Public Profile",
+      "description": "Non-sensitive user info for rankings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "grade": { "type": "string" },
+        "class": { "type": "string" },
+        "score": { "type": "integer" },
+        "monthlyScore": { "type": "integer" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "name", "grade", "class", "score"]
+    },
+    "activityLogs": {
+      "title": "Activity Log",
+      "description": "Logs of user activities for anti-abuse.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "userName": { "type": "string" },
+        "grade": { "type": "string" },
+        "class": { "type": "string" },
+        "activityType": { "type": "string" },
+        "timestamp": { "type": "integer" },
+        "duration": { "type": "integer" },
+        "accuracy": { "type": "number" },
+        "xpGained": { "type": "integer" },
+        "isSuspicious": { "type": "boolean" }
+      },
+      "required": ["uid", "activityType", "timestamp"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "users",
-      "description": "Individual user profiles stored by their UID."
+      "description": "Private user profiles."
+    },
+    "/publicProfiles/{userId}": {
+      "schema": "publicProfiles",
+      "description": "Public user profiles for rankings."
+    },
+    "/activityLogs/{logId}": {
+      "schema": "activityLogs",
+      "description": "Logs of user activities."
+    },
+    "/reflections/{userId}": {
+      "schema": "object",
+      "description": "User reflection data."
+    },
+    "/atl/{userId}": {
+      "schema": "object",
+      "description": "User ATL skill data."
     }
   }
 }

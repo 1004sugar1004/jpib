@@ -63,6 +63,7 @@ export const StudyView = ({
   soundEnabled
 }: StudyViewProps) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [tabStartTime, setTabStartTime] = useState(Date.now());
   const [message, setMessage] = useState<string | null>(null);
   const lastClickTimeRef = useRef<number>(0);
@@ -82,24 +83,23 @@ export const StudyView = ({
 
   React.useEffect(() => {
     setTabStartTime(Date.now());
+    setCurrentCardIndex(0);
     setMessage(null);
   }, [activeTab]);
+
+  // Reset timer when card changes
+  React.useEffect(() => {
+    setTabStartTime(Date.now());
+  }, [currentCardIndex]);
 
   const handleToggle = (id: string) => {
     const now = Date.now();
     
-    // Check if enough time has passed since opening the tab
-    const timeInTab = now - tabStartTime;
-    if (timeInTab < 5000) {
-      const remaining = Math.ceil((5000 - timeInTab) / 1000);
+    // Check if enough time has passed since opening the card
+    const timeInCard = now - tabStartTime;
+    if (timeInCard < 5000) {
+      const remaining = Math.ceil((5000 - timeInCard) / 1000);
       setMessage(`내용을 충분히 읽어주세요! (${remaining}초 남음)`);
-      setTimeout(() => setMessage(null), 2000);
-      return;
-    }
-
-    // Anti-spam cooldown between items
-    if (now - lastClickTimeRef.current < 1500) {
-      setMessage("천천히 하나씩 확인해 주세요!");
       setTimeout(() => setMessage(null), 2000);
       return;
     }
@@ -107,6 +107,34 @@ export const StudyView = ({
     lastClickTimeRef.current = now;
     onToggleItem(id);
     setMessage(null);
+  };
+
+  const getCurrentData = () => {
+    switch (activeTab) {
+      case 0: return { data: ibLearnerProfile, prefix: 'learner' };
+      case 1: return { data: ibThemes, prefix: 'theme' };
+      case 2: return { data: ibKeyConcepts, prefix: 'concept' };
+      case 3: return { data: ibInquiryCycle, prefix: 'inquiry' };
+      case 4: return { data: ibATL, prefix: 'atl' };
+      default: return { data: [], prefix: '' };
+    }
+  };
+
+  const { data: currentItems, prefix: currentPrefix } = getCurrentData();
+  const currentItem = currentItems[currentCardIndex];
+  const isLastCard = currentCardIndex === currentItems.length - 1;
+  const isFirstCard = currentCardIndex === 0;
+
+  const nextCard = () => {
+    if (currentCardIndex < currentItems.length - 1) {
+      setCurrentCardIndex(prev => prev + 1);
+    }
+  };
+
+  const prevCard = () => {
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex(prev => prev - 1);
+    }
   };
 
   const StudyCheck = ({ id, completed, onToggle }: { id: string, completed: boolean, onToggle: (id: string) => void }) => {
@@ -220,297 +248,297 @@ export const StudyView = ({
           transition={{ duration: 0.3 }}
           className="space-y-8"
         >
-          {activeTab === 0 && (
-            <section className="space-y-8 relative">
-              <motion.img 
-                src={ASSETS.quiz.logo} 
-                className="absolute -left-10 top-40 w-20 h-20 opacity-10 -z-10"
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 5 }}
-                referrerPolicy="no-referrer"
-              />
-              <div className="bg-indigo-600 p-10 rounded-[3rem] text-white shadow-2xl shadow-indigo-100 relative overflow-hidden min-h-[220px] flex items-center">
-                <motion.div 
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="absolute -right-4 -bottom-4 opacity-40 w-64 h-64"
-                >
-                  <img src={ASSETS.quiz.decoration} alt="Learner Profile" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                </motion.div>
-                <div className="relative z-10">
-                  <span className="px-4 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">MISSION 01</span>
-                  <h2 className="text-4xl font-black mb-4">IB 학습자상 (Learner Profile)</h2>
-                  <p className="text-indigo-100 text-lg font-medium max-w-2xl">IB 교육이 추구하는 10가지 인재의 모습입니다. 탐구 과정에서 지속적으로 길러야 할 자질입니다.</p>
+          {activeTab < 5 ? (
+            <div className="space-y-8">
+              {/* Keyword Overview Grid */}
+              <div className="bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-white/20 shadow-inner">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <Search className="w-4 h-4" />
+                    키워드 한눈에 보기
+                  </h3>
+                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                    {currentCardIndex + 1} / {currentItems.length}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {currentItems.map((item: any, idx: number) => {
+                    const isCompleted = completedItems.includes(`${currentPrefix}-${idx}`);
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentCardIndex(idx)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-xs font-black transition-all border-2 flex items-center gap-2",
+                          currentCardIndex === idx
+                            ? "bg-indigo-600 border-transparent text-white shadow-lg scale-105"
+                            : isCompleted
+                              ? "bg-green-50 border-green-100 text-green-600"
+                              : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+                        )}
+                      >
+                        {isCompleted && <CheckCircle2 className="w-3 h-3" />}
+                        {item.title}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {ibLearnerProfile.map((profile, idx) => (
-                  <motion.div 
-                    key={idx}
-                    initial={{ opacity: 0, x: idx % 2 === 0 ? -20 : 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-4 group hover:shadow-2xl transition-all"
-                  >
-                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform p-3">
-                        <img src={profile.image} alt={profile.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-black text-gray-900 mb-1">{profile.title}</h3>
-                        <p className="text-indigo-600 font-bold text-sm">{profile.description}</p>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-2xl">
-                      <p className="text-gray-500 text-sm leading-relaxed italic">"{profile.details[0]}"</p>
-                    </div>
-                    <StudyCheck 
-                      id={`learner-${idx}`} 
-                      completed={completedItems.includes(`learner-${idx}`)} 
-                      onToggle={onToggleItem} 
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {activeTab === 1 && (
-            <section className="space-y-8">
-              <div className="bg-emerald-600 p-10 rounded-[3rem] text-white shadow-2xl shadow-emerald-100 relative overflow-hidden flex items-center min-h-[220px]">
-                <div className="absolute -right-10 -top-10 opacity-20">
-                  <Globe className="w-64 h-64" />
-                </div>
-                <div className="relative z-10">
-                  <span className="px-4 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">MISSION 02</span>
-                  <h2 className="text-4xl font-black mb-4">초학문적 주제 (Transdisciplinary Themes)</h2>
-                  <p className="text-emerald-100 text-lg font-medium max-w-2xl">우리가 살아가는 세상의 중요한 문제들을 6가지 주제로 나누어 탐구합니다.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ibThemes.map((theme, idx) => (
-                  <motion.div 
-                    key={idx}
-                    className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-4 hover:shadow-2xl transition-all"
-                  >
-                    <div className="w-24 h-24 bg-emerald-50 rounded-3xl flex items-center justify-center mb-4 p-2 group-hover:scale-110 transition-transform shadow-inner">
-                      <img src={theme.image} alt={theme.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                    </div>
-                    <h3 className="text-xl font-black text-gray-900">{theme.title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed flex-1">{theme.description}</p>
-                    <StudyCheck 
-                      id={`theme-${idx}`} 
-                      completed={completedItems.includes(`theme-${idx}`)} 
-                      onToggle={onToggleItem} 
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {activeTab === 2 && (
-            <section className="space-y-8">
-              <div className="bg-amber-500 p-10 rounded-[3rem] text-white shadow-2xl shadow-amber-100 relative overflow-hidden flex items-center min-h-[220px]">
-                <div className="absolute -right-10 -bottom-10 opacity-20">
-                  <Compass className="w-64 h-64" />
-                </div>
-                <div className="relative z-10">
-                  <span className="px-4 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">MISSION 03</span>
-                  <h2 className="text-4xl font-black mb-4">핵심 개념 (Key Concepts)</h2>
-                  <p className="text-amber-50 text-lg font-medium max-w-2xl">세상을 바라보는 7가지 렌즈입니다. 이 렌즈를 통해 더 깊이 있게 탐구할 수 있습니다.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {ibKeyConcepts.map((concept, idx) => {
-                  return (
-                    <motion.div 
-                      key={idx}
-                      className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-4 hover:shadow-2xl transition-all"
-                    >
-                      <div className="w-24 h-24 bg-amber-50 rounded-3xl flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-inner">
-                        <img src={concept.image} alt={concept.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                      </div>
-                      <h3 className="text-xl font-black text-gray-900">{concept.title}</h3>
-                      <p className="text-gray-500 text-sm leading-relaxed flex-1">{concept.description}</p>
-                      <StudyCheck 
-                        id={`concept-${idx}`} 
-                        completed={completedItems.includes(`concept-${idx}`)} 
-                        onToggle={onToggleItem} 
-                      />
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {activeTab === 3 && (
-            <section className="space-y-8">
-              <div className="bg-blue-500 p-10 rounded-[3rem] text-white shadow-2xl shadow-blue-100 relative overflow-hidden flex items-center min-h-[220px]">
-                <div className="absolute -right-10 -top-10 opacity-20">
-                  <RefreshCcw className="w-64 h-64" />
-                </div>
-                <div className="relative z-10">
-                  <span className="px-4 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">MISSION 04</span>
-                  <h2 className="text-4xl font-black mb-4">탐구 사이클 (Inquiry Cycle)</h2>
-                  <p className="text-blue-50 text-lg font-medium max-w-2xl">탐구가 이루어지는 순환 과정입니다. 질문에서 시작하여 실천으로 이어집니다.</p>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-blue-100 -translate-x-1/2 hidden lg:block" />
-                <div className="grid grid-cols-1 gap-12 relative z-10">
-                  {ibInquiryCycle.map((step, idx) => (
-                    <motion.div 
-                      key={idx}
-                      className={cn(
-                        "flex flex-col lg:flex-row items-center gap-8",
-                        idx % 2 === 1 ? "lg:flex-row-reverse" : ""
-                      )}
-                    >
-                      <div className="flex-1 w-full">
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 hover:shadow-2xl transition-all">
-                          <div className="flex items-center gap-4 mb-4">
-                            <span className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-xl">
-                              {idx + 1}
-                            </span>
-                            <h3 className="text-2xl font-black text-gray-900">{step.title}</h3>
+              {/* Card News Interface */}
+              <div className="relative group">
+                <AnimatePresence mode="wait">
+                  {(() => {
+                    const TabIcon = tabs[activeTab].icon;
+                    return (
+                      <motion.div
+                        key={`${activeTab}-${currentCardIndex}`}
+                        initial={{ opacity: 0, x: 50, rotateY: 10 }}
+                        animate={{ opacity: 1, x: 0, rotateY: 0 }}
+                        exit={{ opacity: 0, x: -50, rotateY: -10 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="bg-white rounded-[3.5rem] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px] flex flex-col md:flex-row"
+                      >
+                        {/* Left: Image Section */}
+                        <div className={cn(
+                          "w-full md:w-2/5 p-12 flex items-center justify-center relative overflow-hidden",
+                          tabs[activeTab].color
+                        )}>
+                          <div className="absolute inset-0 opacity-10">
+                            <TabIcon className="w-full h-full scale-150 rotate-12" />
                           </div>
-                          <p className="text-gray-500 text-lg leading-relaxed mb-6">{step.description}</p>
-                          <StudyCheck 
-                            id={`inquiry-${idx}`} 
-                            completed={completedItems.includes(`inquiry-${idx}`)} 
-                            onToggle={onToggleItem} 
-                          />
+                          <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="relative z-10 w-48 h-48 bg-white/20 backdrop-blur-md rounded-[3rem] p-6 shadow-2xl border border-white/30"
+                          >
+                            <img 
+                              src={currentItem.image} 
+                              alt={currentItem.title} 
+                              className="w-full h-full object-contain drop-shadow-2xl" 
+                              referrerPolicy="no-referrer" 
+                            />
+                          </motion.div>
                         </div>
-                      </div>
-                      <div className="w-28 h-28 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-2xl relative z-20 shrink-0 border-4 border-white">
-                        <img src={step.image} alt={step.title} className="w-20 h-20 object-contain brightness-0 invert" referrerPolicy="no-referrer" />
-                      </div>
-                      <div className="flex-1 hidden lg:block" />
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
 
-          {activeTab === 4 && (
-            <section className="space-y-8">
-              <div className="bg-purple-600 p-10 rounded-[3rem] text-white shadow-2xl shadow-purple-100 relative overflow-hidden flex items-center min-h-[220px]">
-                <div className="absolute -right-10 -bottom-10 opacity-20">
-                  <GraduationCap className="w-64 h-64" />
-                </div>
-                <div className="relative z-10">
-                  <span className="px-4 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">MISSION 05</span>
-                  <h2 className="text-4xl font-black mb-4">ATL 기술 (Approaches to Learning)</h2>
-                  <p className="text-purple-100 text-lg font-medium max-w-2xl">학습하는 방법을 배우는 5가지 기술입니다. 평생 학습자가 되기 위한 필수 도구입니다.</p>
-                </div>
-              </div>
+                        {/* Right: Content Section */}
+                        <div className="flex-1 p-12 flex flex-col justify-center space-y-6">
+                          <div>
+                            <span className="px-4 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 inline-block">
+                              {tabs[activeTab].label} #{currentCardIndex + 1}
+                            </span>
+                            <h2 className="text-4xl font-black text-gray-900 mb-4 leading-tight">
+                              {currentItem.title}
+                            </h2>
+                            <p className="text-xl font-bold text-indigo-600 mb-6">
+                              {currentItem.description}
+                            </p>
+                          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ibATL.map((atl, idx) => {
-                  return (
-                    <motion.div 
-                      key={idx}
-                      className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col gap-6 hover:shadow-2xl transition-all"
-                    >
-                      <div className="flex items-center gap-6">
-                        <div className="w-28 h-28 bg-purple-50 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner overflow-hidden">
-                          <img 
-                            src={atl.image} 
-                            alt={atl.title} 
-                            className={cn(
-                              "w-full h-full object-contain",
-                              (atl.title.includes("의사소통") || atl.title.includes("자기 관리")) ? "scale-125" : "scale-110"
-                            )} 
-                            referrerPolicy="no-referrer" 
-                          />
-                        </div>
-                        <h3 className="text-2xl font-black text-gray-900">{atl.title}</h3>
-                      </div>
-                      <div className="space-y-4 flex-1">
-                        <p className="text-gray-500 text-sm leading-relaxed">{atl.description}</p>
-                        <div className="space-y-3">
-                          <p className="text-xs font-black text-purple-600 uppercase tracking-widest">나의 실천 점수</p>
-                          <div className="flex gap-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
+                          <div className="bg-gray-50 p-8 rounded-[2rem] border-l-8 border-indigo-500">
+                            <p className="text-gray-600 text-lg leading-relaxed font-medium italic">
+                              {currentItem.details ? currentItem.details[0] : currentItem.description}
+                            </p>
+                          </div>
+
+                          {activeTab === 4 && (
+                            <div className="space-y-3 pt-4">
+                              <p className="text-xs font-black text-purple-600 uppercase tracking-widest">나의 실천 점수</p>
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    onClick={() => onSaveATL(currentItem.title, star)}
+                                    className={cn(
+                                      "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                                      (atlData[currentItem.title] || 0) >= star 
+                                        ? "bg-purple-600 text-white shadow-lg shadow-purple-100" 
+                                        : "bg-gray-100 text-gray-300 hover:bg-gray-200"
+                                    )}
+                                  >
+                                    <Star className={cn("w-5 h-5", (atlData[currentItem.title] || 0) >= star ? "fill-current" : "")} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+                            <StudyCheck 
+                              id={`${currentPrefix}-${currentCardIndex}`} 
+                              completed={completedItems.includes(`${currentPrefix}-${currentCardIndex}`)} 
+                              onToggle={onToggleItem} 
+                            />
+                            
+                            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                               <button
-                                key={star}
-                                onClick={() => onSaveATL(atl.title, star)}
+                                onClick={prevCard}
+                                disabled={isFirstCard}
+                                className="w-14 h-14 p-0 rounded-2xl flex items-center justify-center bg-gray-100 text-gray-600 disabled:opacity-30 hover:bg-gray-200 transition-all active:scale-95"
+                              >
+                                <ArrowLeft className="w-7 h-7" />
+                              </button>
+                              <button
+                                onClick={nextCard}
+                                disabled={isLastCard}
                                 className={cn(
-                                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                                  (atlData[atl.title] || 0) >= star 
-                                    ? "bg-purple-600 text-white shadow-lg shadow-purple-100" 
-                                    : "bg-gray-50 text-gray-300 hover:bg-gray-100"
+                                  "flex-1 sm:flex-none px-10 h-14 rounded-2xl font-black flex items-center justify-center gap-2 text-white transition-all hover:brightness-110 active:scale-95 disabled:opacity-30 shadow-lg",
+                                  tabs[activeTab].color,
+                                  !completedItems.includes(`${currentPrefix}-${currentCardIndex}`) && !isLastCard ? "opacity-50" : "opacity-100"
                                 )}
                               >
-                                <Star className={cn("w-4 h-4", (atlData[atl.title] || 0) >= star ? "fill-current" : "")} />
+                                {isLastCard ? "탐험 완료!" : "다음 탐험"}
+                                {!isLastCard && <ChevronRight className="w-6 h-6" />}
                               </button>
-                            ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <StudyCheck 
-                        id={`atl-${idx}`} 
-                        completed={completedItems.includes(`atl-${idx}`)} 
-                        onToggle={onToggleItem} 
-                      />
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+                      </motion.div>
+                    );
+                  })()}
+                </AnimatePresence>
 
-          {activeTab === 5 && (
-            <section className="space-y-8">
-              <div className="bg-rose-500 p-10 rounded-[3rem] text-white shadow-2xl shadow-rose-100 relative overflow-hidden flex items-center min-h-[220px]">
-                <div className="absolute -right-10 -top-10 opacity-20">
-                  <BookOpen className="w-64 h-64" />
-                </div>
-                <div className="relative z-10">
-                  <span className="px-4 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">MISSION 06</span>
-                  <h2 className="text-4xl font-black mb-4">성찰 일지 (Reflection Journal)</h2>
-                  <p className="text-rose-50 text-lg font-medium max-w-2xl">오늘의 배움을 되돌아보고 생각하는 시간입니다. 성찰을 통해 더 크게 성장할 수 있습니다.</p>
+                {/* Progress Bar */}
+                <div className="mt-8 h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${((currentCardIndex + 1) / currentItems.length) * 100}%` }}
+                    className={cn("h-full transition-all duration-500", tabs[activeTab].color)}
+                  />
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {randomQuestions.map((q, idx) => (
-                  <motion.div 
-                    key={idx}
-                    className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-50 space-y-6"
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Reflection Overview */}
+              <div className="bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-white/20 shadow-inner">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    성찰 단계
+                  </h3>
+                  <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
+                    {currentCardIndex + 1} / {randomQuestions.length + 1}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {randomQuestions.map((_, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentCardIndex(idx)}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-xs font-black transition-all border-2",
+                        currentCardIndex === idx
+                          ? "bg-rose-500 border-transparent text-white shadow-lg scale-105"
+                          : reflectionData[randomQuestions[idx]]
+                            ? "bg-rose-50 border-rose-100 text-rose-600"
+                            : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+                      )}
+                    >
+                      질문 {idx + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentCardIndex(randomQuestions.length)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-xs font-black transition-all border-2",
+                      currentCardIndex === randomQuestions.length
+                        ? "bg-rose-500 border-transparent text-white shadow-lg scale-105"
+                        : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+                    )}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
-                        <Lightbulb className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-xl font-black text-gray-900 leading-tight">{q}</h3>
-                    </div>
-                    <textarea
-                      value={reflectionData[q] || ''}
-                      onChange={(e) => setReflectionData(prev => ({ ...prev, [q]: e.target.value }))}
-                      placeholder="여기에 생각을 적어주세요..."
-                      className="w-full h-40 p-6 rounded-[2rem] bg-gray-50 border-2 border-transparent focus:border-rose-200 focus:bg-white outline-none transition-all resize-none font-medium text-gray-700"
-                    />
-                  </motion.div>
-                ))}
+                    저장하기
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-center pt-4">
-                <Button 
-                  onClick={onSaveReflection}
-                  className="px-12 py-5 text-xl bg-rose-500 hover:bg-rose-600 shadow-2xl shadow-rose-100"
-                  icon={CheckCircle2}
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`reflection-${currentCardIndex}`}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  className="bg-white rounded-[3.5rem] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px] flex flex-col md:flex-row"
                 >
-                  성찰 일지 저장하기 (+50 XP)
-                </Button>
+                  {currentCardIndex < randomQuestions.length ? (
+                    <>
+                      <div className="w-full md:w-2/5 p-12 bg-rose-500 flex flex-col items-center justify-center text-white relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-10">
+                          <Lightbulb className="w-full h-full scale-150 rotate-12" />
+                        </div>
+                        <div className="relative z-10 w-32 h-32 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6">
+                          <MessageSquare className="w-16 h-16" />
+                        </div>
+                        <h3 className="text-2xl font-black text-center relative z-10">오늘의 질문</h3>
+                      </div>
+                      <div className="flex-1 p-12 flex flex-col justify-center space-y-6">
+                        <h2 className="text-3xl font-black text-gray-900 leading-tight">
+                          {randomQuestions[currentCardIndex]}
+                        </h2>
+                        <textarea
+                          value={reflectionData[randomQuestions[currentCardIndex]] || ''}
+                          onChange={(e) => setReflectionData(prev => ({ ...prev, [randomQuestions[currentCardIndex]]: e.target.value }))}
+                          placeholder="여기에 생각을 적어주세요..."
+                          className="w-full h-48 p-8 rounded-[2.5rem] bg-gray-50 border-2 border-transparent focus:border-rose-200 focus:bg-white outline-none transition-all resize-none font-medium text-lg text-gray-700"
+                        />
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => setCurrentCardIndex(prev => prev - 1)}
+                            disabled={currentCardIndex === 0}
+                            className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gray-100 text-gray-600 disabled:opacity-30 hover:bg-gray-200"
+                          >
+                            <ArrowLeft className="w-7 h-7" />
+                          </button>
+                          <button
+                            onClick={() => setCurrentCardIndex(prev => prev + 1)}
+                            className="px-10 h-14 rounded-2xl bg-rose-500 text-white font-black flex items-center gap-2 hover:bg-rose-600 shadow-lg shadow-rose-100"
+                          >
+                            다음 단계
+                            <ChevronRight className="w-6 h-6" />
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full p-12 flex flex-col items-center justify-center text-center space-y-8">
+                      <div className="w-24 h-24 bg-rose-100 rounded-[2rem] flex items-center justify-center text-rose-600 mb-4">
+                        <CheckCircle2 className="w-12 h-12" />
+                      </div>
+                      <div>
+                        <h2 className="text-4xl font-black text-gray-900 mb-4">성찰을 완료했습니다!</h2>
+                        <p className="text-xl text-gray-500 font-medium max-w-md mx-auto">
+                          작성하신 소중한 생각들이 저장될 준비가 되었습니다.
+                        </p>
+                      </div>
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => setCurrentCardIndex(0)}
+                          className="px-8 h-14 rounded-2xl bg-gray-100 text-gray-600 font-black hover:bg-gray-200"
+                        >
+                          다시 읽기
+                        </button>
+                        <Button 
+                          onClick={onSaveReflection}
+                          className="px-12 h-14 text-xl bg-rose-500 hover:bg-rose-600 shadow-2xl shadow-rose-100"
+                          icon={CheckCircle2}
+                        >
+                          성찰 일지 저장하기 (+50 XP)
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Progress Bar */}
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentCardIndex + 1) / (randomQuestions.length + 1)) * 100}%` }}
+                  className="h-full bg-rose-500 transition-all duration-500"
+                />
               </div>
-            </section>
+            </div>
           )}
         </motion.div>
       </AnimatePresence>
