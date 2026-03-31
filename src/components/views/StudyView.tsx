@@ -72,6 +72,20 @@ export const StudyView = ({
     return [...ibReflectionQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
   }, []);
 
+  const isReflectionMeaningful = useMemo(() => {
+    const allText = Object.values(reflectionData).join('').trim();
+    return allText.length >= 10;
+  }, [reflectionData]);
+
+  const handleSaveReflectionClick = () => {
+    if (!isReflectionMeaningful) {
+      setMessage("성찰 일지를 조금 더 자세히 적어주세요! (최소 10자)");
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+    onSaveReflection();
+  };
+
   const tabs = [
     { id: 0, label: "학습자상", icon: UserCircle, color: "bg-indigo-500" },
     { id: 1, label: "탐구 주제", icon: School, color: "bg-emerald-500" },
@@ -518,8 +532,11 @@ export const StudyView = ({
                           다시 읽기
                         </button>
                         <Button 
-                          onClick={onSaveReflection}
-                          className="px-12 h-14 text-xl bg-rose-500 hover:bg-rose-600 shadow-2xl shadow-rose-100"
+                          onClick={handleSaveReflectionClick}
+                          className={cn(
+                            "px-12 h-14 text-xl shadow-2xl shadow-rose-100",
+                            isReflectionMeaningful ? "bg-rose-500 hover:bg-rose-600" : "bg-gray-400 cursor-not-allowed"
+                          )}
                           icon={CheckCircle2}
                         >
                           성찰 일지 저장하기 (+50 XP)
