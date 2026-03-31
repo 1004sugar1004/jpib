@@ -63,8 +63,10 @@ export const StudyView = ({
   soundEnabled
 }: StudyViewProps) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [tabStartTime, setTabStartTime] = useState(Date.now());
+  const [message, setMessage] = useState<string | null>(null);
   const lastClickTimeRef = useRef<number>(0);
-  
+
   const randomQuestions = useMemo(() => {
     return [...ibReflectionQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
   }, []);
@@ -78,32 +80,76 @@ export const StudyView = ({
     { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
   ];
 
+  React.useEffect(() => {
+    setTabStartTime(Date.now());
+    setMessage(null);
+  }, [activeTab]);
+
   const handleToggle = (id: string) => {
     const now = Date.now();
-    if (now - lastClickTimeRef.current < 2000) { // 2 seconds cooldown for study items
-      alert("천천히 내용을 읽고 확인해 주세요! (2초 후에 다시 시도 가능)");
+    
+    // Check if enough time has passed since opening the tab
+    const timeInTab = now - tabStartTime;
+    if (timeInTab < 5000) {
+      const remaining = Math.ceil((5000 - timeInTab) / 1000);
+      setMessage(`내용을 충분히 읽어주세요! (${remaining}초 남음)`);
+      setTimeout(() => setMessage(null), 2000);
       return;
     }
+
+    // Anti-spam cooldown between items
+    if (now - lastClickTimeRef.current < 1500) {
+      setMessage("천천히 하나씩 확인해 주세요!");
+      setTimeout(() => setMessage(null), 2000);
+      return;
+    }
+
     lastClickTimeRef.current = now;
     onToggleItem(id);
+    setMessage(null);
   };
 
-  const StudyCheck = ({ id, completed, onToggle }: { id: string, completed: boolean, onToggle: (id: string) => void }) => (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={() => handleToggle(id)}
-      className={cn(
-        "flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold transition-all border-2 w-fit",
-        completed 
-          ? "bg-green-500 border-transparent text-white shadow-lg shadow-green-100" 
-          : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
-      )}
-    >
-      {completed ? <CheckCircle2 className="w-4 h-4" /> : <div className="w-4 h-4 rounded-full border-2 border-gray-200" />}
-      {completed ? "이해했습니다! (+30 XP)" : "읽고 이해했습니다"}
-    </motion.button>
-  );
+  const StudyCheck = ({ id, completed, onToggle }: { id: string, completed: boolean, onToggle: (id: string) => void }) => {
+    const [currentTime, setCurrentTime] = useState(Date.now());
+    
+    React.useEffect(() => {
+      const interval = setInterval(() => setCurrentTime(Date.now()), 500);
+      return () => clearInterval(interval);
+    }, []);
+
+    const timeInTab = currentTime - tabStartTime;
+    const isLocked = !completed && timeInTab < 5000;
+    const remaining = Math.ceil((5000 - timeInTab) / 1000);
+
+    return (
+      <motion.button
+        whileHover={!isLocked ? { scale: 1.05 } : {}}
+        whileTap={!isLocked ? { scale: 0.95 } : {}}
+        onClick={() => handleToggle(id)}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold transition-all border-2 w-fit",
+          completed 
+            ? "bg-green-500 border-transparent text-white shadow-lg shadow-green-100" 
+            : isLocked
+              ? "bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+              : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+        )}
+      >
+        {completed ? (
+          <CheckCircle2 className="w-4 h-4" />
+        ) : isLocked ? (
+          <Clock className="w-4 h-4 animate-pulse" />
+        ) : (
+          <div className="w-4 h-4 rounded-full border-2 border-gray-200" />
+        )}
+        {completed 
+          ? "이해했습니다! (+30 XP)" 
+          : isLocked 
+            ? `읽는 중... (${remaining}초)` 
+            : "읽고 이해했습니다"}
+      </motion.button>
+    );
+  };
 
   return (
     <div className="max-w-5xl mx-auto p-4 py-8 space-y-8">
@@ -150,6 +196,21 @@ export const StudyView = ({
         ))}
       </div>
       
+      {/* Message Overlay */}
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-2xl font-bold shadow-2xl flex items-center gap-2"
+          >
+            <AlertCircle className="w-5 h-5 text-amber-400" />
+            {message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
