@@ -133,9 +133,10 @@ export const HomeView = ({
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowEditModal(true)}
-                className="p-1 h-8 w-8 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full"
+                className="h-8 px-3 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-full flex items-center gap-1.5 border border-indigo-100"
               >
-                <Settings className="w-4 h-4" />
+                <Settings className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-black uppercase">정보 수정</span>
               </Button>
             </div>
             <p className="text-gray-500 font-medium mb-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => setShowEditModal(true)}>

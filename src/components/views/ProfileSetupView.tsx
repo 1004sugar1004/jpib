@@ -56,14 +56,22 @@ export const ProfileSetupView = ({ onCreateProfile }: ProfileSetupViewProps) => 
                 <label className="block text-sm font-medium text-gray-700 mb-1">학년</label>
                 <div className="relative">
                   <School className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                  <input name="grade" required placeholder="예: 3학년" className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <select name="grade" required className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white appearance-none font-bold">
+                    {[1, 2, 3, 4, 5, 6].map(g => (
+                      <option key={g} value={`${g}학년`}>{g}학년</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">반</label>
                 <div className="relative">
                   <School className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                  <input name="class" required placeholder="예: 1반" className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <select name="class" required className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white appearance-none font-bold">
+                    {Array.from({ length: 15 }, (_, i) => i + 1).map(c => (
+                      <option key={c} value={`${c}반`}>{c}반</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </>

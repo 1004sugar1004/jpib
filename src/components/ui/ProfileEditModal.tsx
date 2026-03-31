@@ -13,9 +13,15 @@ interface ProfileEditModalProps {
 }
 
 export const ProfileEditModal = ({ show, onClose, profile, onUpdate }: ProfileEditModalProps) => {
+  const extractNumber = (val: string | undefined) => {
+    if (!val) return '';
+    const matches = val.toString().match(/\d+/);
+    return matches ? matches[0] : '';
+  };
+
   const [name, setName] = useState(profile?.name || '');
-  const [grade, setGrade] = useState(profile?.grade || '');
-  const [className, setClassName] = useState(profile?.class || '');
+  const [grade, setGrade] = useState(extractNumber(profile?.grade) || '1');
+  const [className, setClassName] = useState(extractNumber(profile?.class) || '1');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,8 +30,8 @@ export const ProfileEditModal = ({ show, onClose, profile, onUpdate }: ProfileEd
     try {
       await onUpdate({
         name,
-        grade,
-        class: className,
+        grade: `${grade}학년`,
+        class: `${className}반`,
       });
       onClose();
     } catch (error) {
