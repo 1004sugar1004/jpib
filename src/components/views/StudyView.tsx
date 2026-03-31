@@ -107,12 +107,20 @@ export const StudyView = ({
   }, [currentCardIndex]);
 
   const handleToggle = (id: string) => {
+    const isCompleted = completedItems.includes(id);
+    
+    // If already completed, allow toggling off immediately
+    if (isCompleted) {
+      onToggleItem(id);
+      return;
+    }
+
     const now = Date.now();
     
-    // Check if enough time has passed since opening the card
+    // Check if enough time has passed since opening the card (reduced to 2s)
     const timeInCard = now - tabStartTime;
-    if (timeInCard < 5000) {
-      const remaining = Math.ceil((5000 - timeInCard) / 1000);
+    if (timeInCard < 2000) {
+      const remaining = Math.ceil((2000 - timeInCard) / 1000);
       setMessage(`내용을 충분히 읽어주세요! (${remaining}초 남음)`);
       setTimeout(() => setMessage(null), 2000);
       return;
@@ -160,8 +168,8 @@ export const StudyView = ({
     }, []);
 
     const timeInTab = currentTime - tabStartTime;
-    const isLocked = !completed && timeInTab < 5000;
-    const remaining = Math.ceil((5000 - timeInTab) / 1000);
+    const isLocked = !completed && timeInTab < 2000;
+    const remaining = Math.ceil((2000 - timeInTab) / 1000);
 
     return (
       <motion.button

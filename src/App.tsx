@@ -314,8 +314,8 @@ export default function App() {
           xpGained: finalXP
         });
 
-        setProfile({ 
-          ...profile, 
+        setProfile(prev => prev ? ({ 
+          ...prev, 
           score: newTotalScore, 
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
@@ -323,7 +323,7 @@ export default function App() {
           dailyXP: currentDailyXP + xpToGain,
           lastXPDate: today,
           dailyQuests: newQuests
-        });
+        }) : null);
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
@@ -390,15 +390,15 @@ export default function App() {
           xpGained: finalXP
         });
 
-        setProfile({ 
-          ...profile, 
+        setProfile(prev => prev ? ({ 
+          ...prev, 
           score: newTotalScore, 
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
           dailyXP: currentDailyXP + xpToGain,
           lastXPDate: today,
           dailyQuests: newQuests
-        });
+        }) : null);
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
@@ -481,8 +481,8 @@ export default function App() {
         monthlyScore: newMonthlyScore
       }, { merge: true });
 
-      setProfile({ 
-        ...profile, 
+      setProfile(prev => prev ? ({ 
+        ...prev, 
         completedStudyItems: newCompleted, 
         score: finalNewScore,
         monthlyScore: newMonthlyScore,
@@ -490,7 +490,7 @@ export default function App() {
         dailyXP: currentDailyXP + xpToGain,
         lastXPDate: today,
         dailyQuests: newQuests
-      });
+      }) : null);
       
       if (!isCompleted && xpToGain > 0) {
         await logActivity({
@@ -554,7 +554,7 @@ export default function App() {
       await updateDoc(doc(db, 'users', user.uid), {
         gameTickets: newTickets
       });
-      setProfile({ ...profile, gameTickets: newTickets });
+      setProfile(prev => prev ? ({ ...prev, gameTickets: newTickets }) : null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
@@ -581,7 +581,7 @@ export default function App() {
         await setDoc(publicRef, publicData, { merge: true });
       }
 
-      setProfile({ ...profile, ...data });
+      setProfile(prev => prev ? ({ ...prev, ...data }) : null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
       throw error;
