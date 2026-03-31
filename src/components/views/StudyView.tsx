@@ -50,6 +50,58 @@ interface StudyViewProps {
   soundEnabled: boolean;
 }
 
+const StudyCheck = ({ 
+  id, 
+  completed, 
+  handleToggle, 
+  tabStartTime 
+}: { 
+  id: string, 
+  completed: boolean, 
+  handleToggle: (id: string) => void,
+  tabStartTime: number
+}) => {
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  
+  React.useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 200);
+    return () => clearInterval(interval);
+  }, []);
+
+  const timeInTab = currentTime - tabStartTime;
+  const isLocked = !completed && timeInTab < 2000;
+  const remaining = Math.ceil((2000 - timeInTab) / 1000);
+
+  return (
+    <motion.button
+      whileHover={!isLocked ? { scale: 1.05 } : {}}
+      whileTap={!isLocked ? { scale: 0.95 } : {}}
+      onClick={() => handleToggle(id)}
+      className={cn(
+        "flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold transition-all border-2 w-fit",
+        completed 
+          ? "bg-green-500 border-transparent text-white shadow-lg shadow-green-100" 
+          : isLocked
+            ? "bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+            : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+      )}
+    >
+      {completed ? (
+        <CheckCircle2 className="w-4 h-4" />
+      ) : isLocked ? (
+        <Clock className="w-4 h-4 animate-pulse" />
+      ) : (
+        <div className="w-4 h-4 rounded-full border-2 border-gray-200" />
+      )}
+      {completed 
+        ? "이해했습니다! (+30 XP)" 
+        : isLocked 
+          ? `읽는 중... (${remaining}초)` 
+          : "읽고 이해했습니다"}
+    </motion.button>
+  );
+};
+
 export const StudyView = ({ 
   setView, 
   atlData, 
@@ -106,7 +158,20 @@ export const StudyView = ({
     setTabStartTime(Date.now());
   }, [currentCardIndex]);
 
-  const handleToggle = (id: string) => {
+  const getCurrentData = () => {
+    switch (activeTab) {
+      case 0: return { data: ibLearnerProfile, prefix: 'learner' };
+      case 1: return { data: ibThemes, prefix: 'theme' };
+      case 2: return { data: ibKeyConcepts, prefix: 'concept' };
+      case 3: return { data: ibInquiryCycle, prefix: 'inquiry' };
+      case 4: return { data: ibATL, prefix: 'atl' };
+      default: return { data: [], prefix: '' };
+    }
+  };
+
+  const { data: currentItems, prefix: currentPrefix } = getCurrentData();
+
+  const handleToggle = React.useCallback((id: string) => {
     const isCompleted = completedItems.includes(id);
     
     // If already completed, allow toggling off immediately
@@ -129,20 +194,21 @@ export const StudyView = ({
     lastClickTimeRef.current = now;
     onToggleItem(id);
     setMessage(null);
-  };
 
-  const getCurrentData = () => {
-    switch (activeTab) {
-      case 0: return { data: ibLearnerProfile, prefix: 'learner' };
-      case 1: return { data: ibThemes, prefix: 'theme' };
-      case 2: return { data: ibKeyConcepts, prefix: 'concept' };
-      case 3: return { data: ibInquiryCycle, prefix: 'inquiry' };
-      case 4: return { data: ibATL, prefix: 'atl' };
-      default: return { data: [], prefix: '' };
+    // Automatically move to the next card after a short delay if completing
+    if (!isCompleted) {
+      setTimeout(() => {
+        setCurrentCardIndex(prev => {
+          if (prev < currentItems.length - 1) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 600);
     }
-  };
+  }, [completedItems, onToggleItem, tabStartTime, currentItems.length]);
 
-  const { data: currentItems, prefix: currentPrefix } = getCurrentData();
+  // getCurrentData was moved up
   const currentItem = currentItems[currentCardIndex];
   const isLastCard = currentCardIndex === currentItems.length - 1;
   const isFirstCard = currentCardIndex === 0;
@@ -159,47 +225,7 @@ export const StudyView = ({
     }
   };
 
-  const StudyCheck = ({ id, completed, onToggle }: { id: string, completed: boolean, onToggle: (id: string) => void }) => {
-    const [currentTime, setCurrentTime] = useState(Date.now());
-    
-    React.useEffect(() => {
-      const interval = setInterval(() => setCurrentTime(Date.now()), 500);
-      return () => clearInterval(interval);
-    }, []);
-
-    const timeInTab = currentTime - tabStartTime;
-    const isLocked = !completed && timeInTab < 2000;
-    const remaining = Math.ceil((2000 - timeInTab) / 1000);
-
-    return (
-      <motion.button
-        whileHover={!isLocked ? { scale: 1.05 } : {}}
-        whileTap={!isLocked ? { scale: 0.95 } : {}}
-        onClick={() => handleToggle(id)}
-        className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold transition-all border-2 w-fit",
-          completed 
-            ? "bg-green-500 border-transparent text-white shadow-lg shadow-green-100" 
-            : isLocked
-              ? "bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-70"
-              : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
-        )}
-      >
-        {completed ? (
-          <CheckCircle2 className="w-4 h-4" />
-        ) : isLocked ? (
-          <Clock className="w-4 h-4 animate-pulse" />
-        ) : (
-          <div className="w-4 h-4 rounded-full border-2 border-gray-200" />
-        )}
-        {completed 
-          ? "이해했습니다! (+30 XP)" 
-          : isLocked 
-            ? `읽는 중... (${remaining}초)` 
-            : "읽고 이해했습니다"}
-      </motion.button>
-    );
-  };
+  // StudyCheck component was moved outside
 
   return (
     <div className="max-w-5xl mx-auto p-4 py-8 space-y-8">
@@ -389,7 +415,8 @@ export const StudyView = ({
                             <StudyCheck 
                               id={`${currentPrefix}-${currentCardIndex}`} 
                               completed={completedItems.includes(`${currentPrefix}-${currentCardIndex}`)} 
-                              onToggle={onToggleItem} 
+                              handleToggle={handleToggle}
+                              tabStartTime={tabStartTime}
                             />
                             
                             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">

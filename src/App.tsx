@@ -43,7 +43,7 @@ import { backgrounds } from './constants';
 const DAILY_XP_LIMIT = 500;
 
 const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
-  { id: 'q1', title: '지식탐험 2회 완료', description: '지식 탐험에서 2개의 항목을 읽고 확인하세요.', type: 'study', target: 2, progress: 0, completed: false, xpReward: 50 },
+  { id: 'q1', title: '지식탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 읽고 확인하세요.', type: 'study', target: 34, progress: 0, completed: false, xpReward: 150 },
   { id: 'q2', title: '플래시카드 10개 학습', description: '플래시카드를 10번 뒤집어 학습하세요.', type: 'flashcards', target: 10, progress: 0, completed: false, xpReward: 30 },
   { id: 'q3', title: '메모리 게임 1회 승리', description: '메모리 게임을 한 판 완료하세요.', type: 'memory', target: 1, progress: 0, completed: false, xpReward: 40 },
 ];
