@@ -8,7 +8,8 @@ export const Button = ({
   className,
   disabled,
   size = 'md',
-  icon: Icon
+  icon: Icon,
+  type = 'button'
 }: { 
   children: React.ReactNode; 
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; 
@@ -17,6 +18,7 @@ export const Button = ({
   disabled?: boolean;
   size?: 'sm' | 'md' | 'lg';
   icon?: any;
+  type?: 'button' | 'submit' | 'reset';
 }) => {
   const variants = {
     primary: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100",
@@ -35,6 +37,7 @@ export const Button = ({
     <button 
       onClick={onClick}
       disabled={disabled}
+      type={type}
       className={cn(
         "flex items-center justify-center gap-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg",
         variants[variant],

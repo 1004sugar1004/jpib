@@ -21,12 +21,14 @@ import {
   Brain,
   CheckCircle2,
   ListTodo,
-  Activity
+  Activity,
+  Settings
 } from 'lucide-react';
 import { ibReflectionQuestions } from '../../content';
 
 import { UserProfile } from '../../types';
 import { getLevel, formatGradeClass } from '../../lib/utils';
+import { ProfileEditModal } from '../ui/ProfileEditModal';
 
 interface HomeViewProps {
   profile: UserProfile | null;
@@ -41,6 +43,7 @@ interface HomeViewProps {
   setBgMusicVolume: (volume: number) => void;
   onLogout: () => void;
   onUpdateQuests?: () => void;
+  onUpdateProfile: (data: Partial<UserProfile>) => Promise<void>;
 }
 
 export const HomeView = ({ 
@@ -55,9 +58,11 @@ export const HomeView = ({
   bgMusicVolume,
   setBgMusicVolume,
   onLogout,
-  onUpdateQuests
+  onUpdateQuests,
+  onUpdateProfile
 }: HomeViewProps) => {
   const [showLevelGuide, setShowLevelGuide] = React.useState(false);
+  const [showEditModal, setShowEditModal] = React.useState(false);
   const level = getLevel(profile?.score || 0);
   const studyProgress = Math.floor((Object.keys(reflectionData).length / ibReflectionQuestions.length) * 100);
 
@@ -106,12 +111,15 @@ export const HomeView = ({
         </div>
         
         <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-          <div className="relative">
-            <div className={cn("w-24 h-24 rounded-3xl flex items-center justify-center shadow-inner overflow-hidden", level.bg)}>
+          <div className="relative group cursor-pointer" onClick={() => setShowEditModal(true)}>
+            <div className={cn("w-24 h-24 rounded-3xl flex items-center justify-center shadow-inner overflow-hidden transition-transform group-hover:scale-105", level.bg)}>
               <img src={level.img} alt={level.name} className="w-20 h-20 object-contain" referrerPolicy="no-referrer" />
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg border-2 border-white">
-              <Star className="w-4 h-4 fill-current" />
+            <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg border-2 border-white group-hover:bg-indigo-500 transition-colors">
+              <Settings className="w-4 h-4" />
+            </div>
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-3xl flex items-center justify-center">
+              <span className="text-[10px] font-black text-white opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">Edit</span>
             </div>
           </div>
           
@@ -121,8 +129,16 @@ export const HomeView = ({
               <span className={cn("px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest", level.bg, level.color)}>
                 {level.name}
               </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowEditModal(true)}
+                className="p-1 h-8 w-8 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
             </div>
-            <p className="text-gray-500 font-medium mb-4">
+            <p className="text-gray-500 font-medium mb-4 cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => setShowEditModal(true)}>
               {formatGradeClass(profile?.grade, profile?.class, profile?.role)} • 증평초등학교
             </p>
             
@@ -795,6 +811,12 @@ export const HomeView = ({
           </Card>
         </motion.div>
       </div>
+      <ProfileEditModal 
+        show={showEditModal} 
+        onClose={() => setShowEditModal(false)} 
+        profile={profile} 
+        onUpdate={onUpdateProfile} 
+      />
     </div>
   </div>
   );

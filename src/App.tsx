@@ -514,6 +514,17 @@ export default function App() {
     }
   }, [profile, user]);
 
+  const handleUpdateProfile = async (data: Partial<UserProfile>) => {
+    if (!user || !profile) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), data);
+      setProfile({ ...profile, ...data });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+      throw error;
+    }
+  };
+
   if (!isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-indigo-50">
@@ -584,6 +595,7 @@ export default function App() {
                 bgMusicVolume={bgMusicVolume}
                 setBgMusicVolume={setBgMusicVolume}
                 onLogout={() => signOut(auth)} 
+                onUpdateProfile={handleUpdateProfile}
               />
             )}
             {view === 'study' && (

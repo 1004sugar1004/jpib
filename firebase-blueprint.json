@@ -1,74 +1,43 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
-      "description": "A student participating in the IB Explorer program.",
+    "users": {
+      "title": "User Profile",
+      "description": "Stores user-specific information like grade and class.",
       "type": "object",
       "properties": {
-        "name": {
+        "uid": {
           "type": "string",
-          "description": "The student's full name."
+          "description": "The unique identifier for the user."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address."
         },
         "grade": {
-          "type": "string",
-          "description": "The student's grade level."
+          "type": "integer",
+          "description": "The user's grade level."
         },
         "class": {
-          "type": "string",
+          "type": "integer",
           "description": "The user's class number."
         },
-        "role": {
-          "type": "string",
-          "enum": ["student", "teacher"],
-          "description": "The user's role in the program."
-        },
-        "score": {
-          "type": "integer",
-          "description": "The student's total quiz score."
-        },
-        "lastQuizDate": {
+        "updatedAt": {
           "type": "string",
           "format": "date-time",
-          "description": "The timestamp of the student's last quiz attempt."
-        },
-        "streak": {
-          "type": "integer",
-          "description": "The student's maximum quiz streak."
+          "description": "The last time the profile was updated."
         }
       },
-      "required": ["name", "grade", "class", "score"]
-    },
-    "Reflection": {
-      "title": "Reflection",
-      "description": "A student's reflection journal entries.",
-      "type": "object",
-      "properties": {},
-      "additionalProperties": {
-        "type": "string"
-      }
-    },
-    "ATL": {
-      "title": "ATL",
-      "description": "A student's ATL self-assessment data.",
-      "type": "object",
-      "properties": {},
-      "additionalProperties": {
-        "type": "integer"
-      }
+      "required": ["uid", "email"]
     }
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": "User",
-      "description": "Collection of student profiles and their scores."
-    },
-    "/reflections/{userId}": {
-      "schema": "Reflection",
-      "description": "Collection of student reflection journals."
-    },
-    "/atl/{userId}": {
-      "schema": "ATL",
-      "description": "Collection of student ATL self-assessments."
+      "schema": "users",
+      "description": "Individual user profiles stored by their UID."
     }
   }
 }
