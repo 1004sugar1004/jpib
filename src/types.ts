@@ -16,6 +16,7 @@ export interface UserProfile {
   photoURL?: string;
   // New fields for anti-abusing and engagement
   dailyXP?: number;
+  dailyScore?: number;
   lastXPDate?: string; // YYYY-MM-DD
   activityCounts?: Record<string, number>; // { quiz: 5, cards: 2, ... }
   dailyQuests?: DailyQuest[];

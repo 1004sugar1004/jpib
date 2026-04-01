@@ -155,6 +155,35 @@ export default function App() {
                 dailyQuests: DEFAULT_DAILY_QUESTS,
                 completedStudyItems: []
               });
+              // Sync reset to public profile with full info to ensure it exists
+              await setDoc(doc(db, 'publicProfiles', firebaseUser.uid), {
+                uid: userData.uid,
+                name: userData.name,
+                grade: userData.grade,
+                class: userData.class,
+                score: userData.score,
+                monthlyScore: userData.monthlyScore || 0,
+                dailyScore: 0,
+                lastXPDate: today,
+                photoURL: userData.photoURL || ""
+              }, { merge: true });
+            } else {
+              // Repair logic: ensure public profile exists even if it's not a new day
+              const publicRef = doc(db, 'publicProfiles', firebaseUser.uid);
+              const publicSnap = await getDoc(publicRef);
+              if (!publicSnap.exists()) {
+                await setDoc(publicRef, {
+                  uid: userData.uid,
+                  name: userData.name,
+                  grade: userData.grade,
+                  class: userData.class,
+                  score: userData.score,
+                  monthlyScore: userData.monthlyScore || 0,
+                  dailyScore: userData.dailyScore || 0,
+                  lastXPDate: userData.lastXPDate || today,
+                  photoURL: userData.photoURL || ""
+                });
+              }
             }
             setProfile(userData);
           }
@@ -175,12 +204,14 @@ export default function App() {
     // Fetch from publicProfiles instead of users to avoid permission errors and PII leaks
     const q = query(collection(db, 'publicProfiles'), limit(3000));
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      const today = getCurrentDate();
       const data = snapshot.docs.map(doc => {
         const userData = doc.data() as any;
         return { 
           ...userData, 
           score: userData.score || 0,
-          monthlyScore: userData.monthlyScore || 0
+          monthlyScore: userData.monthlyScore || 0,
+          dailyScore: userData.lastXPDate === today ? (userData.dailyScore || 0) : 0
         };
       });
       // Sort by score descending in memory
@@ -227,6 +258,8 @@ export default function App() {
         class: newProfile.class,
         score: newProfile.score,
         monthlyScore: newProfile.monthlyScore,
+        dailyScore: 0,
+        lastXPDate: getCurrentDate(),
         photoURL: newProfile.photoURL
       });
       setProfile(newProfile);
@@ -301,10 +334,17 @@ export default function App() {
           dailyQuests: newQuests
         });
 
-        // Sync to public profile
+        // Sync to public profile with full info to satisfy security rules
         await setDoc(publicRef, {
+          uid: profile.uid,
+          name: profile.name,
+          grade: profile.grade,
+          class: profile.class,
           score: newTotalScore,
-          monthlyScore: newMonthlyScore
+          monthlyScore: newMonthlyScore,
+          dailyScore: currentDailyXP + xpToGain,
+          lastXPDate: today,
+          photoURL: profile.photoURL || ""
         }, { merge: true });
         
         await logActivity({
@@ -377,10 +417,17 @@ export default function App() {
           dailyQuests: newQuests
         });
 
-        // Sync to public profile
+        // Sync to public profile with full info to satisfy security rules
         await setDoc(publicRef, {
+          uid: profile.uid,
+          name: profile.name,
+          grade: profile.grade,
+          class: profile.class,
           score: newTotalScore,
-          monthlyScore: newMonthlyScore
+          monthlyScore: newMonthlyScore,
+          dailyScore: currentDailyXP + xpToGain,
+          lastXPDate: today,
+          photoURL: profile.photoURL || ""
         }, { merge: true });
 
         await logActivity({
@@ -475,10 +522,17 @@ export default function App() {
         dailyQuests: newQuests
       });
 
-      // Sync to public profile
+      // Sync to public profile with full info to satisfy security rules
       await setDoc(publicRef, {
+        uid: profile.uid,
+        name: profile.name,
+        grade: profile.grade,
+        class: profile.class,
         score: finalNewScore,
-        monthlyScore: newMonthlyScore
+        monthlyScore: newMonthlyScore,
+        dailyScore: currentDailyXP + xpToGain,
+        lastXPDate: today,
+        photoURL: profile.photoURL || ""
       }, { merge: true });
 
       setProfile(prev => prev ? ({ 

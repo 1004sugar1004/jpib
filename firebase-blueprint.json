@@ -32,6 +32,8 @@
         "class": { "type": "string" },
         "score": { "type": "integer" },
         "monthlyScore": { "type": "integer" },
+        "dailyScore": { "type": "integer" },
+        "lastXPDate": { "type": "string" },
         "photoURL": { "type": "string" }
       },
       "required": ["uid", "name", "grade", "class", "score"]

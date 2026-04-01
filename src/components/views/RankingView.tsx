@@ -12,7 +12,7 @@ interface RankingViewProps {
 }
 
 export const RankingView = ({ setView, rankings }: RankingViewProps) => {
-  const [rankingType, setRankingType] = React.useState<'total' | 'monthly'>('total');
+  const [rankingType, setRankingType] = React.useState<'daily' | 'monthly' | 'total'>('daily');
 
   // Robust extraction: find all numbers in a string
   const extractNumbers = (val: string) => {
@@ -22,13 +22,13 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
   };
 
   const sortedRankings = React.useMemo(() => {
-    const scoreKey = rankingType === 'total' ? 'score' : 'monthlyScore';
+    const scoreKey = rankingType === 'total' ? 'score' : (rankingType === 'monthly' ? 'monthlyScore' : 'dailyScore');
     return [...rankings].sort((a, b) => (b[scoreKey] || 0) - (a[scoreKey] || 0));
   }, [rankings, rankingType]);
 
   const classRankings = React.useMemo(() => {
     const classMap: { [key: string]: { name: string; score: number; count: number } } = {};
-    const scoreKey = rankingType === 'total' ? 'score' : 'monthlyScore';
+    const scoreKey = rankingType === 'total' ? 'score' : (rankingType === 'monthly' ? 'monthlyScore' : 'dailyScore');
     
     rankings.forEach(user => {
       let groupKey = '';
@@ -108,9 +108,25 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
               * 월간 랭킹은 매달 1일에 자동으로 초기화됩니다.
             </p>
           )}
+          {rankingType === 'daily' && (
+            <p className="text-[10px] text-indigo-500 font-bold">
+              * 오늘 랭킹은 매일 자정에 자동으로 초기화됩니다.
+            </p>
+          )}
         </div>
 
         <div className="mt-8 flex justify-center gap-2">
+          <button
+            onClick={() => setRankingType('daily')}
+            className={cn(
+              "px-6 py-2 rounded-full text-sm font-bold transition-all",
+              rankingType === 'daily'
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
+                : "bg-white text-gray-500 hover:bg-gray-50"
+            )}
+          >
+            오늘 랭킹
+          </button>
           <button
             onClick={() => setRankingType('monthly')}
             className={cn(
@@ -138,11 +154,12 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
 
       <div className="space-y-4">
         <h3 className="text-xl font-black text-gray-900 px-4">
-          개인 순위 {rankingType === 'monthly' ? '(월간)' : '(누적)'} TOP 30
+          개인 순위 {rankingType === 'daily' ? '(오늘)' : (rankingType === 'monthly' ? '(월간)' : '(누적)')} TOP 30
         </h3>
         <Card className="divide-y divide-gray-100 bg-white/80 backdrop-blur-md rounded-[2.5rem] border-white/20 shadow-xl overflow-hidden">
           {top30Rankings.map((rank, idx) => {
             const level = getLevel(rank.score);
+            const displayScore = rankingType === 'total' ? (rank.score || 0) : (rankingType === 'monthly' ? (rank.monthlyScore || 0) : (rank.dailyScore || 0));
             return (
               <div key={rank.uid} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-4">
@@ -172,7 +189,7 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
                       {level.name.split(' ')[0]}
                     </div>
                   </div>
-
+ 
                   <div>
                     <div className="font-bold text-gray-900">{rank.name} {rank.role === 'teacher' ? '선생님' : ''}</div>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -186,7 +203,7 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
                   </div>
                 </div>
                 <div className="text-xl font-black text-indigo-600">
-                  {(rankingType === 'monthly' ? (rank.monthlyScore || 0) : rank.score).toLocaleString()}점
+                  {displayScore.toLocaleString()}점
                 </div>
               </div>
             );
@@ -199,7 +216,7 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
 
       <div className="space-y-4">
         <h3 className="text-xl font-black text-gray-900 px-4">
-          학급 순위 {rankingType === 'monthly' ? '(월간)' : '(누적)'}
+          학급 순위 {rankingType === 'daily' ? '(오늘)' : (rankingType === 'monthly' ? '(월간)' : '(누적)')}
         </h3>
         <Card className="divide-y divide-gray-100 bg-white/80 backdrop-blur-md rounded-[2.5rem] border-white/20 shadow-xl overflow-hidden">
           {classRankings.map((cls, idx) => {
