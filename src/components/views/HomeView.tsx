@@ -213,7 +213,7 @@ export const HomeView = ({
             <Button variant="ghost" onClick={onLogout} icon={LogOut} className="text-gray-400 hover:text-red-500">
               로그아웃
             </Button>
-            {profile?.name === '김혜진' && (
+            {profile?.role === 'teacher' && (
               <Button 
                 variant="secondary" 
                 size="sm" 

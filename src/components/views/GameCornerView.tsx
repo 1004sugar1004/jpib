@@ -31,8 +31,9 @@ interface GameCornerViewProps {
 
 export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: GameCornerViewProps) => {
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const isTeacher = profile?.role === 'teacher';
   const [showCardWarning, setShowCardWarning] = useState(
-    (profile?.completedStudyItems?.length || 0) === 0 && (profile?.gameTickets || 0) === 0
+    !isTeacher && (profile?.completedStudyItems?.length || 0) === 0 && (profile?.gameTickets || 0) === 0
   );
   const score = profile?.score || 0;
   const tickets = profile?.gameTickets || 0;
@@ -85,30 +86,33 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
           뒤로 가기
         </Button>
         <h2 className="text-3xl font-black text-gray-900">IB 게임 코너</h2>
-        <p className="text-gray-500 font-bold">퀴즈를 풀고 얻은 티켓으로 게임을 즐겨보세요!</p>
+        <p className="text-gray-500 font-bold">
+          {isTeacher ? '선생님은 모든 게임을 자유롭게 체험하실 수 있습니다.' : '퀴즈를 풀고 얻은 티켓으로 게임을 즐겨보세요!'}
+        </p>
         
         <div className="mt-6 inline-flex items-center gap-3 px-6 py-3 bg-indigo-50 rounded-2xl border border-indigo-100">
           <Trophy className="w-6 h-6 text-indigo-600" />
-          <span className="font-black text-indigo-900">보유 티켓: {tickets}개</span>
+          <span className="font-black text-indigo-900">
+            {isTeacher ? '무제한 체험 모드' : `보유 티켓: ${tickets}개`}
+          </span>
         </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {games.map((game) => {
-          const isTester = profile?.name === '김혜진' && profile?.role === 'teacher';
           const isLocked = false; // All games unlocked as requested
           return (
             <motion.div
               key={game.id}
-              whileHover={!isLocked && (tickets > 0 || isTester) ? { scale: 1.02 } : {}}
-              whileTap={!isLocked && (tickets > 0 || isTester) ? { scale: 0.98 } : {}}
+              whileHover={!isLocked && (tickets > 0 || isTeacher) ? { scale: 1.02 } : {}}
+              whileTap={!isLocked && (tickets > 0 || isTeacher) ? { scale: 0.98 } : {}}
               onClick={() => {
                 if (isLocked) return;
-                if (tickets <= 0 && !isTester) {
+                if (tickets <= 0 && !isTeacher) {
                   alert('게임 티켓이 부족합니다! 퀴즈를 풀어 티켓을 획득하세요.');
                   return;
                 }
-                if (!isTester) onUseTicket();
+                if (!isTeacher) onUseTicket();
                 setSelectedGame(game.id);
               }}
               className={cn(
