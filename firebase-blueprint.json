@@ -17,6 +17,7 @@
         "photoURL": { "type": "string" },
         "dailyXP": { "type": "integer" },
         "lastXPDate": { "type": "string" },
+        "dailyScore": { "type": "integer" },
         "gameTickets": { "type": "integer" }
       },
       "required": ["uid", "name", "grade", "class", "role"]
@@ -32,6 +33,7 @@
         "class": { "type": "string" },
         "score": { "type": "integer" },
         "monthlyScore": { "type": "integer" },
+        "lastActiveMonth": { "type": "string" },
         "dailyScore": { "type": "integer" },
         "lastXPDate": { "type": "string" },
         "photoURL": { "type": "string" }

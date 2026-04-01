@@ -18,6 +18,7 @@ import { GalagaGame } from '../games/GalagaGame';
 import { FruitMergeGame } from '../games/FruitMergeGame';
 import { StoreSortingGame } from '../games/StoreSortingGame';
 import { MarioGame } from '../games/MarioGame';
+import { RhythmTrainingGame } from '../games/RhythmTrainingGame';
 
 import { UserProfile } from '../../types';
 
@@ -30,15 +31,17 @@ interface GameCornerViewProps {
 
 export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: GameCornerViewProps) => {
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [showCardWarning, setShowCardWarning] = useState((profile?.completedStudyItems?.length || 0) === 0);
   const score = profile?.score || 0;
   const tickets = profile?.gameTickets || 0;
 
   const games = [
     { id: 'anipang', name: 'IB 애니팡', icon: Grid3X3, color: 'bg-pink-500', unlockXp: 0, description: '3개를 맞춰보세요!', bgImage: 'https://i.imgur.com/UMcVNRB.png' },
-    { id: 'galaga', name: 'IB 갤러그', icon: Rocket, color: 'bg-blue-600', unlockXp: 1000, description: '우주선을 조종하세요!', bgImage: 'https://i.imgur.com/jHXUiJ7.png' },
-    { id: 'fruit', name: 'IB 지식 머지', icon: Apple, color: 'bg-orange-500', unlockXp: 2000, description: '과일을 합치며 IB 핵심 지식을 쌓아요!', bgImage: 'https://i.imgur.com/DrD9Hmx.png' },
-    { id: 'store', name: 'IB 편의점 정리', icon: ShoppingCart, color: 'bg-emerald-500', unlockXp: 3500, description: '선반을 정리하세요!', bgImage: 'https://i.imgur.com/QKpwzWZ.png' },
-    { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 5000, description: '장애물을 뛰어넘으세요!', bgImage: 'https://i.imgur.com/xBUw4hj.png' },
+    { id: 'galaga', name: 'IB 갤러그', icon: Rocket, color: 'bg-blue-600', unlockXp: 0, description: '우주선을 조종하세요!', bgImage: 'https://i.imgur.com/jHXUiJ7.png' },
+    { id: 'fruit', name: 'IB 지식 머지', icon: Apple, color: 'bg-orange-500', unlockXp: 0, description: '과일을 합치며 IB 핵심 지식을 쌓아요!', bgImage: 'https://i.imgur.com/DrD9Hmx.png' },
+    { id: 'store', name: 'IB 편의점 정리', icon: ShoppingCart, color: 'bg-emerald-500', unlockXp: 0, description: '선반을 정리하세요!', bgImage: 'https://i.imgur.com/QKpwzWZ.png' },
+    { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 0, description: '장애물을 뛰어넘으세요!', bgImage: 'https://i.imgur.com/xBUw4hj.png' },
+    { id: 'rhythm', name: 'IB 리듬 트레이닝', icon: Trophy, color: 'bg-yellow-500', unlockXp: 0, description: '박자에 맞춰 화살표를 눌러보세요!', bgImage: 'https://i.imgur.com/rLktNhW.png' },
   ];
 
   if (selectedGame) {
@@ -57,6 +60,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
             {selectedGame === 'fruit' && <FruitMergeGame soundEnabled={soundEnabled} />}
             {selectedGame === 'store' && <StoreSortingGame soundEnabled={soundEnabled} />}
             {selectedGame === 'mario' && <MarioGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'rhythm' && <RhythmTrainingGame soundEnabled={soundEnabled} />}
           </div>
         </div>
       </div>
@@ -64,10 +68,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
   }
 
   return (
-    <div 
-      className="min-h-screen w-full bg-cover bg-center bg-no-repeat p-4 py-8 space-y-8"
-      style={{ backgroundImage: 'url("https://i.imgur.com/lkIt81k.png")' }}
-    >
+    <div className="min-h-screen w-full p-4 py-8 space-y-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <header className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl border border-white/20 text-center relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -93,7 +94,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {games.map((game) => {
           const isTester = profile?.name === '김혜진' && profile?.role === 'teacher';
-          const isLocked = isTester ? false : score < game.unlockXp;
+          const isLocked = false; // All games unlocked as requested
           return (
             <motion.div
               key={game.id}
@@ -134,23 +135,48 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
                 <h3 className="text-xl font-black text-gray-900 mb-2">{game.name}</h3>
                 <p className="text-gray-500 text-sm mb-4">{game.description}</p>
                 
-                {isLocked ? (
-                  <div className="mt-auto w-full">
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
-                      <div className="h-full bg-gray-400" style={{ width: `${(score / game.unlockXp) * 100}%` }} />
-                    </div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">잠금 해제까지 {game.unlockXp - score} XP 필요</p>
-                  </div>
-                ) : (
-                  <div className="mt-auto flex items-center gap-1 text-indigo-600 font-bold text-sm">
-                    게임 시작하기 <ArrowLeft className="w-4 h-4 rotate-180" />
-                  </div>
-                )}
+                <div className="mt-auto flex items-center gap-1 text-indigo-600 font-bold text-sm">
+                  게임 시작하기 <ArrowLeft className="w-4 h-4 rotate-180" />
+                </div>
               </Card>
             </motion.div>
           );
         })}
       </div>
+
+      {/* Card Warning Popup */}
+      {showCardWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[3rem] p-10 max-w-lg w-full text-center shadow-2xl border-4 border-indigo-400"
+          >
+            <div className="w-24 h-24 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Gamepad2 className="w-12 h-12 text-indigo-600" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 mb-4">잠깐! 탐험가님!</h2>
+            <p className="text-xl font-bold text-gray-600 mb-8 leading-relaxed">
+              카드가 없는 친구들은 <span className="text-indigo-600">퀴즈 챌린지</span>에 도전하고 카드를 얻으세요!
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={() => setView('quiz')} 
+                className="w-full py-5 text-xl bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100"
+              >
+                퀴즈 챌린지 도전하기
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowCardWarning(false)} 
+                className="w-full py-4 text-gray-400 hover:text-gray-600"
+              >
+                그냥 둘러볼래요
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   </div>
   );

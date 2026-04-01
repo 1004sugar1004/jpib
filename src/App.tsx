@@ -51,6 +51,7 @@ const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
@@ -143,6 +144,7 @@ export default function App() {
               userData = {
                 ...userData,
                 dailyXP: 0,
+                dailyScore: 0,
                 lastXPDate: today,
                 activityCounts: {},
                 dailyQuests: DEFAULT_DAILY_QUESTS,
@@ -150,6 +152,7 @@ export default function App() {
               };
               await updateDoc(docRef, {
                 dailyXP: 0,
+                dailyScore: 0,
                 lastXPDate: today,
                 activityCounts: {},
                 dailyQuests: DEFAULT_DAILY_QUESTS,
@@ -163,6 +166,7 @@ export default function App() {
                 class: userData.class,
                 score: userData.score,
                 monthlyScore: userData.monthlyScore || 0,
+                lastActiveMonth: userData.lastActiveMonth || getCurrentMonth(),
                 dailyScore: 0,
                 lastXPDate: today,
                 photoURL: userData.photoURL || ""
@@ -179,6 +183,7 @@ export default function App() {
                   class: userData.class,
                   score: userData.score,
                   monthlyScore: userData.monthlyScore || 0,
+                  lastActiveMonth: userData.lastActiveMonth || getCurrentMonth(),
                   dailyScore: userData.dailyScore || 0,
                   lastXPDate: userData.lastXPDate || today,
                   photoURL: userData.photoURL || ""
@@ -205,12 +210,13 @@ export default function App() {
     const q = query(collection(db, 'publicProfiles'), limit(3000));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const today = getCurrentDate();
+      const currentMonth = getCurrentMonth();
       const data = snapshot.docs.map(doc => {
         const userData = doc.data() as any;
         return { 
           ...userData, 
           score: userData.score || 0,
-          monthlyScore: userData.monthlyScore || 0,
+          monthlyScore: userData.lastActiveMonth === currentMonth ? (userData.monthlyScore || 0) : 0,
           dailyScore: userData.lastXPDate === today ? (userData.dailyScore || 0) : 0
         };
       });
@@ -227,8 +233,37 @@ export default function App() {
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
+      setIsGuest(false);
     } catch (error) {
       console.error("Login failed", error);
+    }
+  };
+
+  const handleGuestLogin = () => {
+    setIsGuest(true);
+    setProfile({
+      uid: 'guest',
+      name: '게스트 탐험가',
+      grade: '게스트',
+      class: '탐험대',
+      role: 'student',
+      score: 0,
+      gameTickets: 0,
+      completedStudyItems: [],
+      dailyXP: 0,
+      dailyScore: 0,
+      lastXPDate: getCurrentDate(),
+    });
+    setView('home');
+  };
+
+  const handleLogout = async () => {
+    if (isGuest) {
+      setIsGuest(false);
+      setProfile(null);
+      setView('home');
+    } else {
+      await signOut(auth);
     }
   };
 
@@ -244,6 +279,9 @@ export default function App() {
       role: formData.get('role') as 'student' | 'teacher',
       score: 0,
       monthlyScore: 0,
+      dailyScore: 0,
+      dailyXP: 0,
+      lastXPDate: getCurrentDate(),
       lastActiveMonth: getCurrentMonth(),
       completedStudyItems: [],
       photoURL: user.photoURL || undefined,
@@ -258,6 +296,7 @@ export default function App() {
         class: newProfile.class,
         score: newProfile.score,
         monthlyScore: newProfile.monthlyScore,
+        lastActiveMonth: newProfile.lastActiveMonth,
         dailyScore: 0,
         lastXPDate: getCurrentDate(),
         photoURL: newProfile.photoURL
@@ -272,13 +311,31 @@ export default function App() {
     if (profile) {
       const accuracy = correctCount / totalCount;
       const today = getCurrentDate();
-      const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
       
       // Check for anti-spam (if duration is too short)
       if (duration < 3) {
         alert("너무 빨리 풀었어요! 잠시 쉬어 가세요.");
         return;
       }
+
+      if (isGuest) {
+        // Guest rewards: Only tickets for perfect score
+        let newTickets = (profile.gameTickets || 0);
+        if (correctCount === totalCount) {
+          newTickets += 3;
+          alert("만점입니다! 게임 티켓 3장을 획득했습니다!");
+        } else {
+          alert("정답률이 100%가 아니라 티켓을 획득하지 못했습니다. 만점에 도전해보세요!");
+        }
+        
+        setProfile(prev => prev ? ({ 
+          ...prev, 
+          gameTickets: newTickets,
+        }) : null);
+        return;
+      }
+
+      const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
 
       // Accuracy check: Only give XP if accuracy >= 80%
       let xpToGain = quizScore;
@@ -303,6 +360,9 @@ export default function App() {
       const newTotalScore = profile.score + finalXP;
       const newLevel = getLevel(newTotalScore).name;
       
+      const currentDailyScore = profile.lastXPDate === today ? (profile.dailyScore || 0) : 0;
+      const newDailyScore = currentDailyScore + finalXP;
+
       // Handle monthly score
       let newMonthlyScore = (profile.monthlyScore || 0);
       if (profile.lastActiveMonth !== currentMonth) {
@@ -330,6 +390,7 @@ export default function App() {
           streak: maxStreak,
           gameTickets: newTickets,
           dailyXP: currentDailyXP + xpToGain,
+          dailyScore: newDailyScore,
           lastXPDate: today,
           dailyQuests: newQuests
         });
@@ -342,7 +403,8 @@ export default function App() {
           class: profile.class,
           score: newTotalScore,
           monthlyScore: newMonthlyScore,
-          dailyScore: currentDailyXP + xpToGain,
+          lastActiveMonth: currentMonth,
+          dailyScore: newDailyScore,
           lastXPDate: today,
           photoURL: profile.photoURL || ""
         }, { merge: true });
@@ -361,6 +423,7 @@ export default function App() {
           lastActiveMonth: currentMonth,
           gameTickets: newTickets,
           dailyXP: currentDailyXP + xpToGain,
+          dailyScore: newDailyScore,
           lastXPDate: today,
           dailyQuests: newQuests
         }) : null);
@@ -368,10 +431,11 @@ export default function App() {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
     }
-  }, [profile]);
+  }, [profile, isGuest]);
 
   const handleEarnXP = React.useCallback(async (xp: number, activityType: DailyQuest['type'] = 'study', accuracy: number = 1, duration: number = 10, questAmount: number = 1) => {
     if (profile) {
+      if (isGuest) return; // Guests don't earn persistent XP
       const today = getCurrentDate();
       const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
 
@@ -391,6 +455,9 @@ export default function App() {
       const oldLevel = getLevel(profile.score).name;
       const newTotalScore = profile.score + finalXP;
       const newLevel = getLevel(newTotalScore).name;
+
+      const currentDailyScore = profile.lastXPDate === today ? (profile.dailyScore || 0) : 0;
+      const newDailyScore = currentDailyScore + finalXP;
 
       // Handle monthly score
       let newMonthlyScore = (profile.monthlyScore || 0);
@@ -413,6 +480,7 @@ export default function App() {
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
           dailyXP: currentDailyXP + xpToGain,
+          dailyScore: newDailyScore,
           lastXPDate: today,
           dailyQuests: newQuests
         });
@@ -425,7 +493,8 @@ export default function App() {
           class: profile.class,
           score: newTotalScore,
           monthlyScore: newMonthlyScore,
-          dailyScore: currentDailyXP + xpToGain,
+          lastActiveMonth: currentMonth,
+          dailyScore: newDailyScore,
           lastXPDate: today,
           photoURL: profile.photoURL || ""
         }, { merge: true });
@@ -443,6 +512,7 @@ export default function App() {
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
           dailyXP: currentDailyXP + xpToGain,
+          dailyScore: newDailyScore,
           lastXPDate: today,
           dailyQuests: newQuests
         }) : null);
@@ -450,10 +520,10 @@ export default function App() {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
       }
     }
-  }, [profile]);
+  }, [profile, isGuest]);
 
   const handleToggleStudyItem = React.useCallback(async (itemId: string) => {
-    if (!profile || !user) return;
+    if (!profile || (!user && !isGuest)) return;
     
     const currentCompleted = profile.completedStudyItems || [];
     const isCompleted = currentCompleted.includes(itemId);
@@ -465,15 +535,18 @@ export default function App() {
     }
     
     let newCompleted;
-    let scoreChange = 0;
-    
     if (isCompleted) {
       newCompleted = currentCompleted.filter(id => id !== itemId);
-      scoreChange = -30;
     } else {
       newCompleted = [...currentCompleted, itemId];
-      scoreChange = 30;
     }
+
+    if (isGuest) {
+      setProfile(prev => prev ? ({ ...prev, completedStudyItems: newCompleted }) : null);
+      return;
+    }
+    
+    let scoreChange = isCompleted ? -30 : 30;
     
     const today = getCurrentDate();
     const currentMonth = getCurrentMonth();
@@ -500,6 +573,9 @@ export default function App() {
     const finalXP = xpToGain + questXP;
     const finalNewScore = Math.max(0, profile.score + finalXP);
     
+    const currentDailyScore = profile.lastXPDate === today ? (profile.dailyScore || 0) : 0;
+    const newDailyScore = currentDailyScore + finalXP;
+
     // Handle monthly score update
     let newMonthlyScore = (profile.monthlyScore || 0);
     if (profile.lastActiveMonth !== currentMonth) {
@@ -518,6 +594,7 @@ export default function App() {
         monthlyScore: newMonthlyScore,
         lastActiveMonth: currentMonth,
         dailyXP: currentDailyXP + xpToGain,
+        dailyScore: newDailyScore,
         lastXPDate: today,
         dailyQuests: newQuests
       });
@@ -530,7 +607,8 @@ export default function App() {
         class: profile.class,
         score: finalNewScore,
         monthlyScore: newMonthlyScore,
-        dailyScore: currentDailyXP + xpToGain,
+        lastActiveMonth: currentMonth,
+        dailyScore: newDailyScore,
         lastXPDate: today,
         photoURL: profile.photoURL || ""
       }, { merge: true });
@@ -542,6 +620,7 @@ export default function App() {
         monthlyScore: newMonthlyScore,
         lastActiveMonth: currentMonth,
         dailyXP: currentDailyXP + xpToGain,
+        dailyScore: newDailyScore,
         lastXPDate: today,
         dailyQuests: newQuests
       }) : null);
@@ -563,7 +642,7 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
-  }, [profile, user, soundEnabled]);
+  }, [profile, user, soundEnabled, isGuest]);
 
   const handleSaveReflection = React.useCallback(async () => {
     if (!user) return;
@@ -602,8 +681,14 @@ export default function App() {
   }, [user, atlData]);
 
   const handleUseTicket = React.useCallback(async () => {
-    if (!profile || !user) return;
+    if (!profile || (!user && !isGuest)) return;
     const newTickets = Math.max(0, (profile.gameTickets || 0) - 1);
+    
+    if (isGuest) {
+      setProfile(prev => prev ? ({ ...prev, gameTickets: newTickets }) : null);
+      return;
+    }
+
     try {
       await updateDoc(doc(db, 'users', user.uid), {
         gameTickets: newTickets
@@ -612,7 +697,7 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
-  }, [profile, user]);
+  }, [profile, user, isGuest]);
 
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {
     if (!user || !profile) return;
@@ -682,9 +767,9 @@ export default function App() {
       
       <AnimatePresence mode="wait">
         <BackgroundMusic playing={bgMusicPlaying} volume={bgMusicVolume} />
-        {!user ? (
+        {!user && !isGuest ? (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <LoginView onLogin={handleLogin} />
+            <LoginView onLogin={handleLogin} onGuestLogin={handleGuestLogin} />
           </motion.div>
         ) : !profile ? (
           <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -711,7 +796,7 @@ export default function App() {
                 setBgMusicPlaying={setBgMusicPlaying}
                 bgMusicVolume={bgMusicVolume}
                 setBgMusicVolume={setBgMusicVolume}
-                onLogout={() => signOut(auth)} 
+                onLogout={handleLogout} 
                 onUpdateProfile={handleUpdateProfile}
               />
             )}

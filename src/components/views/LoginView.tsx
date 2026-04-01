@@ -6,9 +6,10 @@ import { UserCircle, Shield, X } from 'lucide-react';
 
 interface LoginViewProps {
   onLogin: () => void;
+  onGuestLogin: () => void;
 }
 
-export const LoginView = ({ onLogin }: LoginViewProps) => {
+export const LoginView = ({ onLogin, onGuestLogin }: LoginViewProps) => {
   const [showPrivacy, setShowPrivacy] = useState(false);
 
   return (
@@ -28,6 +29,13 @@ export const LoginView = ({ onLogin }: LoginViewProps) => {
         <p className="text-gray-600 mb-8">IB 이론을 배우고 퀴즈를 풀며 탐험을 시작해볼까요?</p>
         <Button onClick={onLogin} className="w-full py-4 text-lg mb-4" icon={UserCircle}>
           구글 계정으로 시작하기
+        </Button>
+        <Button 
+          variant="secondary" 
+          onClick={onGuestLogin} 
+          className="w-full py-4 text-lg mb-4 bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+        >
+          로그인 없이 체험하기
         </Button>
         
         <button 

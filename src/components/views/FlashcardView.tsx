@@ -36,6 +36,8 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasFlipped, setHasFlipped] = useState(false);
+  const [isReadComplete, setIsReadComplete] = useState(false);
+  const [readingTimer, setReadingTimer] = useState(0);
   const [learnedCount, setLearnedCount] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
   const startTimeRef = useRef(Date.now());
@@ -47,23 +49,38 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
   const handleFlip = () => {
     const now = Date.now();
     if (now - lastClickTimeRef.current < 800) {
-      alert("너무 빨리 클릭했어요! 내용을 천천히 읽어보세요.");
       return;
     }
     lastClickTimeRef.current = now;
     const nextFlipped = !isFlipped;
     setIsFlipped(nextFlipped);
-    if (nextFlipped) setHasFlipped(true);
+    
+    if (nextFlipped && !isReadComplete) {
+      setHasFlipped(true);
+      setReadingTimer(3);
+      const interval = setInterval(() => {
+        setReadingTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setIsReadComplete(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   };
 
   const handleNext = () => {
     if (showCompletion) return;
-    if (!hasFlipped) return;
+    if (!isReadComplete) return;
 
     if (currentIndex < currentData.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setIsFlipped(false);
       setHasFlipped(false);
+      setIsReadComplete(false);
+      setReadingTimer(0);
       setLearnedCount(prev => prev + 1);
       if (soundEnabled) {
         const audio = new Audio(ASSETS.sounds.correct);
@@ -86,7 +103,9 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setIsFlipped(false);
-      setHasFlipped(true); // Already seen if going back
+      setHasFlipped(true);
+      setIsReadComplete(true); // Already seen if going back
+      setReadingTimer(0);
     }
   };
 
@@ -256,6 +275,16 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
                 💡 카드를 뒤집어서 내용을 확인해주세요!
               </motion.p>
             )}
+            {hasFlipped && !isReadComplete && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 text-amber-600 font-black text-sm bg-amber-50 px-4 py-2 rounded-full border border-amber-100"
+              >
+                <Zap className="w-4 h-4 animate-bounce" />
+                내용을 꼼꼼히 읽어보세요... ({readingTimer}초)
+              </motion.div>
+            )}
             <div className="flex items-center gap-6 w-full">
               <Button 
                 variant="outline" 
@@ -267,10 +296,10 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
               </Button>
               <Button 
                 onClick={() => handleNext()} 
-                disabled={!hasFlipped}
+                disabled={!isReadComplete}
                 className={cn(
                   "flex-[2] py-4 text-lg transition-all",
-                  !hasFlipped ? "opacity-50 grayscale" : "shadow-lg shadow-indigo-200"
+                  !isReadComplete ? "opacity-50 grayscale cursor-not-allowed" : "shadow-lg shadow-indigo-200"
                 )}
               >
                 {currentIndex === currentData.length - 1 ? '완료하기' : '다음 카드'}
