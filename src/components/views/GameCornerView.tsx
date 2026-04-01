@@ -31,7 +31,9 @@ interface GameCornerViewProps {
 
 export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: GameCornerViewProps) => {
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
-  const [showCardWarning, setShowCardWarning] = useState((profile?.completedStudyItems?.length || 0) === 0);
+  const [showCardWarning, setShowCardWarning] = useState(
+    (profile?.completedStudyItems?.length || 0) === 0 && (profile?.gameTickets || 0) === 0
+  );
   const score = profile?.score || 0;
   const tickets = profile?.gameTickets || 0;
 

@@ -73,7 +73,7 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         padding: 20px 0;
       }
       .gtitle {
-        font-size: 36px;
+        font-size: 48px;
         font-weight: 900;
         background: linear-gradient(135deg,#f0f,#0ff,#ff0);
         -webkit-background-clip: text;
@@ -81,17 +81,18 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         letter-spacing: 6px;
         text-align: center;
         animation: tp 2s ease-in-out infinite;
-        margin-bottom: -4px;
+        margin-bottom: 4px;
       }
       @keyframes tp {
         0%,100% { filter:brightness(1) }
         50% { filter:brightness(1.5) }
       }
       .sub {
-        color: #555;
-        font-size: 10px;
+        color: #888;
+        font-size: 14px;
         letter-spacing: 4px;
         font-family: 'Share Tech Mono', monospace;
+        margin-bottom: 10px;
       }
 
       .song-list {
@@ -132,7 +133,7 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         flex: 1;
       }
       .sname {
-        font-size: 11px;
+        font-size: 16px;
         font-weight: 700;
         color: #aaa;
         letter-spacing: 2px;
@@ -142,8 +143,8 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         color: #fff;
       }
       .smeta {
-        font-size: 9px;
-        color: #333;
+        font-size: 12px;
+        color: #444;
         letter-spacing: 2px;
         font-family: 'Share Tech Mono', monospace;
       }
@@ -155,10 +156,10 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         width: 390px;
       }
       .diff-title {
-        font-size: 8px;
+        font-size: 12px;
         letter-spacing: 4px;
-        color: #444;
-        margin-bottom: 8px;
+        color: #666;
+        margin-bottom: 12px;
         font-family: 'Share Tech Mono', monospace;
       }
       .diff-row {
@@ -180,18 +181,18 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         text-align: center;
       }
       .dbtn .dlabel {
-        font-size: 9px;
+        font-size: 14px;
         font-weight: 700;
         display: block;
         margin-bottom: 3px;
       }
       .dbtn .dstars {
-        font-size: 10px;
+        font-size: 14px;
         display: block;
         letter-spacing: 1px;
       }
       .dbtn .ddesc {
-        font-size: 7px;
+        font-size: 11px;
         display: block;
         margin-top: 3px;
         opacity: .6;
@@ -206,29 +207,29 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
 
       #diff-info {
         width: 390px;
-        padding: 8px 12px;
+        padding: 12px 16px;
         background: rgba(255,255,255,.03);
         border: 1px solid #1a1a1a;
         font-family: 'Share Tech Mono', monospace;
-        font-size: 9px;
+        font-size: 13px;
         letter-spacing: 2px;
-        color: #555;
+        color: #666;
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
       #diff-info .di-left { display: flex; flex-direction: column; gap: 3px; }
-      #diff-info .di-name { font-size: 11px; font-weight: 700; }
+      #diff-info .di-name { font-size: 16px; font-weight: 700; }
       #diff-info .di-bar { height: 3px; background: #111; width: 120px; border-radius: 2px; margin-top: 4px; }
       #diff-info .di-fill { height: 100%; border-radius: 2px; transition: width .3s; }
 
       .sbtn {
-        padding: 11px 34px;
+        padding: 14px 40px;
         background: transparent;
         border: 2px solid #0ff;
         color: #0ff;
         font-family: 'Orbitron', monospace;
-        font-size: 13px;
+        font-size: 18px;
         font-weight: 700;
         letter-spacing: 4px;
         cursor: pointer;
@@ -243,35 +244,35 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       .sbtn.mag { border-color: #f0f; color: #f0f; animation: none; }
       .sbtn.mag:hover { background: rgba(255,0,255,.1); }
 
-      #statusBar { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 2px; height: 14px; color: #555; }
+      #statusBar { font-family: 'Share Tech Mono', monospace; font-size: 14px; letter-spacing: 2px; height: 18px; color: #666; }
       #statusBar.ok { color: #4f4; }
 
       #np {
         width: 100%;
-        padding: 5px 10px;
+        padding: 8px 12px;
         background: linear-gradient(90deg,rgba(255,0,255,.08),rgba(0,255,255,.08));
         border: 1px solid #111;
         border-bottom: none;
         display: none;
         align-items: center;
-        gap: 8px;
-        font-size: 9px;
+        gap: 10px;
+        font-size: 12px;
         letter-spacing: 2px;
-        color: #555;
+        color: #666;
         font-family: 'Share Tech Mono', monospace;
       }
       .npdot {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         background: #f0f;
         box-shadow: 0 0 5px #f0f;
         animation: nb 1s ease-in-out infinite;
       }
       @keyframes nb { 0%,100% { opacity: 1 } 50% { opacity: .2 } }
-      #npt { color: #fff; font-size: 10px; font-weight: 700; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-      #diff-badge { font-size: 8px; letter-spacing: 2px; padding: 2px 6px; border: 1px solid currentColor; }
-      #backInGame { padding: 4px 10px; background: transparent; border: 1px solid #2a2a2a; color: #444; font-family: 'Orbitron', monospace; font-size: 7px; letter-spacing: 2px; cursor: pointer; transition: all .2s; white-space: nowrap; }
+      #npt { color: #fff; font-size: 14px; font-weight: 700; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      #diff-badge { font-size: 11px; letter-spacing: 2px; padding: 3px 8px; border: 1px solid currentColor; }
+      #backInGame { padding: 6px 12px; background: transparent; border: 1px solid #2a2a2a; color: #666; font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 2px; cursor: pointer; transition: all .2s; white-space: nowrap; }
       #backInGame:hover { border-color: #f44; color: #f44; }
 
       #hud { width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding: 8px 8px 4px; background: #000; }
@@ -292,6 +293,13 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
 
       .tgt { position: absolute; bottom: 50px; width: 86px; height: 60px; display: flex; align-items: center; justify-content: center; opacity: .22; font-size: 44px; transition: opacity .06s,transform .06s; filter: drop-shadow(0 0 4px currentColor); }
       .tgt.act { opacity: 1; transform: scale(1.15); }
+      .key-label {
+        position: absolute;
+        bottom: -20px;
+        font-size: 12px;
+        font-weight: bold;
+        opacity: 0.6;
+      }
       .tgt[data-k="L"] { left: 8px; color: #f4f; }
       .tgt[data-k="D"] { left: 118px; color: #4ff; }
       .tgt[data-k="U"] { left: 228px; color: #4f8; }
@@ -317,23 +325,91 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       #judge.miss { color: #f44; text-shadow: 0 0 20px #f44; }
       @keyframes ja { 0% { opacity: 1; transform: scale(1.3) translateY(0) } 70% { opacity: 1; transform: scale(1) translateY(-8px) } 100% { opacity: 0; transform: scale(.9) translateY(-18px) } }
       #judge.show { animation: ja .5s ease forwards; }
+      
+      #ready-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.5);
+        z-index: 20;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      #ready-text {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 60px;
+        font-weight: 900;
+        color: #0ff;
+        text-shadow: 0 0 20px #0ff;
+        transform: scale(0.5);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      #ready-overlay.show { opacity: 1; }
+      #ready-overlay.show #ready-text { transform: scale(1); }
+      #ready-overlay.show ~ .game-key-hint { 
+        opacity: 1 !important; 
+        transform: scale(1.2); 
+        color: #fff;
+        text-shadow: 0 0 10px #0ff;
+      }
+
+      .game-key-hint {
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.3);
+        letter-spacing: 2px;
+        pointer-events: none;
+        z-index: 5;
+        animation: hint-fade 3s ease-in-out infinite;
+        transition: all 0.3s;
+      }
+      @keyframes hint-fade {
+        0%, 100% { opacity: 0.1; }
+        50% { opacity: 0.4; }
+      }
 
       #sr { width: 100%; display: flex; justify-content: space-around; padding: 5px 0; font-size: 9px; letter-spacing: 2px; color: #222; font-family: 'Share Tech Mono', monospace; background: #000; }
       .sp { color: #ff06 } .sg { color: #0ff6 } .so { color: #0f86 } .sm { color: #f446 }
 
-      .got { font-size: 30px; font-weight: 900; color: #f0f; letter-spacing: 6px; text-shadow: 0 0 30px #f0f; }
-      .gosong { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #444; letter-spacing: 2px; }
-      .go-diff-badge { font-size: 9px; letter-spacing: 3px; padding: 3px 10px; border: 1px solid currentColor; font-family: 'Orbitron', monospace; }
-      .gosc { font-size: 42px; font-weight: 900; color: #fff; text-shadow: 0 0 20px #0ff; }
-      .gograde { font-size: 72px; font-weight: 900; animation: gg 1s ease-in-out infinite alternate; }
+      .got { font-size: 40px; font-weight: 900; color: #f0f; letter-spacing: 6px; text-shadow: 0 0 30px #f0f; }
+      .gosong { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #666; letter-spacing: 2px; margin-top: 8px; }
+      .go-diff-badge { font-size: 12px; letter-spacing: 3px; padding: 4px 12px; border: 1px solid currentColor; font-family: 'Orbitron', monospace; margin-top: 8px; }
+      .gosc { font-size: 52px; font-weight: 900; color: #fff; text-shadow: 0 0 20px #0ff; margin: 10px 0; }
+      .gograde { font-size: 84px; font-weight: 900; animation: gg 1s ease-in-out infinite alternate; }
       @keyframes gg { from { text-shadow: 0 0 20px currentColor; filter: brightness(1) } to { text-shadow: 0 0 60px currentColor; filter: brightness(1.5) } }
       .gS { color: #fd0 } .gA { color: #0fc } .gB { color: #48f } .gC { color: #f80 } .gD { color: #f44 }
-      .gost { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #555; text-align: center; line-height: 1.6; letter-spacing: 1px; }
+      .gost { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #777; text-align: center; line-height: 1.6; letter-spacing: 1px; margin-bottom: 15px; }
       .gost span { color: #fff }
 
       .kg { display: flex; gap: 10px; margin-top: 4px; }
-      .ki { display: flex; align-items: center; gap: 4px; font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #333; }
-      .kb { padding: 2px 5px; border: 1px solid #1e1e1e; font-size: 11px; color: #555; }
+      .key-instruction {
+        margin-top: 15px;
+        padding: 12px 24px;
+        background: rgba(0, 255, 255, 0.05);
+        border: 1px dashed rgba(0, 255, 255, 0.3);
+        border-radius: 16px;
+        color: #0ff;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        animation: pulse-glow 2s infinite;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+      }
+      @keyframes pulse-glow {
+        0%, 100% { opacity: 0.8; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.02); }
+      }
+      .ki { display: flex; align-items: center; gap: 6px; font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #555; }
+      .kb { padding: 4px 8px; border: 1px solid #1e1e1e; font-size: 15px; color: #777; }
       #bd { width: 7px; height: 7px; border-radius: 50%; background: #f0f; box-shadow: 0 0 5px #f0f; display: inline-block; margin-left: 4px; vertical-align: middle; opacity: .2; transition: opacity .05s; }
 
       /* Visual Enhancements */
@@ -417,6 +493,9 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         </div>
         <div id="statusBar">곡을 선택하세요</div>
         <button class="sbtn" id="startBtn">▶ START</button>
+        <div class="key-instruction">
+          ⌨️ 키보드 방향키(←↓↑→)를 사용하여 박자에 맞춰 눌러보세요!
+        </div>
         <div class="kg">
           <div class="ki"><span class="kb">←</span><span style="color:#f4f">LEFT</span></div>
           <div class="ki"><span class="kb">↓</span><span style="color:#4ff">DOWN</span></div>
@@ -456,10 +535,12 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         <div class="lf" data-k="U"></div>
         <div class="lf" data-k="R"></div>
         <div class="hz"></div>
-        <div class="tgt" data-k="L">◄</div>
-        <div class="tgt" data-k="D">▼</div>
-        <div class="tgt" data-k="U">▲</div>
-        <div class="tgt" data-k="R">►</div>
+        <div class="tgt" data-k="L">◄<span class="key-label">L</span></div>
+        <div class="tgt" data-k="D">▼<span class="key-label">D</span></div>
+        <div class="tgt" data-k="U">▲<span class="key-label">U</span></div>
+        <div class="tgt" data-k="R">►<span class="key-label">R</span></div>
+        <div id="ready-overlay"><div id="ready-text">READY</div></div>
+        <div class="game-key-hint">⌨️ 방향키(←↓↑→)를 사용하세요</div>
         <div id="judge"></div>
       </div>
       <div id="sr">
@@ -754,6 +835,18 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       wrap.querySelector('#judge')!.className = '';
       wrap.querySelector('#judge')!.textContent = '';
       (wrap.querySelector('#pf') as HTMLElement).style.width = '0%';
+
+      // Ready Overlay
+      const readyOverlay = wrap.querySelector('#ready-overlay')!;
+      const readyText = wrap.querySelector('#ready-text')!;
+      readyOverlay.classList.add('show');
+      readyText.textContent = 'READY';
+      setTimeout(() => {
+        readyText.textContent = 'GO!';
+        setTimeout(() => {
+          readyOverlay.classList.remove('show');
+        }, 800);
+      }, 1200);
 
       const cfg = DIFFS[diff];
       (wrap.querySelector('#pf') as HTMLElement).style.background = `linear-gradient(90deg,${cfg.color},#0ff)`;
