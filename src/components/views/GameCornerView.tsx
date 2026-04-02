@@ -57,7 +57,10 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         </header>
         
         <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
-          <div className="w-full max-w-4xl aspect-[3/4] md:aspect-video bg-gray-900 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden relative border-4 md:border-8 border-gray-800 shadow-2xl">
+          <div className={cn(
+            "w-full max-w-4xl bg-gray-900 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden relative border-4 md:border-8 border-gray-800 shadow-2xl",
+            selectedGame === 'rhythm' ? "aspect-[3/5] md:aspect-[4/3]" : "aspect-[3/4] md:aspect-video"
+          )}>
             {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} />}
             {selectedGame === 'galaga' && <GalagaGame soundEnabled={soundEnabled} />}
             {selectedGame === 'fruit' && <FruitMergeGame soundEnabled={soundEnabled} />}

@@ -69,11 +69,11 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         justify-content: center;
         background: rgba(0,0,0,.97);
         z-index: 50;
-        gap: 8px;
-        padding: 20px 0;
+        gap: 4px;
+        padding: 10px 0;
       }
       .gtitle {
-        font-size: 48px;
+        font-size: 40px;
         font-weight: 900;
         background: linear-gradient(135deg,#f0f,#0ff,#ff0);
         -webkit-background-clip: text;
@@ -81,7 +81,7 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         letter-spacing: 6px;
         text-align: center;
         animation: tp 2s ease-in-out infinite;
-        margin-bottom: 4px;
+        margin-bottom: 0px;
       }
       @keyframes tp {
         0%,100% { filter:brightness(1) }
@@ -89,10 +89,10 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       }
       .sub {
         color: #888;
-        font-size: 14px;
+        font-size: 12px;
         letter-spacing: 4px;
         font-family: 'Share Tech Mono', monospace;
-        margin-bottom: 10px;
+        margin-bottom: 4px;
       }
 
       .song-list {
@@ -291,8 +291,26 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       .ll { position: absolute; top: 0; bottom: 0; width: 1px; background: #0d0d1a; }
       .hz { position: absolute; bottom: 70px; left: 0; right: 0; height: 2px; background: rgba(255,255,255,.08); }
 
-      .tgt { position: absolute; bottom: 50px; width: 86px; height: 60px; display: flex; align-items: center; justify-content: center; opacity: .22; font-size: 44px; transition: opacity .06s,transform .06s; filter: drop-shadow(0 0 4px currentColor); }
-      .tgt.act { opacity: 1; transform: scale(1.15); }
+      .tgt { 
+        position: absolute; 
+        bottom: 50px; 
+        width: 86px; 
+        height: 80px; 
+        display: flex; 
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        opacity: .3; 
+        font-size: 44px; 
+        transition: opacity .06s, transform .06s, background .1s; 
+        filter: drop-shadow(0 0 4px currentColor);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .tgt.act { opacity: 1; transform: scale(1.1); background: rgba(255, 255, 255, 0.15); }
       .key-label {
         position: absolute;
         bottom: -20px;
@@ -394,18 +412,18 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
 
       .kg { display: flex; gap: 10px; margin-top: 4px; }
       .key-instruction {
-        margin-top: 15px;
-        padding: 12px 24px;
+        margin-top: 8px;
+        padding: 6px 12px;
         background: rgba(0, 255, 255, 0.05);
         border: 1px dashed rgba(0, 255, 255, 0.3);
-        border-radius: 16px;
+        border-radius: 12px;
         color: #0ff;
         font-family: 'Share Tech Mono', monospace;
-        font-size: 16px;
+        font-size: 12px;
         font-weight: bold;
         text-align: center;
         animation: pulse-glow 2s infinite;
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
       }
       @keyframes pulse-glow {
         0%, 100% { opacity: 0.8; transform: scale(1); }
@@ -497,13 +515,13 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         <div id="statusBar">곡을 선택하세요</div>
         <button class="sbtn" id="startBtn">▶ START</button>
         <div class="key-instruction">
-          ⌨️ 키보드 방향키(←↓↑→)를 사용하여 박자에 맞춰 눌러보세요!
+          ⌨️ 키보드(방향키 또는 WASD)나 📱 화면을 터치하여 플레이하세요!
         </div>
         <div class="kg">
-          <div class="ki"><span class="kb">←</span><span style="color:#f4f">LEFT</span></div>
-          <div class="ki"><span class="kb">↓</span><span style="color:#4ff">DOWN</span></div>
-          <div class="ki"><span class="kb">↑</span><span style="color:#4f8">UP</span></div>
-          <div class="ki"><span class="kb">→</span><span style="color:#fd4">RIGHT</span></div>
+          <div class="ki"><span class="kb">←/A</span><span style="color:#f4f">LEFT</span></div>
+          <div class="ki"><span class="kb">↓/S</span><span style="color:#4ff">DOWN</span></div>
+          <div class="ki"><span class="kb">↑/W</span><span style="color:#4f8">UP</span></div>
+          <div class="ki"><span class="kb">→/D</span><span style="color:#fd4">RIGHT</span></div>
         </div>
       </div>
       <div class="screen" id="gs" style="display:none">
@@ -544,7 +562,7 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         <div class="tgt" data-k="U">▲<span class="key-label">U</span></div>
         <div class="tgt" data-k="R">►<span class="key-label">R</span></div>
         <div id="ready-overlay"><div id="ready-text">READY</div></div>
-        <div class="game-key-hint">⌨️ 방향키(←↓↑→)를 사용하세요</div>
+        <div class="game-key-hint">⌨️ 방향키/WASD 또는 📱 터치</div>
         <div id="judge"></div>
       </div>
       <div id="sr">
@@ -573,7 +591,13 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
 
     const GLOBAL_OFFSET = -15; // Fine-tune sync (negative means notes come earlier)
 
-    const KMAP: any = {ArrowLeft:'L',ArrowDown:'D',ArrowUp:'U',ArrowRight:'R'};
+    const KMAP: any = {
+      ArrowLeft: 'L', ArrowDown: 'D', ArrowUp: 'U', ArrowRight: 'R',
+      a: 'L', s: 'D', w: 'U', d: 'R',
+      A: 'L', S: 'D', W: 'U', D: 'R',
+      f: 'D', j: 'U', k: 'R',
+      F: 'D', J: 'U', K: 'R'
+    };
     const KSYM: any = {L:'◄',D:'▼',U:'▲',R:'►'};
     const FIELD_H = 500, HIT_Y = 430;
 
@@ -771,10 +795,8 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       wrap.querySelector('#cm')!.textContent = String(cnt.miss);
     }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const k = KMAP[e.key];
+    const handleInput = (k: string) => {
       if (!running || !k) return;
-      e.preventDefault();
       flashLane(k);
       const nowMs = getSongMs();
       const cfg = DIFFS[diff];
@@ -790,7 +812,30 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       else if (bDiff <= cfg.win.good) { best.hit=true; addScore('good', k); if(best.el) best.el.remove(); }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const k = KMAP[e.key];
+      if (k) {
+        e.preventDefault();
+        handleInput(k);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+
+    // Add touch support to target elements
+    wrap.querySelectorAll('.tgt').forEach(el => {
+      el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const k = (el as HTMLElement).dataset.k;
+        if (k) handleInput(k);
+      });
+      // Also add click for mouse users on tablet-like devices
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const k = (el as HTMLElement).dataset.k;
+        if (k) handleInput(k);
+      });
+    });
 
     function loop() {
       const nowMs = getSongMs();
