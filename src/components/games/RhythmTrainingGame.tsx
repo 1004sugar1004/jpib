@@ -386,6 +386,9 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       .gograde { font-size: 84px; font-weight: 900; animation: gg 1s ease-in-out infinite alternate; }
       @keyframes gg { from { text-shadow: 0 0 20px currentColor; filter: brightness(1) } to { text-shadow: 0 0 60px currentColor; filter: brightness(1.5) } }
       .gS { color: #fd0 } .gA { color: #0fc } .gB { color: #48f } .gC { color: #f80 } .gD { color: #f44 }
+      
+      @keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      #go-message.show { animation: msgIn 0.5s ease forwards; }
       .gost { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #777; text-align: center; line-height: 1.6; letter-spacing: 1px; margin-bottom: 15px; }
       .gost span { color: #fff }
 
@@ -508,6 +511,7 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         <div id="gosong" class="gosong"></div>
         <div id="go-diff-badge" class="go-diff-badge" style="color:#4f8">EASY</div>
         <div id="gograde" class="gograde gS">S</div>
+        <div id="go-message" style="font-size: 18px; font-weight: bold; margin-bottom: 10px; text-align: center; font-family: 'Share Tech Mono', monospace;"></div>
         <div id="gosc" class="gosc">000000</div>
         <div id="gost" class="gost"></div>
         <button class="sbtn" id="retryBtn">▶ RETRY</button>
@@ -896,16 +900,20 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
 
       const total = cnt.perfect + cnt.great + cnt.good + cnt.miss;
       const pct = total > 0 ? ((cnt.perfect + cnt.great + cnt.good) / total * 100) : 0;
-      let grade, cls;
-      if (pct >= 95) { grade='S'; cls='gS'; } else if (pct >= 85) { grade='A'; cls='gA'; }
-      else if (pct >= 70) { grade='B'; cls='gB'; } else if (pct >= 50) { grade='C'; cls='gC'; }
-      else { grade='D'; cls='gD'; }
+      let grade, cls, msg;
+      if (pct >= 95) { grade='S'; cls='gS'; msg='PERFECT! 당신은 리듬의 신!'; }
+      else if (pct >= 85) { grade='A'; cls='gA'; msg='GREAT! 대단한 실력이에요!'; }
+      else if (pct >= 70) { grade='B'; cls='gB'; msg='GOOD! 조금만 더 연습해봐요!'; }
+      else if (pct >= 50) { grade='C'; cls='gC'; msg='NICE! 나쁘지 않은 실력이에요!'; }
+      else { grade='D'; cls='gD'; msg='BAD! 다시 한번 도전해볼까요?'; }
 
       const cfg = DIFFS[diff];
       (wrap.querySelector('#go-diff-badge') as HTMLElement).textContent = cfg.label;
       (wrap.querySelector('#go-diff-badge') as HTMLElement).style.color = cfg.color;
       wrap.querySelector('#gograde')!.textContent = grade;
       wrap.querySelector('#gograde')!.className = 'gograde ' + cls;
+      wrap.querySelector('#go-message')!.textContent = msg;
+      wrap.querySelector('#go-message')!.className = cls + ' show';
       wrap.querySelector('#gosc')!.textContent = String(Math.floor(score)).padStart(6,'0');
       wrap.querySelector('#gosong')!.textContent = '♫ ' + SONGS[selIdx].name;
       wrap.querySelector('#gost')!.innerHTML =

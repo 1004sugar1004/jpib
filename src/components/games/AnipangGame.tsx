@@ -24,7 +24,9 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'playing' | 'cleared' | 'gameover' | 'quiz'>('playing');
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasShownMidQuiz, setHasShownMidQuiz] = useState(false);
+  const [hintCells, setHintCells] = useState<[number, number][]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hintTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentStage = STAGE_CONFIGS[stage % STAGE_CONFIGS.length];
   const emojis = currentStage.emojis;
@@ -80,6 +82,41 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       }
     }
     return false;
+  };
+
+  const findPossibleMove = (currentGrid: string[][]): [number, number][] | null => {
+    const rows = currentGrid.length;
+    const cols = currentGrid[0].length;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        // Try horizontal swap
+        if (c < cols - 1) {
+          const tempGrid = currentGrid.map(row => [...row]);
+          const temp = tempGrid[r][c];
+          tempGrid[r][c] = tempGrid[r][c + 1];
+          tempGrid[r][c + 1] = temp;
+          const matches = checkMatches(tempGrid);
+          if (matches.length > 0) {
+            // Return the two cells being swapped
+            return [[r, c], [r, c + 1]];
+          }
+        }
+        // Try vertical swap
+        if (r < rows - 1) {
+          const tempGrid = currentGrid.map(row => [...row]);
+          const temp = tempGrid[r][c];
+          tempGrid[r][c] = tempGrid[r + 1][c];
+          tempGrid[r + 1][c] = temp;
+          const matches = checkMatches(tempGrid);
+          if (matches.length > 0) {
+            // Return the two cells being swapped
+            return [[r, c], [r + 1, c]];
+          }
+        }
+      }
+    }
+    return null;
   };
 
   const reshuffle = async () => {
@@ -255,6 +292,27 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     };
   }, [gameState, timeLeft, hasShownMidQuiz]);
 
+  useEffect(() => {
+    if (gameState === 'playing' && !isProcessing) {
+      setHintCells([]);
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+      
+      hintTimerRef.current = setTimeout(() => {
+        const move = findPossibleMove(grid);
+        if (move) {
+          setHintCells(move);
+        }
+      }, 5000); // Show hint after 5 seconds
+    } else {
+      setHintCells([]);
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    }
+
+    return () => {
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    };
+  }, [grid, gameState, isProcessing]);
+
   const handleCellClick = async (r: number, c: number) => {
     if (gameState !== 'playing' || isProcessing) return;
     if (!selected) {
@@ -363,24 +421,37 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       </div>
 
       <div className={cn("grid grid-cols-6 gap-1 md:gap-2 bg-white p-2 md:p-4 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl border-4 transition-colors duration-500", currentStage.border)}>
-        {grid.map((row, r) => row.map((cell, c) => (
-          <motion.div
-            key={`${r}-${c}`}
-            layout
-            initial={false}
-            animate={cell === '' ? { scale: [1, 1.5, 0], opacity: [1, 1, 0] } : { scale: 1, opacity: 1 }}
-            whileHover={gameState === 'playing' && !isProcessing ? { scale: 1.1 } : {}}
-            whileTap={gameState === 'playing' && !isProcessing ? { scale: 0.9 } : {}}
-            onClick={() => handleCellClick(r, c)}
-            className={cn(
-              "w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex items-center justify-center text-2xl sm:text-3xl md:text-4xl cursor-pointer rounded-xl md:rounded-2xl transition-all",
-              selected?.[0] === r && selected?.[1] === c ? "bg-indigo-100 scale-110 shadow-inner" : "bg-gray-50 hover:bg-gray-100",
-              (cell === '' || gameState !== 'playing') && "pointer-events-none"
-            )}
-          >
-            {cell}
-          </motion.div>
-        )))}
+        <style>{`
+          @keyframes hint-blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); background-color: rgba(99, 102, 241, 0.2); }
+          }
+          .hint-cell {
+            animation: hint-blink 1s infinite ease-in-out;
+          }
+        `}</style>
+        {grid.map((row, r) => row.map((cell, c) => {
+          const isHint = hintCells.some(([hr, hc]) => hr === r && hc === c);
+          return (
+            <motion.div
+              key={`${r}-${c}`}
+              layout
+              initial={false}
+              animate={cell === '' ? { scale: [1, 1.5, 0], opacity: [1, 1, 0] } : { scale: 1, opacity: 1 }}
+              whileHover={gameState === 'playing' && !isProcessing ? { scale: 1.1 } : {}}
+              whileTap={gameState === 'playing' && !isProcessing ? { scale: 0.9 } : {}}
+              onClick={() => handleCellClick(r, c)}
+              className={cn(
+                "w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex items-center justify-center text-2xl sm:text-3xl md:text-4xl cursor-pointer rounded-xl md:rounded-2xl transition-all",
+                selected?.[0] === r && selected?.[1] === c ? "bg-indigo-100 scale-110 shadow-inner" : "bg-gray-50 hover:bg-gray-100",
+                isHint && "hint-cell border-2 border-indigo-400",
+                (cell === '' || gameState !== 'playing') && "pointer-events-none"
+              )}
+            >
+              {cell}
+            </motion.div>
+          );
+        }))}
       </div>
 
       <AnimatePresence>

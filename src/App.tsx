@@ -193,7 +193,8 @@ export default function App() {
             setProfile(userData);
           }
         } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          console.error("Error fetching profile:", error);
+          // Don't throw here to avoid breaking the auth listener flow
         }
       } else {
         setProfile(null);
@@ -263,7 +264,14 @@ export default function App() {
       setProfile(null);
       setView('home');
     } else {
-      await signOut(auth);
+      try {
+        await signOut(auth);
+        setUser(null);
+        setProfile(null);
+        setView('home');
+      } catch (error) {
+        console.error("Logout failed", error);
+      }
     }
   };
 
@@ -767,7 +775,19 @@ export default function App() {
       
       <AnimatePresence mode="wait">
         <BackgroundMusic playing={bgMusicPlaying} volume={bgMusicVolume} />
-        {!user && !isGuest ? (
+        
+        {!isAuthReady ? (
+          <motion.div 
+            key="loading" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white"
+          >
+            <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
+            <p className="text-gray-500 font-bold animate-pulse">탐험대 상태 확인 중...</p>
+          </motion.div>
+        ) : !user && !isGuest ? (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <LoginView onLogin={handleLogin} onGuestLogin={handleGuestLogin} />
           </motion.div>
@@ -837,7 +857,7 @@ export default function App() {
                 rankings={rankings} 
               />
             )}
-            {view === 'dashboard' && profile?.name === '김혜진' && (
+            {view === 'dashboard' && (profile?.role === 'teacher' || user?.email === '1004sugar1004@gmail.com') && (
               <TeacherDashboardView 
                 setView={setView} 
               />
