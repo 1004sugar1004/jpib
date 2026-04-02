@@ -92,7 +92,7 @@ export const ProfileSetupView = ({ onCreateProfile }: ProfileSetupViewProps) => 
               <input name="name" required placeholder="이름을 입력하세요" className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none" />
             </div>
           </div>
-          <Button className="w-full mt-4">탐험 시작하기</Button>
+          <Button type="submit" className="w-full mt-4">탐험 시작하기</Button>
         </form>
       </Card>
     </div>

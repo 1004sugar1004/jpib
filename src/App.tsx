@@ -277,7 +277,14 @@ export default function App() {
 
   const handleCreateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    
+    const submitButton = e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement;
+    if (submitButton) submitButton.disabled = true;
+
     const formData = new FormData(e.currentTarget);
     const newProfile: UserProfile = {
       uid: user.uid,
@@ -294,9 +301,14 @@ export default function App() {
       completedStudyItems: [],
       photoURL: user.photoURL || undefined,
     };
+
+    console.log("Creating profile:", newProfile);
+
     try {
+      // 1. Create user profile
       await setDoc(doc(db, 'users', user.uid), newProfile);
-      // Also create public profile for rankings
+      
+      // 2. Create public profile for rankings
       await setDoc(doc(db, 'publicProfiles', user.uid), {
         uid: newProfile.uid,
         name: newProfile.name,
@@ -309,9 +321,13 @@ export default function App() {
         lastXPDate: getCurrentDate(),
         photoURL: newProfile.photoURL
       });
+
+      console.log("Profile created successfully");
       setProfile(newProfile);
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
+      console.error("Profile creation failed:", error);
+      alert("프로필 생성에 실패했습니다. 잠시 후 다시 시도해주세요. (오류: " + (error instanceof Error ? error.message : "알 수 없는 오류") + ")");
+      if (submitButton) submitButton.disabled = false;
     }
   };
 
