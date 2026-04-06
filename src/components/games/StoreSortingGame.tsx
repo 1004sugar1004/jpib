@@ -66,6 +66,10 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   const [quizWrongCount, setQuizWrongCount] = useState(0);
   const [gameState, setGameState] = useState<'START' | 'PLAYING'>('START');
   const [isPaused, setIsPaused] = useState(false);
+  const [lastActionTime, setLastActionTime] = useState(Date.now());
+  const [hintShelfIdx, setHintShelfIdx] = useState<number | null>(null);
+  const [justClosedShelf, setJustClosedShelf] = useState<number | null>(null);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   const playSound = useCallback((type: 'correct' | 'click' | 'fail') => {
     if (!soundEnabled) return;
@@ -78,6 +82,28 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
     audio.play().catch(() => {});
   }, [soundEnabled]);
 
+  // BGM Control
+  useEffect(() => {
+    if (soundEnabled && gameState === 'PLAYING' && !showQuiz && !gameWon && !gameOver) {
+      if (!bgmRef.current) {
+        bgmRef.current = new Audio(ASSETS.sounds.store_bgm);
+        bgmRef.current.loop = true;
+        bgmRef.current.volume = 0.15;
+      }
+      bgmRef.current.play().catch(() => {});
+    } else {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+      }
+    }
+    return () => {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+        bgmRef.current = null;
+      }
+    };
+  }, [soundEnabled, gameState, showQuiz, gameWon, gameOver]);
+
   // Timer logic
   useEffect(() => {
     if (gameState !== 'PLAYING' || showQuiz || gameWon || gameOver || isPaused) return;
@@ -86,8 +112,8 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
       setTimeLeft(prev => {
         const next = prev - 1;
         
-        // Every 10 seconds, show quiz
-        if (next > 0 && (STAGE_TIME - next) % 10 === 0) {
+        // Every 20 seconds, show quiz (Changed from 10s to 20s)
+        if (next > 0 && (STAGE_TIME - next) % 20 === 0) {
           setShowQuiz(true);
         }
         
@@ -104,6 +130,26 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
     return () => clearInterval(timer);
   }, [gameState, showQuiz, gameWon, gameOver, isPaused, playSound]);
 
+  // Hint logic
+  useEffect(() => {
+    if (gameState !== 'PLAYING' || showQuiz || gameWon || gameOver || isPaused) return;
+
+    const hintTimer = setInterval(() => {
+      if (Date.now() - lastActionTime > 7000) { // 7 seconds of inactivity
+        // Find a shelf that can be completed or has items that can be moved
+        // For simplicity, just pick a random non-closed shelf
+        const openShelves = Array.from({ length: SHELF_COUNT }, (_, i) => i).filter(i => !closedShelves.includes(i));
+        if (openShelves.length > 0) {
+          setHintShelfIdx(openShelves[Math.floor(Math.random() * openShelves.length)]);
+        }
+      } else {
+        setHintShelfIdx(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(hintTimer);
+  }, [gameState, showQuiz, gameWon, gameOver, isPaused, lastActionTime, closedShelves]);
+
   const checkShelf = (shelf: string[]) => {
     return shelf.length === SLOT_PER_SHELF && shelf.every(v => v === shelf[0]);
   };
@@ -111,6 +157,8 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   const handleItemClick = (shelfIdx: number, itemIdx: number) => {
     if (showQuiz || gameWon || gameOver || closedShelves.includes(shelfIdx) || gameState !== 'PLAYING') return;
 
+    setLastActionTime(Date.now());
+    setHintShelfIdx(null);
     playSound('click');
 
     if (!selection) {
@@ -137,6 +185,8 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
       if (newlyClosed.length > 0) {
         setScore(s => s + (newlyClosed.length * 500 * stage));
         setClosedShelves(prev => [...prev, ...newlyClosed]);
+        setJustClosedShelf(newlyClosed[newlyClosed.length - 1]);
+        setTimeout(() => setJustClosedShelf(null), 1000);
         playSound('correct');
       }
 
@@ -308,8 +358,19 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
       {/* Shelf Grid */}
       <div className="flex-1 bg-[#8b4513]/10 rounded-[1.5rem] p-2 md:p-3 border-4 border-[#8b4513]/20 overflow-hidden">
         <div className="grid grid-cols-4 gap-1.5 md:gap-2 h-full">
+          <style>{`
+            @keyframes shelf-hint-blink {
+              0%, 100% { border-color: #d2b48c; box-shadow: none; }
+              50% { border-color: #fbbf24; box-shadow: 0 0 15px #fbbf24; }
+            }
+            .shelf-hint {
+              animation: shelf-hint-blink 1s infinite ease-in-out;
+            }
+          `}</style>
           {shelves.map((shelfItems, sIdx) => {
             const isClosed = closedShelves.includes(sIdx);
+            const isHint = hintShelfIdx === sIdx;
+            const isJustClosed = justClosedShelf === sIdx;
             
             return (
               <div
@@ -318,9 +379,25 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
                   "relative rounded-lg border-b-4 border-x-2 border-t transition-all flex flex-row items-center justify-around p-0.5 shadow-inner",
                   isClosed 
                     ? "bg-gray-200 border-gray-300 opacity-40 grayscale" 
-                    : "bg-[#f5deb3] border-[#d2b48c] shadow-[inset_0_2px_0_rgba(255,255,255,0.5)]"
+                    : "bg-[#f5deb3] border-[#d2b48c] shadow-[inset_0_2px_0_rgba(255,255,255,0.5)]",
+                  isHint && "shelf-hint"
                 )}
               >
+                {/* Fancy Closing Effect */}
+                <AnimatePresence>
+                  {isJustClosed && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0, 1, 0] }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none"
+                    >
+                      <div className="w-full h-full bg-yellow-400/30 rounded-lg border-4 border-yellow-400 blur-sm" />
+                      <span className="absolute text-2xl font-black text-yellow-600 drop-shadow-lg">완료!</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Shelf Items */}
                 {shelfItems.map((item, iIdx) => {
                   const isSelected = selection?.shelfIdx === sIdx && selection?.itemIdx === iIdx;

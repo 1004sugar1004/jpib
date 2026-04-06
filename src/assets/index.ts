@@ -44,5 +44,8 @@ export const ASSETS = {
     joyful: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
     wrong: 'https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3',
     bgm: 'https://assets.mixkit.co/active_storage/sfx/123/123-preview.mp3',
+    galaga_bgm: 'https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3',
+    anipang_bgm: 'https://assets.mixkit.co/music/preview/mixkit-fun-and-games-6.mp3',
+    store_bgm: 'https://assets.mixkit.co/music/preview/mixkit-lazy-sunday-153.mp3',
   }
 };

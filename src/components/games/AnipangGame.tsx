@@ -27,6 +27,7 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [hintCells, setHintCells] = useState<[number, number][]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hintTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   const currentStage = STAGE_CONFIGS[stage % STAGE_CONFIGS.length];
   const emojis = currentStage.emojis;
@@ -267,6 +268,28 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   useEffect(() => {
     initGrid();
   }, [initGrid]);
+
+  // BGM Control
+  useEffect(() => {
+    if (soundEnabled && gameState === 'playing') {
+      if (!bgmRef.current) {
+        bgmRef.current = new Audio(ASSETS.sounds.anipang_bgm);
+        bgmRef.current.loop = true;
+        bgmRef.current.volume = 0.15;
+      }
+      bgmRef.current.play().catch(() => {});
+    } else {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+      }
+    }
+    return () => {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+        bgmRef.current = null;
+      }
+    };
+  }, [soundEnabled, gameState]);
 
   useEffect(() => {
     if (gameState === 'playing' && timeLeft > 0) {

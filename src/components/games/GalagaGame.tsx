@@ -38,6 +38,7 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const gameStateRef = useRef<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
   const stageRef = useRef(1);
   const energyRef = useRef(100);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     console.log('GalagaGame mounted');
@@ -105,6 +106,28 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       } catch (e) {}
     }
   }, [soundEnabled]);
+
+  // BGM Control
+  useEffect(() => {
+    if (soundEnabled && gameState === 'PLAYING') {
+      if (!bgmRef.current) {
+        bgmRef.current = new Audio(ASSETS.sounds.galaga_bgm);
+        bgmRef.current.loop = true;
+        bgmRef.current.volume = 0.15;
+      }
+      bgmRef.current.play().catch(() => {});
+    } else {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+      }
+    }
+    return () => {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+        bgmRef.current = null;
+      }
+    };
+  }, [soundEnabled, gameState]);
 
   // Game Loop
   useEffect(() => {
@@ -213,7 +236,7 @@ export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 hitEnemyIds.add(enemy.id); // Destroy enemy that hit shield
               } else {
                 // Reduce energy instead of instant death
-                energyRef.current = Math.max(0, energyRef.current - 20);
+                energyRef.current = Math.max(0, energyRef.current - 10);
                 setEnergy(energyRef.current);
                 hitEnemyIds.add(enemy.id); // Destroy enemy that hit player
                 
