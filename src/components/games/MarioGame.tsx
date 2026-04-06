@@ -185,7 +185,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           // Option 2: 20 to 180
           // (Adjusted for 3 bricks of w-40 with gap-6)
           
-          if (!g.solved && Math.abs(relativeX) < 400 && marioYRef.current > 80 && marioYRef.current < 160 && velocityYRef.current > 0) {
+          if (!g.solved && Math.abs(relativeX) < 300 && marioYRef.current > 90 && marioYRef.current < 160 && velocityYRef.current > 0) {
             // Determine which option was hit dynamically
             const numOptions = g.options.length;
             const brickWidth = 160; // w-40
@@ -548,7 +548,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           <motion.div 
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="absolute top-20 left-0 right-0 bg-white/95 backdrop-blur-md p-6 rounded-3xl border-4 border-yellow-500 shadow-2xl"
+            className="absolute bottom-[360px] left-0 right-0 bg-white/95 backdrop-blur-md p-6 rounded-3xl border-4 border-yellow-500 shadow-2xl"
           >
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-white px-4 py-1.5 rounded-full text-xs font-black shadow-lg">QUIZ</div>
             <p className="text-lg font-black text-gray-800 text-center leading-tight">
@@ -557,7 +557,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           </motion.div>
 
           {/* Bricks */}
-          <div className="absolute top-52 left-0 right-0 flex justify-center gap-6">
+          <div className="absolute bottom-[260px] left-0 right-0 flex justify-center gap-6">
             {g.options.map((opt, i) => {
               const isHit = g.solved && g.hitIdx === i;
               const isCorrect = i === g.correctIdx;
