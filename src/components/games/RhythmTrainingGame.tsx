@@ -73,12 +73,12 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
         padding: 10px 0;
       }
       .gtitle {
-        font-size: 40px;
+        font-size: 32px;
         font-weight: 900;
         background: linear-gradient(135deg,#f0f,#0ff,#ff0);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        letter-spacing: 6px;
+        letter-spacing: 4px;
         text-align: center;
         animation: tp 2s ease-in-out infinite;
         margin-bottom: 0px;
@@ -586,7 +586,7 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
     const SONGS = [
       { name:'우리들의 Super Power', bpm:93.8, offset:550, url:'https://ik.imagekit.io/foefnjeua/%EC%9A%B0%EB%A6%AC%EB%93%A4%EC%9D%98%20Super%20Power.mp3?updatedAt=1773797977356' },
       { name:'개념송 (Remastered)', bpm:111.9, offset:450, url:'https://ik.imagekit.io/foefnjeua/%EA%B0%9C%EB%85%90%EC%86%A1%20(Remastered).mp3?updatedAt=1774403985367' },
-      { name:'ATL 다섯 가지 힘', bpm:90, offset:350, url:'https://ik.imagekit.io/foefnjeua/ATL%20%EB%8B%A4%EC%84%AF%20%EA%B0%80%EC%A7%80%20%ED%9E%98.mp3?updatedAt=1774403985153' },
+      { name:'ATL 기능', bpm:90, offset:350, url:'https://ik.imagekit.io/foefnjeua/ATL%20%EB%8B%A4%EC%84%AF%20%EA%B0%80%EC%A7%80%20%ED%9E%98.mp3?updatedAt=1774403985153' },
     ];
 
     const GLOBAL_OFFSET = -15; // Fine-tune sync (negative means notes come earlier)

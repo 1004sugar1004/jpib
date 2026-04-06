@@ -755,10 +755,10 @@ export const quizQuestions: QuizQuestion[] = [
   },
   {
     id: 30,
-    question: "IB 탐험가가 되기 위해 필요한 5가지 기술(사고, 소통, 사회, 조사, 자기관리)을 무엇이라 부를까요?",
-    options: ["핵심 개념", "ATL 기술", "학습자상", "탐구 사이클"],
+    question: "IB 탐험가가 되기 위해 필요한 5가지 기능(사고, 소통, 사회, 조사, 자기관리)을 무엇이라 부를까요?",
+    options: ["핵심 개념", "ATL 기능", "학습자상", "탐구 사이클"],
     correctAnswer: 1,
-    explanation: "ATL(Approaches to Learning) 기술은 우리가 스스로 학습하는 방법을 익히기 위해 필요한 도구들이에요.",
+    explanation: "ATL(Approaches to Learning) 기능은 우리가 스스로 학습하는 방법을 익히기 위해 필요한 도구들이에요.",
     emoji: "🧰"
   }
 ];

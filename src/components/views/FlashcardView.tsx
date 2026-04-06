@@ -29,7 +29,7 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
     { id: 'learner', name: '학습자상', data: ibLearnerProfile, icon: UserCircle, color: 'bg-indigo-500' },
     { id: 'themes', name: '초학문적 주제', data: ibThemes, icon: Globe, color: 'bg-emerald-500' },
     { id: 'concepts', name: '핵심 개념', data: ibKeyConcepts, icon: Compass, color: 'bg-amber-500' },
-    { id: 'atl', name: 'ATL 기술', data: ibATL, icon: Zap, color: 'bg-rose-500' },
+    { id: 'atl', name: 'ATL 기능', data: ibATL, icon: Zap, color: 'bg-rose-500' },
   ];
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

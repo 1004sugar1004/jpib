@@ -143,7 +143,7 @@ export const StudyView = ({
     { id: 1, label: "탐구 주제", icon: School, color: "bg-emerald-500" },
     { id: 2, label: "핵심 개념", icon: AlertCircle, color: "bg-amber-500" },
     { id: 3, label: "탐구 사이클", icon: RefreshCcw, color: "bg-blue-500" },
-    { id: 4, label: "ATL 기술", icon: GraduationCap, color: "bg-purple-500" },
+    { id: 4, label: "ATL 기능", icon: GraduationCap, color: "bg-purple-500" },
     { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
   ];
 

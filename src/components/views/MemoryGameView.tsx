@@ -38,7 +38,7 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
     { id: 'learner', name: '학습자상', data: ibLearnerProfile },
     { id: 'themes', name: '탐구 주제', data: ibThemes },
     { id: 'concepts', name: '핵심 개념', data: ibKeyConcepts },
-    { id: 'atl', name: 'ATL 기술', data: ibATL },
+    { id: 'atl', name: 'ATL 기능', data: ibATL },
   ];
 
   const initializeGame = useCallback(() => {
