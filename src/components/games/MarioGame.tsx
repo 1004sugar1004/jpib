@@ -20,7 +20,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gates, setGates] = useState<{ id: number, worldX: number, question: QuizQuestion, options: string[], correctIdx: number, solved: boolean }[]>([]);
   const [gameSpeed, setGameSpeed] = useState(3);
   const [floatingTexts, setFloatingTexts] = useState<{ id: number, x: number, y: number, text: string, color: string }[]>([]);
-  const [coins, setCoins] = useState<{ id: number, x: number, y: number, vy: number }[]>([]);
+  const [coins, setCoins] = useState<{ id: number, worldX: number, y: number, vy: number }[]>([]);
 
   const addFloatingText = (x: number, y: number, text: string, color: string = 'text-yellow-400') => {
     const id = Date.now() + Math.random();
@@ -44,7 +44,7 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const quizCountRef = useRef(0);
   const showQuizRef = useRef(false);
   const gameStateRef = useRef<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
-  const coinsRef = useRef<{ id: number, x: number, y: number, vy: number }[]>([]);
+  const coinsRef = useRef<{ id: number, worldX: number, y: number, vy: number }[]>([]);
   const keysPressed = useRef<Set<string>>(new Set());
   const gameSpeedRef = useRef(3);
 
@@ -185,62 +185,71 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           // Option 2: 20 to 180
           // (Adjusted for 3 bricks of w-40 with gap-6)
           
-          if (!g.solved && Math.abs(relativeX) < 250 && marioYRef.current > 80 && marioYRef.current < 160 && velocityYRef.current > 0) {
-            // Determine which option was hit
-            let hitIdx = -1;
-            if (relativeX < -80) hitIdx = 0;
-            else if (relativeX > 80) hitIdx = 2;
-            else hitIdx = 1;
+          if (!g.solved && Math.abs(relativeX) < 400 && marioYRef.current > 80 && marioYRef.current < 160 && velocityYRef.current > 0) {
+            // Determine which option was hit dynamically
+            const numOptions = g.options.length;
+            const brickWidth = 160; // w-40
+            const gap = 24; // gap-6
+            const totalWidth = numOptions * brickWidth + (numOptions - 1) * gap;
+            const startX = -totalWidth / 2;
+            
+            const hitIdx = Math.floor((relativeX - startX) / (brickWidth + gap));
 
-            if (hitIdx !== -1) {
-              g.solved = true;
-              g.hitIdx = hitIdx;
-              velocityYRef.current = -5; // Bounce back
-              
-              const isCorrect = hitIdx === g.correctIdx;
-              
-              if (isCorrect) {
-                scoreRef.current += 500;
-                setScore(scoreRef.current);
-                playSound('coin');
-                playSound('correct');
-                addFloatingText(150, 100 + marioYRef.current, 'CORRECT! +500', 'text-green-400');
+            if (hitIdx >= 0 && hitIdx < numOptions) {
+              // Check if actually hit the brick (not the gap)
+              const brickRelativeX = (relativeX - startX) % (brickWidth + gap);
+              if (brickRelativeX <= brickWidth) {
+                g.solved = true;
+                g.hitIdx = hitIdx;
+                velocityYRef.current = -5; // Bounce back
                 
-                // Add coin effect
-                const coinX = (150 - relativeX) + (hitIdx - 1) * 184;
-                const newCoin = {
-                  id: Date.now() + Math.random(),
-                  x: coinX,
-                  y: 100 + marioYRef.current + 40,
-                  vy: 10
-                };
-                coinsRef.current.push(newCoin);
-                setCoins([...coinsRef.current]);
+                const isCorrect = hitIdx === g.correctIdx;
+                
+                if (isCorrect) {
+                  scoreRef.current += 500;
+                  setScore(scoreRef.current);
+                  playSound('coin');
+                  playSound('correct');
+                  addFloatingText(150, 100 + marioYRef.current, 'CORRECT! +500', 'text-green-400');
+                  
+                  // Add coin effect - spawn exactly above the hit brick
+                  const brickCenterRelX = startX + brickWidth / 2 + hitIdx * (brickWidth + gap);
+                  const coinWorldX = g.worldX + brickCenterRelX;
+                  
+                  const newCoin = {
+                    id: Date.now() + Math.random(),
+                    worldX: coinWorldX,
+                    y: 100 + 160 + 20,
+                    vy: 12
+                  };
+                  coinsRef.current.push(newCoin);
+                  setCoins([...coinsRef.current]);
 
-                // Jump again for joy
-                velocityYRef.current = 15;
-                
-                quizCountRef.current += 1;
-                setQuizCount(quizCountRef.current);
-                
-                // Every 5 correct answers, show a mini quiz challenge
-                if (quizCountRef.current % 5 === 0) {
-                  showQuizRef.current = true;
-                  setShowQuiz(true);
-                }
-              } else {
-                playSound('wrong');
-                addFloatingText(150, 100 + marioYRef.current, 'WRONG!', 'text-red-400');
-                
-                setLife(prev => {
-                  const next = Math.max(0, prev - 1);
-                  lifeRef.current = next;
-                  if (next === 0) {
-                    setGameState('GAMEOVER');
-                    gameStateRef.current = 'GAMEOVER';
+                  // Jump again for joy
+                  velocityYRef.current = 15;
+                  
+                  quizCountRef.current += 1;
+                  setQuizCount(quizCountRef.current);
+                  
+                  // Every 5 correct answers, show a mini quiz challenge
+                  if (quizCountRef.current % 5 === 0) {
+                    showQuizRef.current = true;
+                    setShowQuiz(true);
                   }
-                  return next;
-                });
+                } else {
+                  playSound('wrong');
+                  addFloatingText(150, 100 + marioYRef.current, 'WRONG!', 'text-red-400');
+                  
+                  setLife(prev => {
+                    const next = Math.max(0, prev - 1);
+                    lifeRef.current = next;
+                    if (next === 0) {
+                      setGameState('GAMEOVER');
+                      gameStateRef.current = 'GAMEOVER';
+                    }
+                    return next;
+                  });
+                }
               }
             }
           }
@@ -410,9 +419,9 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             // Add coin effect for quiz success too
             const newCoin = {
               id: Date.now() + Math.random(),
-              x: 150,
-              y: 100 + marioYRef.current + 40,
-              vy: 12
+              worldX: worldXRef.current + 150,
+              y: 100 + marioYRef.current + 60,
+              vy: 14
             };
             coinsRef.current.push(newCoin);
             setCoins([...coinsRef.current]);
@@ -584,12 +593,22 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       {coins.map(c => (
         <motion.div
           key={c.id}
-          className="absolute w-8 h-8 bg-yellow-400 rounded-full border-2 border-yellow-600 flex items-center justify-center z-30 shadow-lg"
-          style={{ left: c.x, bottom: c.y }}
-          animate={{ rotateY: [0, 180, 360] }}
-          transition={{ duration: 0.5, repeat: Infinity }}
+          className="absolute w-10 h-10 bg-yellow-400 rounded-full border-2 border-yellow-600 flex items-center justify-center z-30 shadow-[0_0_15px_rgba(250,204,21,0.6)]"
+          style={{ 
+            left: `${c.worldX - worldX}px`, 
+            bottom: `${c.y}px`,
+            transform: 'translateX(-50%)' 
+          }}
+          animate={{ 
+            rotateY: [0, 180, 360],
+            scale: [1, 1.2, 1]
+          }}
+          transition={{ 
+            rotateY: { duration: 0.4, repeat: Infinity, ease: "linear" },
+            scale: { duration: 0.2, repeat: Infinity }
+          }}
         >
-          <div className="w-1 h-4 bg-yellow-600 rounded-full" />
+          <div className="w-1.5 h-6 bg-yellow-600 rounded-full" />
         </motion.div>
       ))}
 
