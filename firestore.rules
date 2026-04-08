@@ -88,6 +88,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /feedback/{feedbackId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
     match /reflections/{userId} {
       allow read, write: if isOwner(userId);
     }

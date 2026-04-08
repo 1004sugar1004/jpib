@@ -47,3 +47,13 @@ export interface ActivityLog {
   xpGained: number;
   isSuspicious?: boolean;
 }
+
+export interface Feedback {
+  id?: string;
+  uid: string;
+  userName: string;
+  grade: string;
+  class: string;
+  content: string;
+  timestamp: number;
+}

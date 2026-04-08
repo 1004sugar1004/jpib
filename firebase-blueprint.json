@@ -57,6 +57,20 @@
         "isSuspicious": { "type": "boolean" }
       },
       "required": ["uid", "activityType", "timestamp"]
+    },
+    "feedback": {
+      "title": "User Feedback",
+      "description": "Feedback from users about the site and games.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "userName": { "type": "string" },
+        "grade": { "type": "string" },
+        "class": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "integer" }
+      },
+      "required": ["uid", "content", "timestamp"]
     }
   },
   "firestore": {
@@ -71,6 +85,10 @@
     "/activityLogs/{logId}": {
       "schema": "activityLogs",
       "description": "Logs of user activities."
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "feedback",
+      "description": "User feedback submissions."
     },
     "/reflections/{userId}": {
       "schema": "object",

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { collection, query, orderBy, limit, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { ActivityLog } from '../../types';
+import { ActivityLog, Feedback } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface TeacherDashboardViewProps {
@@ -25,28 +25,48 @@ interface TeacherDashboardViewProps {
 
 export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'logs' | 'feedback'>('logs');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
 
   useEffect(() => {
-    const q = query(
+    const logsQuery = query(
       collection(db, 'activityLogs'),
       orderBy('timestamp', 'desc'),
       limit(100)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const feedbackQuery = query(
+      collection(db, 'feedback'),
+      orderBy('timestamp', 'desc'),
+      limit(100)
+    );
+
+    const unsubLogs = onSnapshot(logsQuery, (snapshot) => {
       const newLogs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as ActivityLog[];
       setLogs(newLogs);
-      setLoading(false);
+      if (activeTab === 'logs') setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    const unsubFeedback = onSnapshot(feedbackQuery, (snapshot) => {
+      const newFeedbacks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Feedback[];
+      setFeedbacks(newFeedbacks);
+      if (activeTab === 'feedback') setLoading(false);
+    });
+
+    return () => {
+      unsubLogs();
+      unsubFeedback();
+    };
+  }, [activeTab]);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,6 +74,11 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
     const matchesFilter = filterType === 'all' || log.activityType === filterType;
     return matchesSearch && matchesFilter;
   });
+
+  const filteredFeedbacks = feedbacks.filter(fb => 
+    fb.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    fb.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return '';
@@ -95,6 +120,27 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex bg-gray-100 p-1 rounded-full mr-4">
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-black transition-all",
+                activeTab === 'logs' ? "bg-white text-rose-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              활동 로그
+            </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-black transition-all",
+                activeTab === 'feedback' ? "bg-white text-rose-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              의견함 ({feedbacks.length})
+            </button>
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
@@ -133,6 +179,10 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                 <span className="text-xs font-bold text-rose-700">의심 활동</span>
                 <span className="text-lg font-black text-amber-600">{logs.filter(isSuspicious).length}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-rose-700">새로운 의견</span>
+                <span className="text-lg font-black text-indigo-600">{feedbacks.length}</span>
+              </div>
             </div>
           </Card>
 
@@ -154,105 +204,144 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
         {/* Activity Table */}
         <div className="lg:col-span-3">
           <Card className="overflow-hidden border-gray-100 shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">시간</th>
-                    <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">학생</th>
-                    <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">활동</th>
-                    <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">정답률</th>
-                    <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">소요시간</th>
-                    <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">상태</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={6} className="p-12 text-center text-gray-400 font-bold">데이터를 불러오는 중...</td>
+            {activeTab === 'logs' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">시간</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">학생</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">활동</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">정답률</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">소요시간</th>
+                      <th className="p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">상태</th>
                     </tr>
-                  ) : filteredLogs.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-12 text-center text-gray-400 font-bold">검색 결과가 없습니다.</td>
-                    </tr>
-                  ) : (
-                    filteredLogs.map((log) => {
-                      const suspicious = isSuspicious(log);
-                      return (
-                        <motion.tr 
-                          key={log.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className={cn(
-                            "group transition-colors",
-                            suspicious ? "bg-amber-50/30 hover:bg-amber-50/50" : "hover:bg-gray-50/50"
-                          )}
-                        >
-                          <td className="p-4 text-xs font-bold text-gray-400 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3 h-3" />
-                              {formatDate(log.timestamp)}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden border border-gray-200">
-                                <img 
-                                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${log.userId}`} 
-                                  alt={log.userName}
-                                  className="w-full h-full object-cover"
-                                  referrerPolicy="no-referrer"
-                                />
-                              </div>
-                              <span className="text-sm font-black text-gray-900">{log.userName}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <span className={cn(
-                                "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter",
-                                log.activityType === 'quiz' ? "bg-purple-100 text-purple-700" :
-                                log.activityType === 'flashcards' ? "bg-amber-100 text-amber-700" :
-                                log.activityType === 'memory' ? "bg-indigo-100 text-indigo-700" :
-                                "bg-rose-100 text-rose-700"
-                              )}>
-                                {log.activityType}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-center">
-                            <span className={cn(
-                              "text-sm font-black",
-                              log.accuracy >= 0.8 ? "text-emerald-600" : "text-amber-600"
-                            )}>
-                              {Math.round(log.accuracy * 100)}%
-                            </span>
-                          </td>
-                          <td className="p-4 text-center">
-                            <span className="text-xs font-bold text-gray-500">
-                              {log.duration}초
-                            </span>
-                          </td>
-                          <td className="p-4 text-center">
-                            {suspicious ? (
-                              <div className="flex items-center justify-center gap-1 text-amber-600">
-                                <AlertTriangle className="w-4 h-4" />
-                                <span className="text-[10px] font-black">의심</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center gap-1 text-emerald-600">
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span className="text-[10px] font-black">정상</span>
-                              </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-gray-400 font-bold">데이터를 불러오는 중...</td>
+                      </tr>
+                    ) : filteredLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-gray-400 font-bold">검색 결과가 없습니다.</td>
+                      </tr>
+                    ) : (
+                      filteredLogs.map((log) => {
+                        const suspicious = isSuspicious(log);
+                        return (
+                          <motion.tr 
+                            key={log.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className={cn(
+                              "group transition-colors",
+                              suspicious ? "bg-amber-50/30 hover:bg-amber-50/50" : "hover:bg-gray-50/50"
                             )}
-                          </td>
-                        </motion.tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          >
+                            <td className="p-4 text-xs font-bold text-gray-400 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3 h-3" />
+                                {formatDate(log.timestamp)}
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden border border-gray-200">
+                                  <img 
+                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${log.userId}`} 
+                                    alt={log.userName}
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                </div>
+                                <span className="text-sm font-black text-gray-900">{log.userName}</span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter",
+                                  log.activityType === 'quiz' ? "bg-purple-100 text-purple-700" :
+                                  log.activityType === 'flashcards' ? "bg-amber-100 text-amber-700" :
+                                  log.activityType === 'memory' ? "bg-indigo-100 text-indigo-700" :
+                                  "bg-rose-100 text-rose-700"
+                                )}>
+                                  {log.activityType}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={cn(
+                                "text-sm font-black",
+                                log.accuracy >= 0.8 ? "text-emerald-600" : "text-amber-600"
+                              )}>
+                                {Math.round(log.accuracy * 100)}%
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className="text-xs font-bold text-gray-500">
+                                {log.duration}초
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              {suspicious ? (
+                                <div className="flex items-center justify-center gap-1 text-amber-600">
+                                  <AlertTriangle className="w-4 h-4" />
+                                  <span className="text-[10px] font-black">의심</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-center gap-1 text-emerald-600">
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span className="text-[10px] font-black">정상</span>
+                                </div>
+                              )}
+                            </td>
+                          </motion.tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6 space-y-4">
+                {loading ? (
+                  <div className="py-12 text-center text-gray-400 font-bold">의견을 불러오는 중...</div>
+                ) : filteredFeedbacks.length === 0 ? (
+                  <div className="py-12 text-center text-gray-400 font-bold">제출된 의견이 없습니다.</div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {filteredFeedbacks.map((fb) => (
+                      <motion.div
+                        key={fb.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-6 bg-gray-50 rounded-3xl border border-gray-100"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                              <User className="w-5 h-5 text-indigo-600" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-black text-gray-900">{fb.userName}</div>
+                              <div className="text-[10px] font-bold text-gray-400">{fb.grade} {fb.class}</div>
+                            </div>
+                          </div>
+                          <div className="text-[10px] font-bold text-gray-400">
+                            {formatDate(fb.timestamp)}
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
+                          {fb.content}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
         </div>
       </div>

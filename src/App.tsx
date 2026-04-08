@@ -36,6 +36,8 @@ import { CertificateView } from './components/views/CertificateView';
 import { PlanView } from './components/views/PlanView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
+import { AnnouncementPopup } from './components/ui/AnnouncementPopup';
+import { FeedbackForm } from './components/ui/FeedbackForm';
 import { UserProfile, ActivityLog, DailyQuest } from './types';
 import { getLevel } from './lib/utils';
 import { backgrounds } from './constants';
@@ -788,6 +790,8 @@ export default function App() {
         onClose={() => setShowLevelUp(false)} 
         profile={profile} 
       />
+
+      <AnnouncementPopup />
       
       <AnimatePresence mode="wait">
         <BackgroundMusic playing={bgMusicPlaying} volume={bgMusicVolume} />
@@ -914,6 +918,11 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Feedback Form */}
+      {view === 'home' && profile && (
+        <FeedbackForm profile={profile} />
+      )}
 
       {/* Footer */}
       {view !== 'games' && (
