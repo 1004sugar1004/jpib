@@ -147,10 +147,16 @@ export const StudyView = ({
     { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
   ];
 
+  const handleTabChange = (tabId: number) => {
+    setActiveTab(tabId);
+    setCurrentCardIndex(0);
+    setTabStartTime(Date.now());
+    setMessage(null);
+  };
+
   React.useEffect(() => {
     setTabStartTime(Date.now());
-    setCurrentCardIndex(0);
-    setMessage(null);
+    // Index is now reset in handleTabChange for immediate effect
   }, [activeTab]);
 
   // Reset timer when card changes
@@ -170,6 +176,9 @@ export const StudyView = ({
   };
 
   const { data: currentItems, prefix: currentPrefix } = getCurrentData();
+
+  // Safe index to prevent white screen on tab switch
+  const safeIndex = currentCardIndex >= currentItems.length ? 0 : currentCardIndex;
 
   const handleToggle = React.useCallback((id: string) => {
     const isCompleted = completedItems.includes(id);
@@ -209,19 +218,19 @@ export const StudyView = ({
   }, [completedItems, onToggleItem, tabStartTime, currentItems.length]);
 
   // getCurrentData was moved up
-  const currentItem = currentItems[currentCardIndex];
-  const isLastCard = currentCardIndex === currentItems.length - 1;
-  const isFirstCard = currentCardIndex === 0;
+  const currentItem = currentItems[safeIndex];
+  const isLastCard = safeIndex === currentItems.length - 1;
+  const isFirstCard = safeIndex === 0;
 
   const nextCard = () => {
-    if (currentCardIndex < currentItems.length - 1) {
-      setCurrentCardIndex(prev => prev + 1);
+    if (safeIndex < currentItems.length - 1) {
+      setCurrentCardIndex(safeIndex + 1);
     }
   };
 
   const prevCard = () => {
-    if (currentCardIndex > 0) {
-      setCurrentCardIndex(prev => prev - 1);
+    if (safeIndex > 0) {
+      setCurrentCardIndex(safeIndex - 1);
     }
   };
 
@@ -258,7 +267,7 @@ export const StudyView = ({
             key={tab.id}
             whileHover={{ scale: 1.05, y: -5 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={cn(
               "flex flex-col items-center gap-2 p-4 rounded-3xl transition-all border-2",
               activeTab === tab.id 
@@ -338,9 +347,10 @@ export const StudyView = ({
                 <AnimatePresence mode="wait">
                   {(() => {
                     const TabIcon = tabs[activeTab].icon;
+                    if (!currentItem) return null;
                     return (
                       <motion.div
-                        key={`${activeTab}-${currentCardIndex}`}
+                        key={`${activeTab}-${safeIndex}`}
                         initial={{ opacity: 0, x: 50, rotateY: 10 }}
                         animate={{ opacity: 1, x: 0, rotateY: 0 }}
                         exit={{ opacity: 0, x: -50, rotateY: -10 }}
@@ -413,8 +423,8 @@ export const StudyView = ({
 
                           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
                             <StudyCheck 
-                              id={`${currentPrefix}-${currentCardIndex}`} 
-                              completed={completedItems.includes(`${currentPrefix}-${currentCardIndex}`)} 
+                              id={`${currentPrefix}-${safeIndex}`} 
+                              completed={completedItems.includes(`${currentPrefix}-${safeIndex}`)} 
                               handleToggle={handleToggle}
                               tabStartTime={tabStartTime}
                             />
@@ -433,7 +443,7 @@ export const StudyView = ({
                                 className={cn(
                                   "flex-1 sm:flex-none px-10 h-14 rounded-2xl font-black flex items-center justify-center gap-2 text-white transition-all hover:brightness-110 active:scale-95 disabled:opacity-30 shadow-lg",
                                   tabs[activeTab].color,
-                                  !completedItems.includes(`${currentPrefix}-${currentCardIndex}`) && !isLastCard ? "opacity-50" : "opacity-100"
+                                  !completedItems.includes(`${currentPrefix}-${safeIndex}`) && !isLastCard ? "opacity-50" : "opacity-100"
                                 )}
                               >
                                 {isLastCard ? "탐험 완료!" : "다음 탐험"}
@@ -451,7 +461,7 @@ export const StudyView = ({
                 <div className="mt-8 h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${((currentCardIndex + 1) / currentItems.length) * 100}%` }}
+                    animate={{ width: `${((safeIndex + 1) / currentItems.length) * 100}%` }}
                     className={cn("h-full transition-all duration-500", tabs[activeTab].color)}
                   />
                 </div>
