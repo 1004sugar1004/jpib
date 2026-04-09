@@ -952,6 +952,7 @@ export default function App() {
           >
             {view === 'home' && (
               <HomeView 
+                user={user}
                 profile={profile} 
                 reflectionData={reflectionData} 
                 setView={handleProtectedViewChange} 
@@ -1003,7 +1004,7 @@ export default function App() {
                 rankings={rankings} 
               />
             )}
-            {view === 'dashboard' && (profile?.role === 'teacher' || user?.email === '1004sugar1004@gmail.com') && (
+            {view === 'dashboard' && user?.email === '1004sugar1004@gmail.com' && (
               <TeacherDashboardView 
                 setView={handleProtectedViewChange} 
               />

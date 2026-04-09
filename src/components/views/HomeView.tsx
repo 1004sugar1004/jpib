@@ -24,6 +24,7 @@ import {
   Activity,
   Settings
 } from 'lucide-react';
+import { User as FirebaseUser } from 'firebase/auth';
 import { ibReflectionQuestions } from '../../content';
 
 import { UserProfile } from '../../types';
@@ -31,6 +32,7 @@ import { getLevel, formatGradeClass } from '../../lib/utils';
 import { ProfileEditModal } from '../ui/ProfileEditModal';
 
 interface HomeViewProps {
+  user: FirebaseUser | null;
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
   setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard') => void;
@@ -47,6 +49,7 @@ interface HomeViewProps {
 }
 
 export const HomeView = ({ 
+  user,
   profile, 
   reflectionData, 
   setView, 
@@ -213,7 +216,7 @@ export const HomeView = ({
             <Button variant="ghost" onClick={onLogout} icon={LogOut} className="text-gray-400 hover:text-red-500">
               로그아웃
             </Button>
-            {profile?.role === 'teacher' && (
+            {user?.email === '1004sugar1004@gmail.com' && (
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -221,7 +224,7 @@ export const HomeView = ({
                 className="bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-100 mt-2"
                 icon={Activity}
               >
-                활동로그(관리자용)
+                활동로그(관리자 전용)
               </Button>
             )}
             <Button 

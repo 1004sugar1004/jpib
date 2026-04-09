@@ -271,18 +271,41 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
 
           <Card className="p-6 bg-amber-50 border-amber-100">
             <h4 className="text-sm font-black text-amber-900 uppercase tracking-widest mb-4">관리자 도구</h4>
-            <p className="text-[10px] text-amber-700 font-bold mb-4">
-              모든 사용자의 점수와 랭킹을 초기화합니다. 새로운 시즌을 시작할 때 사용하세요.
-            </p>
-            <Button 
-              variant="outline"
-              disabled={isResetting}
-              onClick={() => setShowResetConfirm(true)}
-              className="w-full border-amber-200 text-amber-700 hover:bg-amber-100 flex items-center justify-center gap-2"
-            >
-              <RefreshCcw className={cn("w-4 h-4", isResetting && "animate-spin")} />
-              <span>{isResetting ? "초기화 중..." : "모든 랭킹 초기화"}</span>
-            </Button>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] text-amber-700 font-bold mb-2">
+                  모든 사용자의 점수와 랭킹을 초기화합니다.
+                </p>
+                <Button 
+                  variant="outline"
+                  disabled={isResetting}
+                  onClick={() => setShowResetConfirm(true)}
+                  className="w-full border-amber-200 text-amber-700 hover:bg-amber-100 flex items-center justify-center gap-2"
+                >
+                  <RefreshCcw className={cn("w-4 h-4", isResetting && "animate-spin")} />
+                  <span>{isResetting ? "초기화 중..." : "모든 랭킹 초기화"}</span>
+                </Button>
+              </div>
+
+              <div className="pt-4 border-t border-amber-200">
+                <p className="text-[10px] text-amber-700 font-bold mb-2">
+                  팝업창 설정을 초기화합니다. (일주일 보지 않기 등)
+                </p>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    localStorage.removeItem('dontShowExitConfirmUntil');
+                    localStorage.removeItem('announcement_last_closed');
+                    alert('팝업 설정이 초기화되었습니다. 페이지를 새로고침하면 다시 나타납니다.');
+                  }}
+                  className="w-full border-amber-200 text-amber-700 hover:bg-amber-100 flex items-center justify-center gap-2"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                  <span>팝업 설정 초기화</span>
+                </Button>
+              </div>
+            </div>
           </Card>
         </div>
 
