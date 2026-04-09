@@ -690,11 +690,10 @@ export default function App() {
   const handleSaveReflection = React.useCallback(async () => {
     if (!user) return;
     
-    // Validation: Check if there's meaningful content (at least 10 characters)
-    const allText = Object.values(reflectionData).join('').trim();
-    if (allText.length < 30) {
-      // We'll handle the UI feedback in the component, 
-      // but this is a safety check.
+    // Validation: Check if there's meaningful content (at least 20 characters per answer)
+    const answers = Object.values(reflectionData) as string[];
+    const isMeaningful = answers.length >= 2 && answers.every(a => a.trim().length >= 20);
+    if (!isMeaningful) {
       return;
     }
 

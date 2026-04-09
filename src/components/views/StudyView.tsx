@@ -142,12 +142,25 @@ export const StudyView = ({
 
   const isReflectionMeaningful = useMemo(() => {
     const answers = randomQuestions.map(q => reflectionData[q] || '');
-    return answers.every(a => a.trim().length >= 15);
+    return answers.every(a => {
+      const trimmed = a.trim();
+      // Check length (min 20)
+      if (trimmed.length < 20) return false;
+      
+      // Basic anti-spam: check for variety (at least 5 unique characters)
+      const uniqueChars = new Set(trimmed.split('')).size;
+      if (uniqueChars < 5) return false;
+
+      // Check for repeated patterns (e.g., "asdfasdfasdf")
+      if (/^(.+)\1+$/.test(trimmed) && trimmed.length > 10) return false;
+
+      return true;
+    });
   }, [reflectionData, randomQuestions]);
 
   const handleSaveReflectionClick = () => {
     if (!isReflectionMeaningful) {
-      setMessage("모든 질문에 대해 정성껏 답변을 적어주세요! (각 질문당 최소 15자)");
+      setMessage("모든 질문에 대해 정성껏 답변을 적어주세요! (각 질문당 최소 20자, 의미 있는 내용)");
       setTimeout(() => setMessage(null), 3000);
       return;
     }
@@ -158,7 +171,10 @@ export const StudyView = ({
     return tabs.map(tab => {
       if (tab.id === 5) {
         const answers = randomQuestions.map(q => reflectionData[q] || '');
-        return answers.every(a => a.trim().length >= 15);
+        return answers.every(a => {
+          const trimmed = a.trim();
+          return trimmed.length >= 20 && new Set(trimmed.split('')).size >= 5;
+        });
       }
       
       let items: any[] = [];
@@ -175,6 +191,10 @@ export const StudyView = ({
       return items.every((_, idx) => completedItems.includes(`${prefix}-${idx}`));
     });
   }, [completedItems, reflectionData, randomQuestions]);
+
+  const allPreviousTabsCompleted = useMemo(() => {
+    return tabCompletionStatus.slice(0, 5).every(status => status === true);
+  }, [tabCompletionStatus]);
 
   const handleTabChange = (tabId: number) => {
     if (tabId === activeTab) return;
@@ -282,19 +302,30 @@ export const StudyView = ({
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {tabs.map((tab, idx) => {
           const isCompleted = tabCompletionStatus[idx];
+          const isLocked = tab.id === 5 && !allPreviousTabsCompleted;
+          
           return (
             <motion.button
               key={tab.id}
-              whileHover={{ scale: 1.05, y: -5 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleTabChange(tab.id)}
+              whileHover={!isLocked ? { scale: 1.05, y: -5 } : {}}
+              whileTap={!isLocked ? { scale: 0.95 } : {}}
+              onClick={() => {
+                if (isLocked) {
+                  setMessage("이전 탐험을 모두 마쳐야 성찰 일지를 쓸 수 있어요!");
+                  setTimeout(() => setMessage(null), 3000);
+                  return;
+                }
+                handleTabChange(tab.id);
+              }}
               className={cn(
                 "flex flex-col items-center gap-2 p-4 rounded-3xl transition-all border-2 relative",
                 activeTab === tab.id 
                   ? cn("border-transparent text-white shadow-xl", tab.color)
                   : isCompleted
                     ? "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
-                    : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                    : isLocked
+                      ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-60"
+                      : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
               )}
             >
               {isCompleted && activeTab !== tab.id && (
@@ -302,7 +333,11 @@ export const StudyView = ({
                   <CheckCircle2 className="w-3 h-3" />
                 </div>
               )}
-              <tab.icon className={cn("w-6 h-6", activeTab === tab.id ? "text-white" : isCompleted ? "text-green-500" : "text-gray-300")} />
+              {isLocked ? (
+                <ShieldCheck className="w-6 h-6 text-gray-300" />
+              ) : (
+                <tab.icon className={cn("w-6 h-6", activeTab === tab.id ? "text-white" : isCompleted ? "text-green-500" : "text-gray-300")} />
+              )}
               <span className="text-xs font-black uppercase tracking-tighter">{tab.label}</span>
             </motion.button>
           );
