@@ -127,7 +127,14 @@ export const StudyView = ({
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [tabStartTime, setTabStartTime] = useState(Date.now());
   const [message, setMessage] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const lastClickTimeRef = useRef<number>(0);
+
+  // Update current time for reactive timers
+  React.useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 200);
+    return () => clearInterval(interval);
+  }, []);
 
   const randomQuestions = useMemo(() => {
     return [...ibReflectionQuestions].sort(() => Math.random() - 0.5).slice(0, 2);
@@ -198,6 +205,10 @@ export const StudyView = ({
 
   const { data: currentItems, prefix: currentPrefix } = getCurrentData();
   const safeIndex = currentCardIndex >= currentItems.length ? 0 : currentCardIndex;
+  
+  const isCurrentCardCompleted = completedItems.includes(`${currentPrefix}-${safeIndex}`);
+  const timeInTab = currentTime - tabStartTime;
+  const isCurrentCardLocked = !isCurrentCardCompleted && timeInTab < 2000;
 
   const handleToggle = React.useCallback((id: string) => {
     const now = Date.now();
@@ -338,14 +349,22 @@ export const StudyView = ({
                     return (
                       <button
                         key={idx}
-                        onClick={() => setCurrentCardIndex(idx)}
+                        onClick={() => {
+                          if (isCurrentCardLocked && idx > safeIndex) {
+                            setMessage("현재 카드를 먼저 읽어주세요!");
+                            setTimeout(() => setMessage(null), 2000);
+                            return;
+                          }
+                          setCurrentCardIndex(idx);
+                        }}
                         className={cn(
                           "px-4 py-2 rounded-xl text-xs font-black transition-all border-2 flex items-center gap-2",
                           currentCardIndex === idx
                             ? "bg-indigo-600 border-transparent text-white shadow-lg scale-105"
                             : isCompleted
                               ? "bg-green-500 border-transparent text-white shadow-md"
-                              : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+                              : "bg-white border-gray-100 text-gray-400 hover:border-gray-200",
+                          isCurrentCardLocked && idx > safeIndex && "opacity-50 cursor-not-allowed"
                         )}
                       >
                         {isCompleted && <CheckCircle2 className="w-3 h-3" />}
@@ -430,22 +449,34 @@ export const StudyView = ({
                               tabStartTime={tabStartTime}
                             />
                             
-                            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                              <button
-                                onClick={prevCard}
-                                disabled={isFirstCard}
-                                className="w-14 h-14 p-0 rounded-2xl flex items-center justify-center bg-gray-100 text-gray-600 disabled:opacity-30 hover:bg-gray-200 transition-all active:scale-95"
-                              >
-                                <ArrowLeft className="w-7 h-7" />
-                              </button>
-                              <button
-                                onClick={nextCard}
-                                disabled={isLastCard}
-                                className="w-14 h-14 p-0 rounded-2xl flex items-center justify-center bg-gray-100 text-gray-600 disabled:opacity-30 hover:bg-gray-200 transition-all active:scale-95"
-                              >
-                                <ChevronRight className="w-7 h-7" />
-                              </button>
-                            </div>
+                              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                <button
+                                  onClick={prevCard}
+                                  disabled={isFirstCard}
+                                  className="w-14 h-14 p-0 rounded-2xl flex items-center justify-center bg-gray-100 text-gray-600 disabled:opacity-30 hover:bg-gray-200 transition-all active:scale-95"
+                                >
+                                  <ArrowLeft className="w-7 h-7" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (isCurrentCardLocked) {
+                                      setMessage("내용을 충분히 읽어주세요!");
+                                      setTimeout(() => setMessage(null), 2000);
+                                      return;
+                                    }
+                                    nextCard();
+                                  }}
+                                  disabled={isLastCard || isCurrentCardLocked}
+                                  className={cn(
+                                    "w-14 h-14 p-0 rounded-2xl flex items-center justify-center transition-all active:scale-95",
+                                    isCurrentCardLocked 
+                                      ? "bg-gray-50 text-gray-300 cursor-not-allowed" 
+                                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
+                                  )}
+                                >
+                                  <ChevronRight className="w-7 h-7" />
+                                </button>
+                              </div>
                           </div>
                         </div>
                       </motion.div>
