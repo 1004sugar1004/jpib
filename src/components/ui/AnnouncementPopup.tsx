@@ -43,66 +43,64 @@ export const AnnouncementPopup = () => {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-indigo-100"
+            className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-indigo-100"
           >
             <button 
               onClick={() => setIsOpen(false)}
               className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
             >
-              <X className="w-6 h-6 text-gray-400" />
+              <X className="w-5 h-5 text-gray-400" />
             </button>
 
-            <div className="p-8 text-center">
-              <div className="mb-6 relative">
-                <div className="absolute inset-0 bg-indigo-100 rounded-3xl rotate-3 scale-105" />
+            <div className="p-6 text-center">
+              <div className="mb-4 relative mx-auto w-32">
+                <div className="absolute inset-0 bg-indigo-100 rounded-2xl rotate-3 scale-105" />
                 <img 
                   src="https://i.imgur.com/BNpz6dS.png" 
                   alt="Coffee" 
-                  className="relative w-full h-48 object-contain rounded-2xl"
+                  className="relative w-32 h-24 object-contain rounded-xl"
                   referrerPolicy="no-referrer"
                 />
               </div>
 
-              <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">
+              <h3 className="text-xl font-black text-gray-900 mb-3 tracking-tight">
                 🚀 IB Explorer 정식 오픈!
               </h3>
               
-              <div className="space-y-4 text-gray-600 font-medium leading-relaxed">
-                <p className="text-sm">
+              <div className="space-y-3 text-gray-600 font-medium leading-relaxed">
+                <p className="text-xs">
                   IB Explorer가 드디어 <span className="text-indigo-600 font-bold">정식 오픈</span>했습니다!<br />
-                  오픈 기념으로 <span className="font-bold">4월 8일 랭킹이 초기화</span>되었습니다.
+                  <span className="font-bold">4월 8일 랭킹이 초기화</span>되었습니다.
                 </p>
-                <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 space-y-2 text-xs">
+                <div className="bg-indigo-50 p-3 rounded-2xl border border-indigo-100 space-y-1.5 text-[10px]">
                   <p className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
+                    <span className="w-1 h-1 bg-indigo-600 rounded-full" />
                     <span><span className="font-black">4월 30일:</span> 이달의 우수 탐험가 시상</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
+                    <span className="w-1 h-1 bg-indigo-600 rounded-full" />
                     <span><span className="font-black">5월부터:</span> 매달 1일 랭킹 자동 초기화</span>
                   </p>
                   <p className="flex items-center gap-2 text-rose-600 font-black">
-                    <span className="w-1.5 h-1.5 bg-rose-600 rounded-full" />
+                    <span className="w-1 h-1 bg-rose-600 rounded-full" />
                     <span>🎁 우수학생 & 우수학급 과자박스 배달!</span>
                   </p>
                 </div>
-                <p className="text-[11px] text-gray-400">
-                  새로운 마음으로 다시 한번 정상을 향해 도전해보세요!
-                </p>
 
                 <div className="pt-2 border-t border-gray-100">
-                  <p className="text-xs font-bold text-gray-700 mb-1">💡 의견을 들려주세요!</p>
-                  <p className="text-[10px] text-gray-500 leading-tight">
+                  <p className="text-[11px] font-bold text-gray-700 mb-1">💡 의견을 들려주세요!</p>
+                  <p className="text-[9px] text-gray-500 leading-tight">
+                    사이트 개선이나 새로운 게임 아이디어 등<br />
                     좋은 의견을 주신 <span className="text-indigo-600 font-bold">선생님께는 기프티콘</span>을,<br />
                     <span className="text-rose-600 font-bold">학생들에게는 추첨을 통해 과자</span>를 드립니다!
                   </p>
                 </div>
               </div>
 
-              <div className="mt-8 flex flex-col gap-4">
+              <div className="mt-6 flex flex-col gap-3">
                 <Button 
                   onClick={handleClose}
-                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-lg shadow-lg shadow-indigo-200"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-base shadow-lg shadow-indigo-200"
                 >
                   확인했습니다
                 </Button>

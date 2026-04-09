@@ -54,9 +54,9 @@ export const FeedbackForm = ({ profile }: FeedbackFormProps) => {
               여러분의 소중한 의견을 기다립니다!
             </h2>
             <p className="text-gray-500 font-medium leading-relaxed">
-              사이트 개선이나 새로운 게임 아이디어 등<br />
-              어떤 의견이라도 좋습니다. 좋은 의견을 주신 분들께<br />
-              <span className="text-indigo-600 font-bold">카페라떼 기프티콘</span>을 선물로 드려요!
+              사이트 개선이나 새로운 게임 아이디어 등 어떤 의견이라도 좋습니다.<br />
+              좋은 의견을 주신 <span className="text-indigo-600 font-bold">선생님께는 기프티콘</span>을,<br />
+              <span className="text-rose-600 font-bold">학생들에게는 추첨을 통해 과자</span>를 선물로 드려요!
             </p>
           </div>
 
