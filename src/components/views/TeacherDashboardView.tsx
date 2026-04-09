@@ -197,7 +197,7 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                 activeTab === 'logs' ? "bg-white text-rose-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
               )}
             >
-              활동 로그
+              활동로그(관리자용)
             </button>
             <button
               onClick={() => setActiveTab('feedback')}

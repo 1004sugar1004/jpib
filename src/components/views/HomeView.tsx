@@ -221,7 +221,7 @@ export const HomeView = ({
                 className="bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-100 mt-2"
                 icon={Activity}
               >
-                활동 로그 (교사용)
+                활동로그(관리자용)
               </Button>
             )}
             <Button 
