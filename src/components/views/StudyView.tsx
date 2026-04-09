@@ -207,8 +207,9 @@ export const StudyView = ({
   const safeIndex = currentCardIndex >= currentItems.length ? 0 : currentCardIndex;
   
   const isCurrentCardCompleted = completedItems.includes(`${currentPrefix}-${safeIndex}`);
+  const isNavigationBlocked = !isCurrentCardCompleted;
   const timeInTab = currentTime - tabStartTime;
-  const isCurrentCardLocked = !isCurrentCardCompleted && timeInTab < 2000;
+  const isCompletionButtonLocked = !isCurrentCardCompleted && timeInTab < 2000;
 
   const handleToggle = React.useCallback((id: string) => {
     const now = Date.now();
@@ -350,8 +351,8 @@ export const StudyView = ({
                       <button
                         key={idx}
                         onClick={() => {
-                          if (isCurrentCardLocked && idx > safeIndex) {
-                            setMessage("현재 카드를 먼저 읽어주세요!");
+                          if (isNavigationBlocked && idx > safeIndex) {
+                            setMessage("'읽고 이해했습니다' 버튼을 먼저 눌러주세요!");
                             setTimeout(() => setMessage(null), 2000);
                             return;
                           }
@@ -364,7 +365,7 @@ export const StudyView = ({
                             : isCompleted
                               ? "bg-green-500 border-transparent text-white shadow-md"
                               : "bg-white border-gray-100 text-gray-400 hover:border-gray-200",
-                          isCurrentCardLocked && idx > safeIndex && "opacity-50 cursor-not-allowed"
+                          isNavigationBlocked && idx > safeIndex && "opacity-50 cursor-not-allowed"
                         )}
                       >
                         {isCompleted && <CheckCircle2 className="w-3 h-3" />}
@@ -459,17 +460,17 @@ export const StudyView = ({
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (isCurrentCardLocked) {
-                                      setMessage("내용을 충분히 읽어주세요!");
+                                    if (isNavigationBlocked) {
+                                      setMessage("'읽고 이해했습니다' 버튼을 눌러야 다음으로 갈 수 있어요!");
                                       setTimeout(() => setMessage(null), 2000);
                                       return;
                                     }
                                     nextCard();
                                   }}
-                                  disabled={isLastCard || isCurrentCardLocked}
+                                  disabled={isLastCard || isNavigationBlocked}
                                   className={cn(
                                     "w-14 h-14 p-0 rounded-2xl flex items-center justify-center transition-all active:scale-95",
-                                    isCurrentCardLocked 
+                                    isNavigationBlocked 
                                       ? "bg-gray-50 text-gray-300 cursor-not-allowed" 
                                       : "bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
                                   )}
