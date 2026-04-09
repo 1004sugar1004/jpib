@@ -692,7 +692,7 @@ export default function App() {
     
     // Validation: Check if there's meaningful content (at least 10 characters)
     const allText = Object.values(reflectionData).join('').trim();
-    if (allText.length < 10) {
+    if (allText.length < 30) {
       // We'll handle the UI feedback in the component, 
       // but this is a safety check.
       return;

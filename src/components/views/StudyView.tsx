@@ -102,6 +102,15 @@ const StudyCheck = ({
   );
 };
 
+const tabs = [
+  { id: 0, label: "학습자상", icon: UserCircle, color: "bg-indigo-500" },
+  { id: 1, label: "탐구 주제", icon: School, color: "bg-emerald-500" },
+  { id: 2, label: "핵심 개념", icon: AlertCircle, color: "bg-amber-500" },
+  { id: 3, label: "탐구 사이클", icon: RefreshCcw, color: "bg-blue-500" },
+  { id: 4, label: "ATL 기능", icon: GraduationCap, color: "bg-purple-500" },
+  { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
+];
+
 export const StudyView = ({ 
   setView, 
   atlData, 
@@ -125,29 +134,43 @@ export const StudyView = ({
   }, []);
 
   const isReflectionMeaningful = useMemo(() => {
-    const allText = Object.values(reflectionData).join('').trim();
-    return allText.length >= 10;
-  }, [reflectionData]);
+    const answers = randomQuestions.map(q => reflectionData[q] || '');
+    return answers.every(a => a.trim().length >= 15);
+  }, [reflectionData, randomQuestions]);
 
   const handleSaveReflectionClick = () => {
     if (!isReflectionMeaningful) {
-      setMessage("성찰 일지를 조금 더 자세히 적어주세요! (최소 10자)");
+      setMessage("모든 질문에 대해 정성껏 답변을 적어주세요! (각 질문당 최소 15자)");
       setTimeout(() => setMessage(null), 3000);
       return;
     }
     onSaveReflection();
   };
 
-  const tabs = [
-    { id: 0, label: "학습자상", icon: UserCircle, color: "bg-indigo-500" },
-    { id: 1, label: "탐구 주제", icon: School, color: "bg-emerald-500" },
-    { id: 2, label: "핵심 개념", icon: AlertCircle, color: "bg-amber-500" },
-    { id: 3, label: "탐구 사이클", icon: RefreshCcw, color: "bg-blue-500" },
-    { id: 4, label: "ATL 기능", icon: GraduationCap, color: "bg-purple-500" },
-    { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
-  ];
+  const tabCompletionStatus = useMemo(() => {
+    return tabs.map(tab => {
+      if (tab.id === 5) {
+        const answers = randomQuestions.map(q => reflectionData[q] || '');
+        return answers.every(a => a.trim().length >= 15);
+      }
+      
+      let items: any[] = [];
+      let prefix = '';
+      switch (tab.id) {
+        case 0: items = ibLearnerProfile; prefix = 'learner'; break;
+        case 1: items = ibThemes; prefix = 'theme'; break;
+        case 2: items = ibKeyConcepts; prefix = 'concept'; break;
+        case 3: items = ibInquiryCycle; prefix = 'inquiry'; break;
+        case 4: items = ibATL; prefix = 'atl'; break;
+      }
+      
+      if (items.length === 0) return false;
+      return items.every((_, idx) => completedItems.includes(`${prefix}-${idx}`));
+    });
+  }, [completedItems, reflectionData, randomQuestions]);
 
   const handleTabChange = (tabId: number) => {
+    if (tabId === activeTab) return;
     setActiveTab(tabId);
     setCurrentCardIndex(0);
     setTabStartTime(Date.now());
@@ -156,10 +179,8 @@ export const StudyView = ({
 
   React.useEffect(() => {
     setTabStartTime(Date.now());
-    // Index is now reset in handleTabChange for immediate effect
   }, [activeTab]);
 
-  // Reset timer when card changes
   React.useEffect(() => {
     setTabStartTime(Date.now());
   }, [currentCardIndex]);
@@ -176,27 +197,17 @@ export const StudyView = ({
   };
 
   const { data: currentItems, prefix: currentPrefix } = getCurrentData();
-
-  // Safe index to prevent white screen on tab switch
   const safeIndex = currentCardIndex >= currentItems.length ? 0 : currentCardIndex;
 
   const handleToggle = React.useCallback((id: string) => {
+    const now = Date.now();
     const isCompleted = completedItems.includes(id);
     
-    // If already completed, allow toggling off immediately
-    if (isCompleted) {
-      onToggleItem(id);
-      return;
-    }
+    if (now - lastClickTimeRef.current < 500) return;
 
-    const now = Date.now();
-    
-    // Check if enough time has passed since opening the card (reduced to 2s)
-    const timeInCard = now - tabStartTime;
-    if (timeInCard < 2000) {
-      const remaining = Math.ceil((2000 - timeInCard) / 1000);
-      setMessage(`내용을 충분히 읽어주세요! (${remaining}초 남음)`);
-      setTimeout(() => setMessage(null), 2000);
+    if (!isCompleted && now - tabStartTime < 2000) {
+      setMessage("내용을 충분히 읽고 확인해주세요! (최소 2초)");
+      setTimeout(() => setMessage(null), 3000);
       return;
     }
 
@@ -204,7 +215,6 @@ export const StudyView = ({
     onToggleItem(id);
     setMessage(null);
 
-    // Automatically move to the next card after a short delay if completing
     if (!isCompleted) {
       setTimeout(() => {
         setCurrentCardIndex(prev => {
@@ -217,7 +227,6 @@ export const StudyView = ({
     }
   }, [completedItems, onToggleItem, tabStartTime, currentItems.length]);
 
-  // getCurrentData was moved up
   const currentItem = currentItems[safeIndex];
   const isLastCard = safeIndex === currentItems.length - 1;
   const isFirstCard = safeIndex === 0;
@@ -233,8 +242,6 @@ export const StudyView = ({
       setCurrentCardIndex(safeIndex - 1);
     }
   };
-
-  // StudyCheck component was moved outside
 
   return (
     <div className="max-w-5xl mx-auto p-4 py-8 space-y-8">
@@ -260,28 +267,36 @@ export const StudyView = ({
         </div>
       </header>
 
-      {/* Quest Navigation */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {tabs.map((tab) => (
-          <motion.button
-            key={tab.id}
-            whileHover={{ scale: 1.05, y: -5 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleTabChange(tab.id)}
-            className={cn(
-              "flex flex-col items-center gap-2 p-4 rounded-3xl transition-all border-2",
-              activeTab === tab.id 
-                ? cn("border-transparent text-white shadow-xl", tab.color)
-                : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-            )}
-          >
-            <tab.icon className={cn("w-6 h-6", activeTab === tab.id ? "text-white" : "text-gray-300")} />
-            <span className="text-xs font-black uppercase tracking-tighter">{tab.label}</span>
-          </motion.button>
-        ))}
+        {tabs.map((tab, idx) => {
+          const isCompleted = tabCompletionStatus[idx];
+          return (
+            <motion.button
+              key={tab.id}
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleTabChange(tab.id)}
+              className={cn(
+                "flex flex-col items-center gap-2 p-4 rounded-3xl transition-all border-2 relative",
+                activeTab === tab.id 
+                  ? cn("border-transparent text-white shadow-xl", tab.color)
+                  : isCompleted
+                    ? "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
+                    : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+              )}
+            >
+              {isCompleted && activeTab !== tab.id && (
+                <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-1 shadow-md">
+                  <CheckCircle2 className="w-3 h-3" />
+                </div>
+              )}
+              <tab.icon className={cn("w-6 h-6", activeTab === tab.id ? "text-white" : isCompleted ? "text-green-500" : "text-gray-300")} />
+              <span className="text-xs font-black uppercase tracking-tighter">{tab.label}</span>
+            </motion.button>
+          );
+        })}
       </div>
       
-      {/* Message Overlay */}
       <AnimatePresence>
         {message && (
           <motion.div
@@ -307,7 +322,6 @@ export const StudyView = ({
         >
           {activeTab < 5 ? (
             <div className="space-y-8">
-              {/* Keyword Overview Grid */}
               <div className="bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-white/20 shadow-inner">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -315,7 +329,7 @@ export const StudyView = ({
                     키워드 한눈에 보기
                   </h3>
                   <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                    {currentCardIndex + 1} / {currentItems.length}
+                    {currentItems.length > 0 ? safeIndex + 1 : 0} / {currentItems.length}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -330,7 +344,7 @@ export const StudyView = ({
                           currentCardIndex === idx
                             ? "bg-indigo-600 border-transparent text-white shadow-lg scale-105"
                             : isCompleted
-                              ? "bg-green-50 border-green-100 text-green-600"
+                              ? "bg-green-500 border-transparent text-white shadow-md"
                               : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
                         )}
                       >
@@ -342,11 +356,9 @@ export const StudyView = ({
                 </div>
               </div>
 
-              {/* Card News Interface */}
               <div className="relative group">
                 <AnimatePresence mode="wait">
                   {(() => {
-                    const TabIcon = tabs[activeTab].icon;
                     if (!currentItem) return null;
                     return (
                       <motion.div
@@ -357,46 +369,35 @@ export const StudyView = ({
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         className="bg-white rounded-[3.5rem] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px] flex flex-col md:flex-row"
                       >
-                        {/* Left: Image Section */}
-                        <div className={cn(
-                          "w-full md:w-2/5 p-12 flex items-center justify-center relative overflow-hidden",
-                          tabs[activeTab].color
-                        )}>
-                          <div className="absolute inset-0 opacity-10">
-                            <TabIcon className="w-full h-full scale-150 rotate-12" />
-                          </div>
-                          <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="relative z-10 w-48 h-48 bg-white/20 backdrop-blur-md rounded-[3rem] p-6 shadow-2xl border border-white/30"
-                          >
-                            <img 
-                              src={currentItem.image} 
-                              alt={currentItem.title} 
-                              className="w-full h-full object-contain drop-shadow-2xl" 
-                              referrerPolicy="no-referrer" 
-                            />
-                          </motion.div>
+                        <div className="w-full md:w-2/5 relative overflow-hidden bg-gray-100">
+                          <img 
+                            src={currentItem.image} 
+                            alt={currentItem.title} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-black/20" />
                         </div>
-
-                        {/* Right: Content Section */}
-                        <div className="flex-1 p-12 flex flex-col justify-center space-y-6">
-                          <div>
-                            <span className="px-4 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 inline-block">
-                              {tabs[activeTab].label} #{currentCardIndex + 1}
-                            </span>
-                            <h2 className="text-4xl font-black text-gray-900 mb-4 leading-tight">
+                        <div className="flex-1 p-8 md:p-12 flex flex-col justify-between">
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg", tabs[activeTab].color)}>
+                                {React.createElement(tabs[activeTab].icon, { className: "w-6 h-6" })}
+                              </div>
+                              <span className="text-sm font-black text-gray-400 uppercase tracking-widest">{tabs[activeTab].label} #{safeIndex + 1}</span>
+                            </div>
+                            <h2 className="text-4xl font-black text-gray-900 leading-tight">
                               {currentItem.title}
                             </h2>
-                            <p className="text-xl font-bold text-indigo-600 mb-6">
+                            <p className="text-xl text-gray-600 font-medium leading-relaxed">
                               {currentItem.description}
                             </p>
-                          </div>
-
-                          <div className="bg-gray-50 p-8 rounded-[2rem] border-l-8 border-indigo-500">
-                            <p className="text-gray-600 text-lg leading-relaxed font-medium italic">
-                              {currentItem.details ? currentItem.details[0] : currentItem.description}
-                            </p>
+                            
+                            <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                              <p className="text-gray-700 font-medium italic">
+                                "{currentItem.details ? currentItem.details[0] : currentItem.description}"
+                              </p>
+                            </div>
                           </div>
 
                           {activeTab === 4 && (
@@ -440,14 +441,9 @@ export const StudyView = ({
                               <button
                                 onClick={nextCard}
                                 disabled={isLastCard}
-                                className={cn(
-                                  "flex-1 sm:flex-none px-10 h-14 rounded-2xl font-black flex items-center justify-center gap-2 text-white transition-all hover:brightness-110 active:scale-95 disabled:opacity-30 shadow-lg",
-                                  tabs[activeTab].color,
-                                  !completedItems.includes(`${currentPrefix}-${safeIndex}`) && !isLastCard ? "opacity-50" : "opacity-100"
-                                )}
+                                className="w-14 h-14 p-0 rounded-2xl flex items-center justify-center bg-gray-100 text-gray-600 disabled:opacity-30 hover:bg-gray-200 transition-all active:scale-95"
                               >
-                                {isLastCard ? "탐험 완료!" : "다음 탐험"}
-                                {!isLastCard && <ChevronRight className="w-6 h-6" />}
+                                <ChevronRight className="w-7 h-7" />
                               </button>
                             </div>
                           </div>
@@ -457,11 +453,10 @@ export const StudyView = ({
                   })()}
                 </AnimatePresence>
 
-                {/* Progress Bar */}
                 <div className="mt-8 h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${((safeIndex + 1) / currentItems.length) * 100}%` }}
+                    animate={{ width: `${currentItems.length > 0 ? ((safeIndex + 1) / currentItems.length) * 100 : 0}%` }}
                     className={cn("h-full transition-all duration-500", tabs[activeTab].color)}
                   />
                 </div>
@@ -469,7 +464,6 @@ export const StudyView = ({
             </div>
           ) : (
             <div className="space-y-8">
-              {/* Reflection Overview */}
               <div className="bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-white/20 shadow-inner">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -592,7 +586,6 @@ export const StudyView = ({
                 </motion.div>
               </AnimatePresence>
 
-              {/* Progress Bar */}
               <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                 <motion.div
                   initial={{ width: 0 }}
