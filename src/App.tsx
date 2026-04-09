@@ -41,6 +41,8 @@ import { FeedbackForm } from './components/ui/FeedbackForm';
 import { UserProfile, ActivityLog, DailyQuest } from './types';
 import { getLevel } from './lib/utils';
 import { backgrounds } from './constants';
+import { Button } from './components/ui/Button';
+import { AlertTriangle } from 'lucide-react';
 
 const DAILY_XP_LIMIT = 500;
 
@@ -62,6 +64,8 @@ export default function App() {
   const [bgMusicVolume, setBgMusicVolume] = useState(0.5);
   
   const [showLevelUp, setShowLevelUp] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [pendingView, setPendingView] = useState<typeof view | null>(null);
   const [reflectionData, setReflectionData] = useState<Record<string, string>>({});
   const [atlData, setAtlData] = useState<Record<string, number>>({});
 
@@ -767,6 +771,60 @@ export default function App() {
 
   const currentBgKey = !user ? 'login' : !profile ? 'setup' : view;
 
+  // Navigation Guard
+  useEffect(() => {
+    const protectedViews = ['quiz', 'music-quiz', 'memory', 'flashcards', 'games'];
+    const isProtected = protectedViews.includes(view);
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isProtected) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (isProtected) {
+        // Push state back to prevent immediate exit
+        window.history.pushState(null, '', window.location.pathname);
+        setPendingView('home');
+        setShowExitConfirm(true);
+      }
+    };
+
+    if (isProtected) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      // Push an extra state so the back button triggers popstate instead of leaving
+      window.history.pushState(null, '', window.location.pathname);
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [view]);
+
+  const confirmExit = () => {
+    if (pendingView) {
+      setView(pendingView);
+    } else {
+      setView('home');
+    }
+    setShowExitConfirm(false);
+    setPendingView(null);
+  };
+
+  const handleProtectedViewChange = (newView: typeof view) => {
+    const protectedViews = ['quiz', 'music-quiz', 'memory', 'flashcards', 'games'];
+    if (protectedViews.includes(view) && newView === 'home') {
+      setPendingView(newView);
+      setShowExitConfirm(true);
+    } else {
+      setView(newView);
+    }
+  };
+
   return (
     <div className="min-h-screen font-sans text-gray-900 relative overflow-x-hidden bg-indigo-50/30">
       {/* Dynamic Background Layer */}
@@ -792,6 +850,46 @@ export default function App() {
       />
 
       <AnnouncementPopup />
+      
+      {/* Exit Confirmation Modal */}
+      <AnimatePresence>
+        {showExitConfirm && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full border-4 border-rose-100 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <AlertTriangle className="w-8 h-8 text-rose-600" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-2">잠깐만요!</h3>
+              <p className="text-gray-500 font-bold mb-8 leading-relaxed">
+                지금 나가면 <span className="text-rose-600">진행 중인 학습 데이터가 사라집니다.</span> 정말 그만둘까요?
+              </p>
+              <div className="flex gap-3">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => {
+                    setShowExitConfirm(false);
+                    setPendingView(null);
+                  }}
+                  className="flex-1 py-4 rounded-2xl font-black"
+                >
+                  계속하기
+                </Button>
+                <Button 
+                  onClick={confirmExit}
+                  className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100"
+                >
+                  그만두기
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       
       <AnimatePresence mode="wait">
         <BackgroundMusic playing={bgMusicPlaying} volume={bgMusicVolume} />
@@ -828,7 +926,7 @@ export default function App() {
               <HomeView 
                 profile={profile} 
                 reflectionData={reflectionData} 
-                setView={setView} 
+                setView={handleProtectedViewChange} 
                 rankings={rankings}
                 soundEnabled={soundEnabled} 
                 setSoundEnabled={setSoundEnabled} 
@@ -842,7 +940,7 @@ export default function App() {
             )}
             {view === 'study' && (
               <StudyView 
-                setView={setView} 
+                setView={handleProtectedViewChange} 
                 atlData={atlData} 
                 onSaveATL={handleSaveATL} 
                 reflectionData={reflectionData} 
@@ -860,49 +958,49 @@ export default function App() {
                 questions={quizQuestions}
                 title="IB QUIZ"
                 onFinish={handleFinishQuiz}
-                onClose={() => setView('home')}
+                onClose={() => handleProtectedViewChange('home')}
                 soundEnabled={soundEnabled}
               />
             )}
             {view === 'music-quiz' && (
               <MusicQuizView 
                 onFinish={handleFinishQuiz}
-                onClose={() => setView('home')}
+                onClose={() => handleProtectedViewChange('home')}
                 soundEnabled={soundEnabled}
               />
             )}
             {view === 'ranking' && (
               <RankingView 
-                setView={setView} 
+                setView={handleProtectedViewChange} 
                 rankings={rankings} 
               />
             )}
             {view === 'dashboard' && (profile?.role === 'teacher' || user?.email === '1004sugar1004@gmail.com') && (
               <TeacherDashboardView 
-                setView={setView} 
+                setView={handleProtectedViewChange} 
               />
             )}
             {view === 'certificate' && (
               <CertificateView 
                 profile={profile} 
-                onClose={() => setView('home')} 
+                onClose={() => handleProtectedViewChange('home')} 
               />
             )}
             {view === 'plan' && (
               <PlanView 
-                onClose={() => setView('home')} 
+                onClose={() => handleProtectedViewChange('home')} 
               />
             )}
             {view === 'flashcards' && (
               <FlashcardView 
-                setView={setView} 
+                setView={handleProtectedViewChange} 
                 onEarnXP={handleEarnXP} 
                 soundEnabled={soundEnabled} 
               />
             )}
             {view === 'memory' && (
               <MemoryGameView 
-                setView={setView} 
+                setView={handleProtectedViewChange} 
                 onEarnXP={handleEarnXP} 
                 soundEnabled={soundEnabled} 
               />
@@ -910,7 +1008,7 @@ export default function App() {
             {view === 'games' && (
               <GameCornerView 
                 profile={profile}
-                setView={setView} 
+                setView={handleProtectedViewChange} 
                 onUseTicket={handleUseTicket}
                 soundEnabled={soundEnabled} 
               />
