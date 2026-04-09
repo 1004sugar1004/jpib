@@ -65,6 +65,7 @@ export default function App() {
   
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [dontShowForAWeek, setDontShowForAWeek] = useState(false);
   const [pendingView, setPendingView] = useState<typeof view | null>(null);
   const [reflectionData, setReflectionData] = useState<Record<string, string>>({});
   const [atlData, setAtlData] = useState<Record<string, number>>({});
@@ -777,16 +778,20 @@ export default function App() {
     const isProtected = protectedViews.includes(view);
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isProtected) {
+      const dontShowUntil = localStorage.getItem('dontShowExitConfirmUntil');
+      const isMuted = dontShowUntil && new Date().getTime() < parseInt(dontShowUntil);
+
+      if (isProtected && !isMuted) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
 
     const handlePopState = (e: PopStateEvent) => {
-      if (isProtected) {
-        // Push state back to prevent immediate exit
-        // window.history.pushState(null, '', window.location.pathname);
+      const dontShowUntil = localStorage.getItem('dontShowExitConfirmUntil');
+      const isMuted = dontShowUntil && new Date().getTime() < parseInt(dontShowUntil);
+
+      if (isProtected && !isMuted) {
         setPendingView('home');
         setShowExitConfirm(true);
       }
@@ -806,6 +811,11 @@ export default function App() {
   }, [view]);
 
   const confirmExit = () => {
+    if (dontShowForAWeek) {
+      const oneWeekLater = new Date().getTime() + 7 * 24 * 60 * 60 * 1000;
+      localStorage.setItem('dontShowExitConfirmUntil', oneWeekLater.toString());
+    }
+
     if (pendingView) {
       setView(pendingView);
     } else {
@@ -813,11 +823,15 @@ export default function App() {
     }
     setShowExitConfirm(false);
     setPendingView(null);
+    setDontShowForAWeek(false);
   };
 
   const handleProtectedViewChange = (newView: typeof view) => {
     const protectedViews = ['quiz', 'music-quiz', 'memory', 'flashcards', 'games'];
-    if (protectedViews.includes(view) && newView === 'home') {
+    const dontShowUntil = localStorage.getItem('dontShowExitConfirmUntil');
+    const isMuted = dontShowUntil && new Date().getTime() < parseInt(dontShowUntil);
+
+    if (protectedViews.includes(view) && newView === 'home' && !isMuted) {
       setPendingView(newView);
       setShowExitConfirm(true);
     } else {
@@ -865,9 +879,23 @@ export default function App() {
                 <AlertTriangle className="w-8 h-8 text-rose-600" />
               </div>
               <h3 className="text-2xl font-black text-gray-900 mb-2">잠깐만요!</h3>
-              <p className="text-gray-500 font-bold mb-8 leading-relaxed">
+              <p className="text-gray-500 font-bold mb-6 leading-relaxed">
                 지금 나가면 <span className="text-rose-600">진행 중인 학습 데이터가 사라집니다.</span> 정말 그만둘까요?
               </p>
+              
+              <div className="flex items-center justify-center gap-2 mb-8">
+                <input 
+                  type="checkbox" 
+                  id="dontShow"
+                  checked={dontShowForAWeek}
+                  onChange={(e) => setDontShowForAWeek(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                />
+                <label htmlFor="dontShow" className="text-sm font-bold text-gray-500 cursor-pointer">
+                  일주일 동안 보지 않기
+                </label>
+              </div>
+
               <div className="flex gap-3">
                 <Button 
                   variant="ghost" 
