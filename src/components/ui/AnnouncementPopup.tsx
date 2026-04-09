@@ -53,17 +53,30 @@ export const AnnouncementPopup = () => {
               </div>
 
               <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">
-                ☕ 카페라떼 기프티콘 이벤트!
+                🚀 IB Explorer 정식 오픈!
               </h3>
               
               <div className="space-y-4 text-gray-600 font-medium leading-relaxed">
-                <p>
-                  사이트 개선과 게임에 대한 업그레이드 방향 등<br />
-                  <span className="text-indigo-600 font-bold">좋은 의견을 주신 선생님들께</span><br />
-                  카페라떼 기프티콘을 드려요!
+                <p className="text-sm">
+                  IB Explorer가 드디어 <span className="text-indigo-600 font-bold">정식 오픈</span>했습니다!<br />
+                  오픈 기념으로 <span className="font-bold">4월 8일 랭킹이 초기화</span>되었습니다.
                 </p>
-                <p className="text-sm bg-indigo-50 py-2 rounded-xl border border-indigo-100">
-                  의견 제출은 <span className="font-bold text-indigo-700">홈페이지 하단</span>에서 하실 수 있습니다.
+                <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 space-y-2 text-xs">
+                  <p className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
+                    <span><span className="font-black">4월 30일:</span> 이달의 우수 탐험가 시상</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
+                    <span><span className="font-black">5월부터:</span> 매달 1일 랭킹 자동 초기화</span>
+                  </p>
+                  <p className="flex items-center gap-2 text-rose-600 font-black">
+                    <span className="w-1.5 h-1.5 bg-rose-600 rounded-full" />
+                    <span>🎁 우수학생 & 우수학급 과자박스 배달!</span>
+                  </p>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  새로운 마음으로 다시 한번 정상을 향해 도전해보세요!
                 </p>
               </div>
 
