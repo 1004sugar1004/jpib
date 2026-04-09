@@ -12,9 +12,11 @@ import {
   Clock,
   Zap,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCcw,
+  Trash2
 } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { ActivityLog, Feedback } from '../../types';
 import { cn } from '../../lib/utils';
@@ -30,6 +32,8 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
   const [activeTab, setActiveTab] = useState<'logs' | 'feedback'>('logs');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     const logsQuery = query(
@@ -79,6 +83,49 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
     fb.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     fb.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleResetRankings = async () => {
+    if (!window.confirm("정말로 모든 랭킹을 초기화하시겠습니까? 이 작업은 되돌릴 수 없으며 모든 사용자의 누적 점수, 월간 점수, 일간 점수가 0이 됩니다.")) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Reset users collection
+      const usersSnap = await getDocs(collection(db, 'users'));
+      usersSnap.docs.forEach(userDoc => {
+        batch.update(doc(db, 'users', userDoc.id), {
+          score: 0,
+          monthlyScore: 0,
+          dailyScore: 0,
+          dailyXP: 0,
+          gameTickets: 0,
+          completedStudyItems: []
+        });
+      });
+
+      // 2. Reset publicProfiles collection
+      const publicSnap = await getDocs(collection(db, 'publicProfiles'));
+      publicSnap.docs.forEach(publicDoc => {
+        batch.update(doc(db, 'publicProfiles', publicDoc.id), {
+          score: 0,
+          monthlyScore: 0,
+          dailyScore: 0
+        });
+      });
+
+      await batch.commit();
+      alert("모든 랭킹이 성공적으로 초기화되었습니다!");
+      setShowResetConfirm(false);
+    } catch (error) {
+      console.error("Failed to reset rankings:", error);
+      alert("초기화 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : "알 수 없는 오류"));
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return '';
@@ -198,6 +245,22 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                 <span>정상적인 학습 활동은 학생의 성장을 돕습니다.</span>
               </li>
             </ul>
+          </Card>
+
+          <Card className="p-6 bg-amber-50 border-amber-100">
+            <h4 className="text-sm font-black text-amber-900 uppercase tracking-widest mb-4">관리자 도구</h4>
+            <p className="text-[10px] text-amber-700 font-bold mb-4">
+              모든 사용자의 점수와 랭킹을 초기화합니다. 새로운 시즌을 시작할 때 사용하세요.
+            </p>
+            <Button 
+              variant="outline"
+              disabled={isResetting}
+              onClick={() => setShowResetConfirm(true)}
+              className="w-full border-amber-200 text-amber-700 hover:bg-amber-100 flex items-center justify-center gap-2"
+            >
+              <RefreshCcw className={cn("w-4 h-4", isResetting && "animate-spin")} />
+              <span>{isResetting ? "초기화 중..." : "모든 랭킹 초기화"}</span>
+            </Button>
           </Card>
         </div>
 
@@ -345,6 +408,42 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
           </Card>
         </div>
       </div>
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-[2.5rem] p-8 max-w-md w-full border-4 border-amber-100 shadow-2xl"
+          >
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <AlertTriangle className="w-8 h-8 text-amber-600" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 text-center mb-4">정말 초기화할까요?</h3>
+            <p className="text-gray-500 font-bold text-center mb-8 leading-relaxed">
+              이 작업은 <span className="text-rose-600 underline">절대 되돌릴 수 없습니다.</span><br />
+              모든 학생의 누적 점수, 월간 점수, 일간 점수가 0으로 리셋되며 새로운 랭킹이 시작됩니다.
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 py-4 rounded-2xl font-black"
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleResetRankings}
+                disabled={isResetting}
+                className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100"
+              >
+                {isResetting ? "초기화 중..." : "네, 초기화합니다"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
