@@ -37,7 +37,6 @@ export const CertificateView = ({ profile, onClose }: CertificateViewProps) => {
       link.click();
     } catch (err) {
       console.error('Failed to download certificate:', err);
-      alert('자격증 이미지를 저장하는 중 오류가 발생했습니다.');
     } finally {
       setIsDownloading(false);
     }

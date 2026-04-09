@@ -99,7 +99,7 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
       console.log(`Found ${usersSnap.size} users and ${publicSnap.size} public profiles. Total: ${totalDocs}`);
 
       if (totalDocs === 0) {
-        alert("초기화할 데이터가 없습니다.");
+        console.log("No data to reset.");
         setIsResetting(false);
         setShowResetConfirm(false);
         return;
@@ -139,12 +139,11 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
         console.log(`Committed batch ${Math.floor(i / CHUNK_SIZE) + 1}`);
       }
 
-      alert("모든 랭킹이 성공적으로 초기화되었습니다!");
+      console.log("All rankings reset successfully!");
       setShowResetConfirm(false);
     } catch (error) {
       console.error("Failed to reset rankings:", error);
       const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
-      alert(`초기화 중 오류가 발생했습니다.\n\n오류 내용: ${errorMessage}\n\n관리자 권한이 있는지 확인해 주세요.`);
     } finally {
       setIsResetting(false);
     }

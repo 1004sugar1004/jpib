@@ -34,7 +34,6 @@ export const FeedbackForm = ({ profile }: FeedbackFormProps) => {
       setTimeout(() => setIsSubmitted(false), 5000);
     } catch (error) {
       console.error("Failed to submit feedback", error);
-      alert("의견 제출에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsSubmitting(false);
     }

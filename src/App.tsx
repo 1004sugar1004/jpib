@@ -786,7 +786,7 @@ export default function App() {
     const handlePopState = (e: PopStateEvent) => {
       if (isProtected) {
         // Push state back to prevent immediate exit
-        window.history.pushState(null, '', window.location.pathname);
+        // window.history.pushState(null, '', window.location.pathname);
         setPendingView('home');
         setShowExitConfirm(true);
       }
@@ -795,7 +795,7 @@ export default function App() {
     if (isProtected) {
       window.addEventListener('beforeunload', handleBeforeUnload);
       // Push an extra state so the back button triggers popstate instead of leaving
-      window.history.pushState(null, '', window.location.pathname);
+      // window.history.pushState(null, '', window.location.pathname);
       window.addEventListener('popstate', handlePopState);
     }
 
