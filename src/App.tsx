@@ -284,7 +284,7 @@ export default function App() {
   const handleCreateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) {
-      alert("로그인이 필요합니다.");
+      console.log("Login required");
       return;
     }
     
@@ -332,7 +332,6 @@ export default function App() {
       setProfile(newProfile);
     } catch (error) {
       console.error("Profile creation failed:", error);
-      alert("프로필 생성에 실패했습니다. 잠시 후 다시 시도해주세요. (오류: " + (error instanceof Error ? error.message : "알 수 없는 오류") + ")");
       if (submitButton) submitButton.disabled = false;
     }
   };
@@ -344,7 +343,7 @@ export default function App() {
       
       // Check for anti-spam (if duration is too short)
       if (duration < 3) {
-        alert("너무 빨리 풀었어요! 잠시 쉬어 가세요.");
+        console.log("Quiz finished too quickly");
         return;
       }
 
@@ -353,9 +352,9 @@ export default function App() {
         let newTickets = (profile.gameTickets || 0);
         if (correctCount === totalCount) {
           newTickets += 3;
-          alert("만점입니다! 게임 티켓 3장을 획득했습니다!");
+          console.log("Perfect score! 3 tickets earned.");
         } else {
-          alert("정답률이 100%가 아니라 티켓을 획득하지 못했습니다. 만점에 도전해보세요!");
+          console.log("Not a perfect score. No tickets earned.");
         }
         
         setProfile(prev => prev ? ({ 
@@ -371,13 +370,13 @@ export default function App() {
       let xpToGain = quizScore;
       if (accuracy < 0.8) {
         xpToGain = 0;
-        alert("정답률이 80% 미만이라 경험치를 획득하지 못했습니다. 다시 도전해보세요!");
+        console.log("Accuracy below 80%. No XP earned.");
       }
 
       // Daily XP limit check
       if (currentDailyXP >= DAILY_XP_LIMIT) {
         xpToGain = 0;
-        alert(`오늘 획득할 수 있는 기본 경험치 상한선(${DAILY_XP_LIMIT}XP)에 도달했습니다. 일일 퀘스트 보상은 계속 받을 수 있습니다!`);
+        console.log("Daily XP limit reached.");
       } else if (currentDailyXP + xpToGain > DAILY_XP_LIMIT) {
         xpToGain = DAILY_XP_LIMIT - currentDailyXP;
       }
@@ -756,18 +755,6 @@ export default function App() {
       throw error;
     }
   };
-
-  if (!isAuthReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-indigo-50">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
 
   const currentBgKey = !user ? 'login' : !profile ? 'setup' : view;
 
