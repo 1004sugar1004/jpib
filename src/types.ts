@@ -32,6 +32,7 @@ export interface DailyQuest {
   progress: number;
   completed: boolean;
   xpReward: number;
+  ticketReward?: number;
 }
 
 export interface ActivityLog {

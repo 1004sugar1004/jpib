@@ -33,10 +33,13 @@ export const LoginView = ({ onLogin, onGuestLogin }: LoginViewProps) => {
         <Button 
           variant="secondary" 
           onClick={onGuestLogin} 
-          className="w-full py-4 text-lg mb-4 bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+          className="w-full py-4 text-lg mb-2 bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
         >
           로그인 없이 체험하기
         </Button>
+        <p className="text-[10px] text-gray-400 mb-6 font-medium">
+          💡 교사는 로그인 시 랭킹 확인 및 게임 무제한 이용이 가능합니다.
+        </p>
         
         <button 
           onClick={() => setShowPrivacy(true)}

@@ -252,6 +252,7 @@ export const HomeView = ({
               <div>
                 <h3 className="text-2xl font-black text-gray-900">🎯 오늘의 일일 퀘스트</h3>
                 <p className="text-emerald-600 font-bold text-sm uppercase tracking-widest">DAILY MISSIONS</p>
+                <p className="text-[10px] text-indigo-600 font-black mt-1">🎁 퀘스트 완료 시 게임 티켓 2장을 드립니다!</p>
               </div>
             </div>
           </div>

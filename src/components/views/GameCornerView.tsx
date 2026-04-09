@@ -112,7 +112,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
               onClick={() => {
                 if (isLocked) return;
                 if (tickets <= 0 && !isTeacher) {
-                  alert('게임 티켓이 부족합니다! 퀴즈를 풀어 티켓을 획득하세요.');
+                  console.log('게임 티켓이 부족합니다! 퀴즈를 풀어 티켓을 획득하세요.');
                   return;
                 }
                 if (!isTeacher) onUseTicket();

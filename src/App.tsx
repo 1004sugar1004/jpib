@@ -47,9 +47,9 @@ import { AlertTriangle } from 'lucide-react';
 const DAILY_XP_LIMIT = 500;
 
 const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
-  { id: 'q1', title: '지식탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 읽고 확인하세요.', type: 'study', target: 34, progress: 0, completed: false, xpReward: 150 },
-  { id: 'q2', title: '플래시카드 10개 학습', description: '플래시카드를 10번 뒤집어 학습하세요.', type: 'flashcards', target: 10, progress: 0, completed: false, xpReward: 30 },
-  { id: 'q3', title: '메모리 게임 1회 승리', description: '메모리 게임을 한 판 완료하세요.', type: 'memory', target: 1, progress: 0, completed: false, xpReward: 40 },
+  { id: 'q1', title: '지식탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 읽고 확인하세요. (보상: 150XP + 티켓 2장)', type: 'study', target: 34, progress: 0, completed: false, xpReward: 150, ticketReward: 2 },
+  { id: 'q2', title: '플래시카드 10개 학습', description: '플래시카드를 10번 뒤집어 학습하세요. (보상: 30XP + 티켓 2장)', type: 'flashcards', target: 10, progress: 0, completed: false, xpReward: 30, ticketReward: 2 },
+  { id: 'q3', title: '메모리 게임 1회 승리', description: '메모리 게임을 한 판 완료하세요. (보상: 40XP + 티켓 2장)', type: 'memory', target: 1, progress: 0, completed: false, xpReward: 40, ticketReward: 2 },
 ];
 
 export default function App() {
@@ -118,19 +118,23 @@ export default function App() {
   };
 
   const updateDailyQuests = (type: DailyQuest['type'], amount: number = 1) => {
-    if (!profile) return { newQuests: [], questXP: 0 };
+    if (!profile) return { newQuests: [], questXP: 0, questTickets: 0 };
     const quests = profile.dailyQuests || DEFAULT_DAILY_QUESTS;
     let questXP = 0;
+    let questTickets = 0;
     const newQuests = quests.map(q => {
       if (q.type === type && !q.completed) {
         const newProgress = q.progress + amount;
         const completed = newProgress >= q.target;
-        if (completed) questXP += q.xpReward;
+        if (completed) {
+          questXP += q.xpReward;
+          questTickets += (q.ticketReward || 0);
+        }
         return { ...q, progress: newProgress, completed };
       }
       return q;
     });
-    return { newQuests, questXP };
+    return { newQuests, questXP, questTickets };
   };
 
   // Auth Listener
@@ -381,7 +385,7 @@ export default function App() {
         xpToGain = DAILY_XP_LIMIT - currentDailyXP;
       }
 
-      const { newQuests, questXP } = updateDailyQuests('quiz');
+      const { newQuests, questXP, questTickets } = updateDailyQuests('quiz');
       const finalXP = xpToGain + questXP;
 
       const currentMonth = getCurrentMonth();
@@ -401,7 +405,7 @@ export default function App() {
       }
 
       // 10 questions -> 3 tickets (proportional)
-      const newTickets = (profile.gameTickets || 0) + Math.floor((correctCount / 10) * 3);
+      const newTickets = (profile.gameTickets || 0) + Math.floor((correctCount / 10) * 3) + questTickets;
 
       if (oldLevel !== newLevel) {
         setShowLevelUp(true);
@@ -477,7 +481,7 @@ export default function App() {
         xpToGain = DAILY_XP_LIMIT - currentDailyXP;
       }
 
-      const { newQuests, questXP } = updateDailyQuests(activityType, questAmount);
+      const { newQuests, questXP, questTickets } = updateDailyQuests(activityType, questAmount);
       const finalXP = xpToGain + questXP;
 
       const currentMonth = getCurrentMonth();
@@ -500,6 +504,8 @@ export default function App() {
         setShowLevelUp(true);
       }
 
+      const newTickets = (profile.gameTickets || 0) + questTickets;
+
       try {
         const userRef = doc(db, 'users', profile.uid);
         const publicRef = doc(db, 'publicProfiles', profile.uid);
@@ -511,7 +517,8 @@ export default function App() {
           dailyXP: currentDailyXP + xpToGain,
           dailyScore: newDailyScore,
           lastXPDate: today,
-          dailyQuests: newQuests
+          dailyQuests: newQuests,
+          gameTickets: newTickets
         });
 
         // Sync to public profile with full info to satisfy security rules
@@ -543,7 +550,8 @@ export default function App() {
           dailyXP: currentDailyXP + xpToGain,
           dailyScore: newDailyScore,
           lastXPDate: today,
-          dailyQuests: newQuests
+          dailyQuests: newQuests,
+          gameTickets: newTickets
         }) : null);
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
@@ -593,14 +601,17 @@ export default function App() {
     // Update daily quests for study
     let newQuests = profile.dailyQuests || DEFAULT_DAILY_QUESTS;
     let questXP = 0;
+    let questTickets = 0;
     if (!isCompleted) {
       const result = updateDailyQuests('study', 1);
       newQuests = result.newQuests;
       questXP = result.questXP;
+      questTickets = result.questTickets;
     }
 
     const finalXP = xpToGain + questXP;
     const finalNewScore = Math.max(0, profile.score + finalXP);
+    const finalNewTickets = (profile.gameTickets || 0) + questTickets;
     
     const currentDailyScore = profile.lastXPDate === today ? (profile.dailyScore || 0) : 0;
     const newDailyScore = currentDailyScore + finalXP;
@@ -625,7 +636,8 @@ export default function App() {
         dailyXP: currentDailyXP + xpToGain,
         dailyScore: newDailyScore,
         lastXPDate: today,
-        dailyQuests: newQuests
+        dailyQuests: newQuests,
+        gameTickets: finalNewTickets
       });
 
       // Sync to public profile with full info to satisfy security rules
@@ -651,7 +663,8 @@ export default function App() {
         dailyXP: currentDailyXP + xpToGain,
         dailyScore: newDailyScore,
         lastXPDate: today,
-        dailyQuests: newQuests
+        dailyQuests: newQuests,
+        gameTickets: finalNewTickets
       }) : null);
       
       if (!isCompleted && xpToGain > 0) {
