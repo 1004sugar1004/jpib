@@ -6,18 +6,29 @@ import { Button } from './Button';
 export const AnnouncementPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [dontShowToday, setDontShowToday] = useState(false);
+  const [dontShowForWeek, setDontShowForWeek] = useState(false);
 
   useEffect(() => {
     const lastClosed = localStorage.getItem('announcement_last_closed');
+    const dontShowUntil = localStorage.getItem('announcement_dont_show_until');
+    const now = Date.now();
     const today = new Date().toDateString();
     
+    if (dontShowUntil && parseInt(dontShowUntil) > now) {
+      setIsOpen(false);
+      return;
+    }
+
     if (lastClosed !== today) {
       setIsOpen(true);
     }
   }, []);
 
   const handleClose = () => {
-    if (dontShowToday) {
+    if (dontShowForWeek) {
+      const nextWeek = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      localStorage.setItem('announcement_dont_show_until', nextWeek.toString());
+    } else if (dontShowToday) {
       const today = new Date().toDateString();
       localStorage.setItem('announcement_last_closed', today);
     }
@@ -78,6 +89,14 @@ export const AnnouncementPopup = () => {
                 <p className="text-[11px] text-gray-400">
                   새로운 마음으로 다시 한번 정상을 향해 도전해보세요!
                 </p>
+
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-xs font-bold text-gray-700 mb-1">💡 의견을 들려주세요!</p>
+                  <p className="text-[10px] text-gray-500 leading-tight">
+                    좋은 의견을 주신 <span className="text-indigo-600 font-bold">선생님께는 기프티콘</span>을,<br />
+                    <span className="text-rose-600 font-bold">학생들에게는 추첨을 통해 과자</span>를 드립니다!
+                  </p>
+                </div>
               </div>
 
               <div className="mt-8 flex flex-col gap-4">
@@ -88,17 +107,36 @@ export const AnnouncementPopup = () => {
                   확인했습니다
                 </Button>
                 
-                <label className="flex items-center justify-center gap-2 cursor-pointer group">
-                  <input 
-                    type="checkbox" 
-                    checked={dontShowToday}
-                    onChange={(e) => setDontShowToday(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-400 font-bold group-hover:text-gray-600 transition-colors">
-                    오늘 하루 보지 않기
-                  </span>
-                </label>
+                <div className="flex items-center justify-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={dontShowToday}
+                      onChange={(e) => {
+                        setDontShowToday(e.target.checked);
+                        if (e.target.checked) setDontShowForWeek(false);
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] text-gray-400 font-bold group-hover:text-gray-600 transition-colors">
+                      오늘 하루 보지 않기
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={dontShowForWeek}
+                      onChange={(e) => {
+                        setDontShowForWeek(e.target.checked);
+                        if (e.target.checked) setDontShowToday(false);
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] text-gray-400 font-bold group-hover:text-gray-600 transition-colors">
+                      일주일 동안 보지 않기
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
           </motion.div>

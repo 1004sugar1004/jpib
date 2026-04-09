@@ -297,6 +297,7 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                   onClick={() => {
                     localStorage.removeItem('dontShowExitConfirmUntil');
                     localStorage.removeItem('announcement_last_closed');
+                    localStorage.removeItem('announcement_dont_show_until');
                     alert('팝업 설정이 초기화되었습니다. 페이지를 새로고침하면 다시 나타납니다.');
                   }}
                   className="w-full border-amber-200 text-amber-700 hover:bg-amber-100 flex items-center justify-center gap-2"
