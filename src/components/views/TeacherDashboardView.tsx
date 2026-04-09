@@ -85,43 +85,66 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
   );
 
   const handleResetRankings = async () => {
-    if (!window.confirm("정말로 모든 랭킹을 초기화하시겠습니까? 이 작업은 되돌릴 수 없으며 모든 사용자의 누적 점수, 월간 점수, 일간 점수가 0이 됩니다.")) {
-      return;
-    }
-
     setIsResetting(true);
     try {
-      const batch = writeBatch(db);
+      console.log("Starting ranking reset...");
       
-      // 1. Reset users collection
-      const usersSnap = await getDocs(collection(db, 'users'));
-      usersSnap.docs.forEach(userDoc => {
-        batch.update(doc(db, 'users', userDoc.id), {
-          score: 0,
-          monthlyScore: 0,
-          dailyScore: 0,
-          dailyXP: 0,
-          gameTickets: 0,
-          completedStudyItems: []
-        });
-      });
+      // 1. Get all documents
+      const [usersSnap, publicSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'publicProfiles'))
+      ]);
 
-      // 2. Reset publicProfiles collection
-      const publicSnap = await getDocs(collection(db, 'publicProfiles'));
-      publicSnap.docs.forEach(publicDoc => {
-        batch.update(doc(db, 'publicProfiles', publicDoc.id), {
-          score: 0,
-          monthlyScore: 0,
-          dailyScore: 0
-        });
-      });
+      const totalDocs = usersSnap.size + publicSnap.size;
+      console.log(`Found ${usersSnap.size} users and ${publicSnap.size} public profiles. Total: ${totalDocs}`);
 
-      await batch.commit();
+      if (totalDocs === 0) {
+        alert("초기화할 데이터가 없습니다.");
+        setIsResetting(false);
+        setShowResetConfirm(false);
+        return;
+      }
+
+      // 2. Process in chunks of 400 (Firestore batch limit is 500)
+      const allDocs = [
+        ...usersSnap.docs.map(d => ({ ref: doc(db, 'users', d.id), type: 'user' })),
+        ...publicSnap.docs.map(d => ({ ref: doc(db, 'publicProfiles', d.id), type: 'public' }))
+      ];
+
+      const CHUNK_SIZE = 400;
+      for (let i = 0; i < allDocs.length; i += CHUNK_SIZE) {
+        const chunk = allDocs.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+        
+        chunk.forEach(item => {
+          if (item.type === 'user') {
+            batch.update(item.ref, {
+              score: 0,
+              monthlyScore: 0,
+              dailyScore: 0,
+              dailyXP: 0,
+              gameTickets: 0,
+              completedStudyItems: []
+            });
+          } else {
+            batch.update(item.ref, {
+              score: 0,
+              monthlyScore: 0,
+              dailyScore: 0
+            });
+          }
+        });
+
+        await batch.commit();
+        console.log(`Committed batch ${Math.floor(i / CHUNK_SIZE) + 1}`);
+      }
+
       alert("모든 랭킹이 성공적으로 초기화되었습니다!");
       setShowResetConfirm(false);
     } catch (error) {
       console.error("Failed to reset rankings:", error);
-      alert("초기화 중 오류가 발생했습니다: " + (error instanceof Error ? error.message : "알 수 없는 오류"));
+      const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
+      alert(`초기화 중 오류가 발생했습니다.\n\n오류 내용: ${errorMessage}\n\n관리자 권한이 있는지 확인해 주세요.`);
     } finally {
       setIsResetting(false);
     }
