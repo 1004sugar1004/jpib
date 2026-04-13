@@ -219,14 +219,23 @@ export const MemoryGameView = ({ setView, onEarnXP, soundEnabled, initialCategor
               {/* Back (Content) */}
               <div className="absolute inset-0 bg-white rounded-xl md:rounded-2xl border-4 border-indigo-100 flex flex-col items-center justify-center backface-hidden rotate-y-180 shadow-lg p-2 overflow-hidden">
                 {card.type === 'visual' ? (
-                  card.image ? (
-                    <img src={card.image} alt={card.content} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                  ) : (
-                    <span className="text-2xl md:text-3xl font-black text-indigo-900 text-center leading-tight">{card.content}</span>
-                  )
+                  <div className="w-full h-full flex flex-col items-center justify-center p-1 gap-1">
+                    {card.image ? (
+                      <>
+                        <div className="flex-1 w-full min-h-0 flex items-center justify-center">
+                          <img src={card.image} alt={card.content} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                        </div>
+                        <span className="text-[10px] md:text-xs font-black text-indigo-900 text-center leading-tight">{card.content}</span>
+                      </>
+                    ) : (
+                      <span className="text-xl md:text-2xl font-black text-indigo-900 text-center leading-tight">{card.content}</span>
+                    )}
+                  </div>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center p-1 gap-1">
-                    <span className="text-[10px] md:text-xs font-black text-indigo-600 uppercase tracking-tighter text-center">{card.content}</span>
+                    <div className="bg-indigo-50 px-2 py-0.5 rounded-full">
+                      <span className="text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-tighter text-center">{card.content}</span>
+                    </div>
                     {card.description && (
                       <span className={cn(
                         "font-bold text-indigo-900 text-center leading-tight",
