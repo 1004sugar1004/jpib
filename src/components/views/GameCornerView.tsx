@@ -11,7 +11,8 @@ import {
   Rocket, 
   Apple, 
   ShoppingCart, 
-  Lock 
+  Lock,
+  Pencil
 } from 'lucide-react';
 import { AnipangGame } from '../games/AnipangGame';
 import { GalagaGame } from '../games/GalagaGame';
@@ -19,6 +20,7 @@ import { FruitMergeGame } from '../games/FruitMergeGame';
 import { StoreSortingGame } from '../games/StoreSortingGame';
 import { MarioGame } from '../games/MarioGame';
 import { RhythmTrainingGame } from '../games/RhythmTrainingGame';
+import { DrawingGame } from '../games/DrawingGame';
 
 import { UserProfile } from '../../types';
 
@@ -45,6 +47,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
     { id: 'store', name: 'IB 편의점 정리', icon: ShoppingCart, color: 'bg-emerald-500', unlockXp: 0, description: '선반을 정리하세요!', bgImage: 'https://i.imgur.com/QKpwzWZ.png' },
     { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 0, description: '장애물을 뛰어넘으세요!', bgImage: 'https://i.imgur.com/xBUw4hj.png' },
     { id: 'rhythm', name: 'IB 리듬 트레이닝', icon: Trophy, color: 'bg-yellow-500', unlockXp: 0, description: '박자에 맞춰 화살표를 눌러보세요!', bgImage: 'https://i.imgur.com/rLktNhW.png' },
+    { id: 'drawing', name: '10초 드로잉', icon: Pencil, color: 'bg-indigo-600', unlockXp: 0, description: 'AI가 당신의 그림을 맞힐 수 있을까요?', bgImage: 'https://i.imgur.com/lyCqTY1.png' },
   ];
 
   if (selectedGame) {
@@ -67,6 +70,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
             {selectedGame === 'store' && <StoreSortingGame soundEnabled={soundEnabled} />}
             {selectedGame === 'mario' && <MarioGame soundEnabled={soundEnabled} />}
             {selectedGame === 'rhythm' && <RhythmTrainingGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'drawing' && <DrawingGame soundEnabled={soundEnabled} />}
           </div>
         </div>
       </div>
