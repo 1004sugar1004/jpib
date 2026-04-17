@@ -51,9 +51,19 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
   ];
 
   if (selectedGame) {
+    const isDrawingGame = selectedGame === 'drawing';
     return (
-      <div className="w-full h-full min-h-screen flex flex-col bg-gray-900/10 p-2 md:p-4">
-        <header className="flex items-center justify-between mb-4 px-4 py-2 bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-white/20">
+      <div 
+        className={cn(
+          "w-full h-full min-h-screen flex flex-col p-2 md:p-4 transition-all duration-500",
+          isDrawingGame ? "bg-cover bg-center" : "bg-gray-900/10"
+        )}
+        style={isDrawingGame ? { backgroundImage: 'url(https://i.imgur.com/pDQDTaf.png)' } : {}}
+      >
+        <header className={cn(
+          "flex items-center justify-between mb-4 px-4 py-2 rounded-2xl shadow-sm border",
+          isDrawingGame ? "bg-white/40 backdrop-blur-xl border-white/20" : "bg-white/80 backdrop-blur-md border-white/20"
+        )}>
           <Button variant="ghost" onClick={() => setSelectedGame(null)} icon={ArrowLeft} className="text-gray-600">게임 목록</Button>
           <h2 className="text-lg md:text-2xl font-black text-gray-900">{games.find(g => g.id === selectedGame)?.name}</h2>
           <div className="w-20 hidden md:block" />
@@ -61,7 +71,10 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         
         <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
           <div className={cn(
-            "w-full max-w-4xl bg-gray-900 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden relative border-4 md:border-8 border-gray-800 shadow-2xl",
+            "w-full max-w-4xl overflow-hidden relative border-4 md:border-8 shadow-2xl transition-all",
+            isDrawingGame 
+              ? "bg-transparent border-transparent shadow-none" 
+              : "bg-gray-900 border-gray-800 rounded-[1.5rem] md:rounded-[2.5rem]",
             selectedGame === 'rhythm' ? "aspect-[9/16] md:aspect-square" : "aspect-[3/4] md:aspect-video"
           )}>
             {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} />}
