@@ -129,11 +129,14 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
-            { text: `Target word: "${currentWord}". Does this sketch represent "${currentWord}"? Be generous, it's a quick sketch.` },
+            { text: `The user is trying to draw: "${currentWord}". 
+            Evaluate this simple black or blue ink sketch on a white background. 
+            Does it reasonably represent the core features or symbolic shape of a "${currentWord}"? 
+            Since this is a quick 10-second game, be very flexible and look for characteristic outlines.` },
             { inlineData: { mimeType: "image/png", data: imageData } }
         ],
         config: {
-          systemInstruction: "You are a playful drawing recognition AI for a quick sketch guessing game. Analyze the human's hand-drawn sketch.",
+          systemInstruction: "You are a professional Quick-Draw recognition engine. You specialize in identifying objects from minimal, rough, hand-drawn sketches. You are generous but accurate, recognizing symbolic representations and simplified icon-like drawings. Provide guesses in Korean.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
