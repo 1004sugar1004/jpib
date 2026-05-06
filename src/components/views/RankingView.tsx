@@ -12,7 +12,7 @@ interface RankingViewProps {
 }
 
 export const RankingView = ({ setView, rankings }: RankingViewProps) => {
-  const [rankingType, setRankingType] = React.useState<'daily' | 'monthly' | 'total'>('daily');
+  const [rankingType, setRankingType] = React.useState<'daily' | 'monthly' | 'total'>('monthly');
 
   // Robust extraction: find all numbers in a string
   const extractNumbers = (val: string) => {
@@ -20,6 +20,8 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
     const matches = val.toString().match(/\d+/g);
     return matches ? matches.map(m => parseInt(m, 10).toString()) : [];
   };
+
+  const currentMonth = new Date().getMonth() + 1;
 
   const sortedRankings = React.useMemo(() => {
     const scoreKey = rankingType === 'total' ? 'score' : (rankingType === 'monthly' ? 'monthlyScore' : 'dailyScore');
@@ -98,7 +100,7 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
           <img src="https://i.imgur.com/EhA2HQZ.png" alt="Ranking" className="w-20 h-20 object-contain" referrerPolicy="no-referrer" />
         </div>
         <h2 className="text-3xl font-black text-gray-900">명예의 전당</h2>
-        <p className="text-gray-500 font-bold">증평 IB 탐험대의 최고 탐험가들을 소개합니다!</p>
+        <p className="text-gray-500 font-bold">{currentMonth}월 증평 IB 탐험대의 최고 탐험가들을 소개합니다!</p>
         <div className="mt-4 flex flex-col items-center gap-2">
           <div className="inline-flex items-center gap-2 bg-gray-100 px-4 py-1.5 rounded-full text-[10px] font-black text-gray-500 uppercase tracking-widest">
             총 참여 인원: {rankings.length}명 (학생: {totalStudentCount}명)
@@ -136,7 +138,7 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
                 : "bg-white text-gray-500 hover:bg-gray-50"
             )}
           >
-            월간 랭킹
+            {currentMonth}월 랭킹
           </button>
           <button
             onClick={() => setRankingType('total')}
@@ -154,7 +156,7 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
 
       <div className="space-y-4">
         <h3 className="text-xl font-black text-gray-900 px-4">
-          개인 순위 {rankingType === 'daily' ? '(오늘)' : (rankingType === 'monthly' ? '(월간)' : '(누적)')} TOP 30
+          개인 순위 {rankingType === 'daily' ? '(오늘)' : (rankingType === 'monthly' ? `(${currentMonth}월)` : '(누적)')} TOP 30
         </h3>
         <Card className="divide-y divide-gray-100 bg-white/80 backdrop-blur-md rounded-[2.5rem] border-white/20 shadow-xl overflow-hidden">
           {top30Rankings.map((rank, idx) => {
@@ -216,7 +218,7 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
 
       <div className="space-y-4">
         <h3 className="text-xl font-black text-gray-900 px-4">
-          학급 순위 {rankingType === 'daily' ? '(오늘)' : (rankingType === 'monthly' ? '(월간)' : '(누적)')}
+          학급 순위 {rankingType === 'daily' ? '(오늘)' : (rankingType === 'monthly' ? `(${currentMonth}월)` : '(누적)')}
         </h3>
         <Card className="divide-y divide-gray-100 bg-white/80 backdrop-blur-md rounded-[2.5rem] border-white/20 shadow-xl overflow-hidden">
           {classRankings.map((cls, idx) => {

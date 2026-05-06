@@ -71,7 +71,9 @@ export const HomeView = ({
 
   const DAILY_XP_LIMIT = 1000; // Should match App.tsx
 
-  // Calculate class rankings
+  const currentMonth = new Date().getMonth() + 1;
+
+  // Calculate class rankings based on monthly score
   const classRankings = React.useMemo(() => {
     const classMap: { [key: string]: { name: string; score: number; count: number } } = {};
     
@@ -98,12 +100,16 @@ export const HomeView = ({
         if (!classMap[groupKey]) {
           classMap[groupKey] = { name: groupName, score: 0, count: 0 };
         }
-        classMap[groupKey].score += (user.score || 0);
+        classMap[groupKey].score += (user.monthlyScore || 0);
         classMap[groupKey].count += 1;
       }
     });
     
     return Object.values(classMap).sort((a, b) => b.score - a.score).slice(0, 3);
+  }, [rankings]);
+
+  const topMonthlyRankings = React.useMemo(() => {
+    return [...rankings].sort((a, b) => (b.monthlyScore || 0) - (a.monthlyScore || 0)).slice(0, 3);
   }, [rankings]);
   
   return (
@@ -341,8 +347,8 @@ export const HomeView = ({
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-gray-900">🏆 실시간 누적 랭킹 TOP 3</h3>
-              <p className="text-yellow-600 font-bold text-sm uppercase tracking-widest">CURRENT LEADERS</p>
+              <h3 className="text-2xl font-black text-gray-900">🏆 {currentMonth}월 실시간 누적 랭킹 TOP 3</h3>
+              <p className="text-yellow-600 font-bold text-sm uppercase tracking-widest">MONTHLY LEADERS</p>
             </div>
           </div>
           <Button 
@@ -356,7 +362,7 @@ export const HomeView = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {rankings.slice(0, 3).map((rank, index) => {
+          {topMonthlyRankings.map((rank, index) => {
             const level = getLevel(rank.score);
             return (
               <div 
@@ -397,12 +403,12 @@ export const HomeView = ({
                 <p className="text-gray-500 font-bold text-xs mb-3">{formatGradeClass(rank.grade, rank.class, rank.role)}</p>
                 
                 <div className="px-4 py-1.5 bg-white rounded-full border border-gray-100 shadow-sm">
-                  <span className="text-indigo-600 font-black">{rank.score.toLocaleString()} XP</span>
+                  <span className="text-indigo-600 font-black">{(rank.monthlyScore || 0).toLocaleString()} XP</span>
                 </div>
               </div>
             );
           })}
-          {rankings.length === 0 && (
+          {topMonthlyRankings.length === 0 && (
             <div className="col-span-3 py-12 text-center text-gray-400 font-bold italic">
               아직 탐험가가 없습니다. 첫 번째 주인공이 되어보세요!
             </div>
@@ -422,8 +428,8 @@ export const HomeView = ({
               <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-gray-900">🏫 학급 대항전 TOP 3</h3>
-              <p className="text-indigo-600 font-bold text-sm uppercase tracking-widest">CLASS LEADERS</p>
+              <h3 className="text-2xl font-black text-gray-900">🏫 {currentMonth}월 학급 대항전 TOP 3</h3>
+              <p className="text-indigo-600 font-bold text-sm uppercase tracking-widest">MONTHLY CLASS LEADERS</p>
             </div>
           </div>
         </div>
