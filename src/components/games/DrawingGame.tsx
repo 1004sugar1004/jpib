@@ -16,7 +16,7 @@ const WORDS = [
 
 const ROUND_COUNT = 6;
 const DRAW_TIME = 10;
-const API_INTERVAL = 3000;
+const API_INTERVAL = 2000;
 
 function pickWords() {
   const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
@@ -131,12 +131,13 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         contents: [
             { text: `The user is trying to draw: "${currentWord}". 
             Evaluate this simple black or blue ink sketch on a white background. 
-            Does it reasonably represent the core features or symbolic shape of a "${currentWord}"? 
-            Since this is a quick 10-second game, be very flexible and look for characteristic outlines.` },
+            Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint of a "${currentWord}"? 
+            Since this is a quick 10-second game for elementary/middle school students, be extremely flexible and generous. 
+            If the drawing has even a slight resemblance or captures the basic essence of "${currentWord}", consider it a match.` },
             { inlineData: { mimeType: "image/png", data: imageData } }
         ],
         config: {
-          systemInstruction: "You are a professional Quick-Draw recognition engine. You specialize in identifying objects from minimal, rough, hand-drawn sketches. You are generous but accurate, recognizing symbolic representations and simplified icon-like drawings. Provide guesses in Korean.",
+          systemInstruction: "You are a professional Quick-Draw recognition engine. You specialize in identifying objects from minimal, rough, hand-drawn sketches. You are extremely generous and lenient, recognizing symbolic representations and simplified icon-like drawings. Even very abstract or incomplete shapes should be matched if they suggest the target word. Provide guesses in Korean.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -228,7 +229,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
         setTimeout(() => {
           if (!matchedRef.current) checkDrawingWithAI();
-        }, 1500);
+        }, 1000);
         
         apiTimerRef.current = setInterval(() => {
           if (!matchedRef.current) checkDrawingWithAI();
