@@ -98,6 +98,10 @@ export const AnnouncementPopup = () => {
                       <span className="text-emerald-500">⚡</span>
                       <span><span className="font-black text-emerald-600">XP 상향:</span> 일일 최대 경험치가 <span className="font-black">1,000 XP</span>로 늘어났습니다!</span>
                     </p>
+                    <p className="flex gap-1.5">
+                      <span className="text-amber-500">✨</span>
+                      <span><span className="font-black text-amber-600">업데이트:</span> 5월 중 퀴즈와 게임 속 퀴즈가 업데이트 될 예정입니다!</span>
+                    </p>
                   </div>
                 </div>
 
