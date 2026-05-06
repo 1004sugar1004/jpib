@@ -69,7 +69,7 @@ export const HomeView = ({
   const level = getLevel(profile?.score || 0);
   const studyProgress = Math.floor((Object.keys(reflectionData).length / ibReflectionQuestions.length) * 100);
 
-  const DAILY_XP_LIMIT = 500; // Should match App.tsx
+  const DAILY_XP_LIMIT = 1000; // Should match App.tsx
 
   // Calculate class rankings
   const classRankings = React.useMemo(() => {

@@ -44,7 +44,7 @@ import { backgrounds } from './constants';
 import { Button } from './components/ui/Button';
 import { AlertTriangle } from 'lucide-react';
 
-const DAILY_XP_LIMIT = 500;
+const DAILY_XP_LIMIT = 1000;
 
 const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
   { id: 'q1', title: '지식탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 읽고 확인하세요. (보상: 150XP + 티켓 2장)', type: 'study', target: 34, progress: 0, completed: false, xpReward: 150, ticketReward: 2 },

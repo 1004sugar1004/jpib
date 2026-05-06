@@ -63,36 +63,49 @@ export const AnnouncementPopup = () => {
                 />
               </div>
 
-              <h3 className="text-xl font-black text-gray-900 mb-3 tracking-tight">
-                🚀 IB Explorer 정식 오픈!
+              <h3 className="text-xl font-black text-gray-900 mb-2 tracking-tight">
+                🎉 4월 시상식 & 5월 공지
               </h3>
               
-              <div className="space-y-3 text-gray-600 font-medium leading-relaxed">
-                <p className="text-xs">
-                  IB Explorer가 드디어 <span className="text-indigo-600 font-bold">정식 오픈</span>했습니다!<br />
-                  <span className="font-bold">4월 8일 랭킹이 초기화</span>되었습니다.
-                </p>
-                <div className="bg-indigo-50 p-3 rounded-2xl border border-indigo-100 space-y-1.5 text-[10px]">
-                  <p className="flex items-center gap-2">
-                    <span className="w-1 h-1 bg-indigo-600 rounded-full" />
-                    <span><span className="font-black">4월 30일:</span> 이달의 우수 탐험가 시상</span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="w-1 h-1 bg-indigo-600 rounded-full" />
-                    <span><span className="font-black">5월부터:</span> 매달 1일 랭킹 자동 초기화</span>
-                  </p>
-                  <p className="flex items-center gap-2 text-rose-600 font-black">
-                    <span className="w-1 h-1 bg-rose-600 rounded-full" />
-                    <span>🎁 우수학생 & 우수학급 과자박스 배달!</span>
-                  </p>
+              <div className="space-y-2 text-gray-600 font-medium leading-relaxed max-h-[65vh] overflow-y-auto px-1 custom-scrollbar">
+                {/* 1. 우수학생/학급 (GRID) */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                    <h4 className="text-[10px] font-black text-amber-700 mb-1.5 flex items-center gap-1">🏆 4월 우수 학생</h4>
+                    <div className="space-y-0.5 text-[11px] text-gray-700 font-bold">
+                      <p className="flex justify-between"><span>🥇 1위</span> <span>최진호(4-1)</span></p>
+                      <p className="flex justify-between"><span>🥈 2위</span> <span>김태린(4-1)</span></p>
+                      <p className="flex justify-between"><span>🥉 3위</span> <span>윤태서(4-1)</span></p>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded-2xl border border-blue-100">
+                    <h4 className="text-[10px] font-black text-blue-700 mb-1.5 flex items-center gap-1">🏫 4월 우수 학급</h4>
+                    <div className="text-[10px] text-gray-700 font-bold leading-tight">
+                      <p>4-1, 5-5, 3-5</p>
+                      <p className="text-[8px] text-blue-500 font-medium mt-1 leading-tight">우수학생과 우수학급에게는 과자박스 선물이 있습니다</p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-[11px] font-bold text-gray-700 mb-1">💡 의견을 들려주세요!</p>
+                {/* 2. 랭킹 리셋 & 경험치 상향 */}
+                <div className="bg-indigo-50 p-3 rounded-2xl border border-indigo-100 text-left">
+                  <div className="flex flex-col gap-1 text-[10px] text-gray-700">
+                    <p className="flex gap-1.5">
+                      <span className="text-indigo-500">🗓️</span>
+                      <span><span className="font-black text-indigo-600">5월 랭킹 시작:</span> 4월 랭킹은 마감 및 초기화되었습니다.</span>
+                    </p>
+                    <p className="flex gap-1.5">
+                      <span className="text-emerald-500">⚡</span>
+                      <span><span className="font-black text-emerald-600">XP 상향:</span> 일일 최대 경험치가 <span className="font-black">1,000 XP</span>로 늘어났습니다!</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. 당첨자 & 이벤트 안내 */}
+                <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 text-center">
+                  <h4 className="text-[10px] font-black text-rose-700 mb-1">🎁 후기 이벤트 당첨: 한음 (4-1) ✨</h4>
                   <p className="text-[9px] text-gray-500 leading-tight">
-                    사이트 개선이나 새로운 게임 아이디어 등<br />
-                    좋은 의견을 주신 <span className="text-indigo-600 font-bold">선생님께는 기프티콘</span>을,<br />
-                    <span className="text-rose-600 font-bold">학생들에게는 추첨을 통해 과자</span>를 드립니다!
+                    선생님들을 위한 <span className="text-indigo-600 font-bold">커피쿠폰 이벤트</span>는 계속됩니다! ☕
                   </p>
                 </div>
               </div>
