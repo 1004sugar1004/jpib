@@ -215,15 +215,19 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Ranking Listener
-  useEffect(() => {
-    if (!isAuthReady || !user) return;
-    // Fetch from publicProfiles instead of users to avoid permission errors and PII leaks
-    const q = query(collection(db, 'publicProfiles'), limit(3000));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+  // Ranking Fetcher (Optimized: Removed onSnapshot to save costs)
+  const fetchRankings = React.useCallback(async () => {
+    if (!isAuthReady || (!user && !isGuest)) return;
+    try {
+      const q = query(collection(db, 'publicProfiles'), orderBy('score', 'desc'), limit(100)); // Limit to top 100
+      const snapshot = await getDoc(doc(db, 'publicProfiles', 'non-existent-to-trigger-cache')).catch(() => null); // Dummy for potential cache
+      
+      const { getDocs } = await import('firebase/firestore');
+      const querySnapshot = await getDocs(q);
+      
       const today = getCurrentDate();
       const currentMonth = getCurrentMonth();
-      const data = snapshot.docs.map(doc => {
+      const data = querySnapshot.docs.map(doc => {
         const userData = doc.data() as any;
         return { 
           ...userData, 
@@ -232,15 +236,19 @@ export default function App() {
           dailyScore: userData.lastXPDate === today ? (userData.dailyScore || 0) : 0
         };
       });
-      // Sort by score descending in memory
-      data.sort((a, b) => b.score - a.score);
-      console.log(`Fetched ${data.length} users for ranking.`);
       setRankings(data as UserProfile[]);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'publicProfiles');
-    });
-    return () => unsubscribe();
-  }, [isAuthReady, user]);
+      console.log(`Fetched ${data.length} users for ranking.`);
+    } catch (error) {
+      console.error("Error fetching rankings:", error);
+    }
+  }, [isAuthReady, user, isGuest]);
+
+  // Initial ranking load and periodic refresh (every 5 mins instead of real-time)
+  useEffect(() => {
+    fetchRankings();
+    const interval = setInterval(fetchRankings, 5 * 60 * 1000); // 5 mins
+    return () => clearInterval(interval);
+  }, [fetchRankings]);
 
   const handleLogin = async () => {
     try {

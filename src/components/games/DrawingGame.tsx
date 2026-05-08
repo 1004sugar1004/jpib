@@ -16,7 +16,7 @@ const WORDS = [
 
 const ROUND_COUNT = 6;
 const DRAW_TIME = 10;
-const API_INTERVAL = 2000;
+const API_INTERVAL = 3000;
 
 function pickWords() {
   const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
@@ -227,12 +227,13 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           }
         }, 1000);
 
+        // First check after 3 seconds of drawing to save cost and give user time
         setTimeout(() => {
-          if (!matchedRef.current) checkDrawingWithAI();
-        }, 1000);
+          if (!matchedRef.current && t > 0) checkDrawingWithAI();
+        }, 3000);
         
         apiTimerRef.current = setInterval(() => {
-          if (!matchedRef.current) checkDrawingWithAI();
+          if (!matchedRef.current && t > 0) checkDrawingWithAI();
         }, API_INTERVAL);
       }
     }, 1000);
