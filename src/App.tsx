@@ -201,6 +201,20 @@ export default function App() {
                 });
               }
             }
+
+            // [DATA FIX] Special fix for Lee Yeeun (Change role Teacher -> Student)
+            if (userData.name === '이예은' && userData.role === 'teacher') {
+              console.log("Applying data fix for Lee Yeeun...");
+              const updatedFields = {
+                role: 'student' as const,
+                grade: '5학년',
+                class: '5반'
+              };
+              await updateDoc(docRef, updatedFields);
+              await updateDoc(doc(db, 'publicProfiles', firebaseUser.uid), updatedFields);
+              userData = { ...userData, ...updatedFields };
+            }
+
             setProfile(userData);
           }
         } catch (error) {
