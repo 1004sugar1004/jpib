@@ -182,6 +182,10 @@ export default function App() {
                 lastXPDate: today,
                 photoURL: userData.photoURL || ""
               }, { merge: true });
+            } else if (!userData.dailyQuests || userData.dailyQuests.length === 0) {
+              // Ensure dailyQuests exist even if it's not a new day (for transitional users)
+              userData.dailyQuests = DEFAULT_DAILY_QUESTS;
+              await updateDoc(docRef, { dailyQuests: DEFAULT_DAILY_QUESTS });
             } else {
               // Repair logic: ensure public profile exists even if it's not a new day
               const publicRef = doc(db, 'publicProfiles', firebaseUser.uid);
@@ -332,6 +336,7 @@ export default function App() {
       lastXPDate: getCurrentDate(),
       lastActiveMonth: getCurrentMonth(),
       completedStudyItems: [],
+      dailyQuests: DEFAULT_DAILY_QUESTS,
       photoURL: user.photoURL || undefined,
     };
 
