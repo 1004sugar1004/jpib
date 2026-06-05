@@ -96,24 +96,34 @@ const RenderCard = ({ card, label, isCpu, playedCount = 0 }: RenderCardProps) =>
     );
   };
 
-  // Stack range offsets for pile density
-  const pileOffsets = playedCount > 15 ? 4 : playedCount > 8 ? 3 : playedCount > 4 ? 2 : playedCount > 1 ? 1 : 0;
+  // Number of background stacked card visuals
+  const numVisualCards = Math.min(playedCount - 1, 8);
+
+  // Deterministic physical offsets and rotations for realistic stacking
+  const stackPositions = [
+    { x: -6, y: 4, r: -10 },
+    { x: 6, y: -4, r: 9 },
+    { x: -4, y: -6, r: -14 },
+    { x: 7, y: 6, r: 13 },
+    { x: -8, y: 6, r: -7 },
+    { x: 5, y: 8, r: 11 },
+    { x: -5, y: -8, r: -5 },
+    { x: 7, y: 4, r: 10 }
+  ];
 
   return (
     <div className="relative">
       {/* 바닥에 은은하게 누적되어 보이는 카드 스택들 */}
-      {Array.from({ length: pileOffsets }).map((_, i) => {
-        const rotateDeg = (i + 1) * (i % 2 === 0 ? 3.5 : -3.5);
-        const translateX = (i + 1) * (i % 2 === 0 ? 3 : -3);
-        const translateY = (i + 1) * 4;
+      {numVisualCards > 0 && Array.from({ length: numVisualCards }).map((_, i) => {
+        const pos = stackPositions[i % stackPositions.length];
         return (
           <div 
             key={i}
-            className="absolute inset-0 bg-white border border-zinc-200/90 rounded-xl shadow-md pointer-events-none"
+            className="absolute inset-0 bg-white border border-zinc-300/90 rounded-xl shadow-md pointer-events-none"
             style={{ 
-              transform: `translate(${translateX}px, ${translateY}px) rotate(${rotateDeg}deg)`,
+              transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.r}deg)`,
               zIndex: -1 - i,
-              opacity: 0.9 - i * 0.2
+              opacity: Math.max(0.4, 0.95 - (i * 0.08))
             }}
           />
         );

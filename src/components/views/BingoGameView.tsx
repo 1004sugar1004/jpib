@@ -86,7 +86,7 @@ const BINGO_CATEGORIES = [
     title: "🔍 IB 핵심 개념",
     color: "bg-indigo-500/10 border-indigo-500/30 text-indigo-300",
     hoverBg: "hover:bg-indigo-500/20 hover:text-white",
-    words: ["형태 개념", "기능 개념", "원인 개념", "변화 개념", "연결 개념", "관점 개념", "책임 개념"]
+    words: ["형태", "기능", "원인", "변화", "연결", "관점", "책임"]
   },
   {
     title: "⚙️ 학습 접근 기능 (ATL)",
