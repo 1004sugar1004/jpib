@@ -62,6 +62,8 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
   const [bgMusicVolume, setBgMusicVolume] = useState(0.5);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -328,11 +330,25 @@ export default function App() {
   }, [fetchRankings]);
 
   const handleLogin = async () => {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setLoginError(null);
     try {
       await signInWithPopup(auth, googleProvider);
       setIsGuest(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
+      let localizedError = "로그인에 실패했습니다. 다시 시도해 주세요.";
+      if (error && (error.code === 'auth/cancelled-popup-request' || error.message?.includes('cancelled-popup-request'))) {
+        localizedError = "이미 진행 중인 로그인 창이 열려있거나 취소되었습니다. 대기 후 다시 클릭해 주시거나 주소창의 팝업 차단 여부를 체크해 주세요.";
+      } else if (error && (error.code === 'auth/popup-blocked' || error.message?.includes('popup-blocked'))) {
+        localizedError = "브라우저에 의해 로그인 창이 차단되었습니다. 주소창 부근의 팝업 차단 해제 설정을 한 후 다시 시도해 주세요.";
+      } else if (error?.message) {
+        localizedError = `로그인 오류: ${error.message}`;
+      }
+      setLoginError(localizedError);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -1020,7 +1036,12 @@ export default function App() {
           </motion.div>
         ) : !user && !isGuest ? (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <LoginView onLogin={handleLogin} onGuestLogin={handleGuestLogin} />
+            <LoginView 
+              onLogin={handleLogin} 
+              onGuestLogin={handleGuestLogin} 
+              isLoggingIn={isLoggingIn} 
+              loginError={loginError} 
+            />
           </motion.div>
         ) : !profile ? (
           <motion.div key="setup" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

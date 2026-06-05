@@ -265,7 +265,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       <header className="w-full flex items-center justify-between pb-2 border-b border-white/10 z-10">
         <div className="flex items-center gap-2">
           <img 
-            src="https://imgur.com/xe54lqW" 
+            src="https://i.imgur.com/xe54lqW.png" 
             alt="할리갈리 아이콘" 
             referrerPolicy="no-referrer"
             className="w-10 h-10 object-contain bg-white/10 p-1 rounded-xl"
@@ -285,7 +285,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-md">
           <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mb-6 border border-white/20">
             <img 
-              src="https://imgur.com/xe54lqW" 
+              src="https://i.imgur.com/xe54lqW.png" 
               alt="할리갈리 아이콘" 
               referrerPolicy="no-referrer" 
               className="w-16 h-16 object-contain"

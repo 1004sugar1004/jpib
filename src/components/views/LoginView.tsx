@@ -2,14 +2,23 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/Button';
 import { ASSETS } from '../../assets';
-import { UserCircle, Shield, X } from 'lucide-react';
+import { UserCircle, Shield, X, AlertCircle, Loader2 } from 'lucide-react';
 
 interface LoginViewProps {
   onLogin: () => void;
   onGuestLogin: () => void;
+  isLoggingIn?: boolean;
+  loginError?: string | null;
 }
 
-export const LoginView = ({ onLogin, onGuestLogin }: LoginViewProps) => {
+const SpinningLoader = (props: any) => <Loader2 {...props} className="animate-spin" />;
+
+export const LoginView = ({ 
+  onLogin, 
+  onGuestLogin, 
+  isLoggingIn = false, 
+  loginError = null 
+}: LoginViewProps) => {
   const [showPrivacy, setShowPrivacy] = useState(false);
 
   return (
@@ -27,12 +36,38 @@ export const LoginView = ({ onLogin, onGuestLogin }: LoginViewProps) => {
         </div>
         <h1 className="text-3xl font-black text-gray-900 mb-2">증평 IB 탐험대</h1>
         <p className="text-gray-600 mb-8">IB 이론을 배우고 퀴즈를 풀며 탐험을 시작해볼까요?</p>
-        <Button onClick={onLogin} className="w-full py-4 text-lg mb-4" icon={UserCircle}>
-          구글 계정으로 시작하기
+
+        {loginError && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mb-5 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-left text-xs text-rose-700 flex flex-col gap-1.5 shadow-sm"
+          >
+            <div className="flex items-center gap-1.5 font-black">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span>로그인 실패 알림 및 안내</span>
+            </div>
+            <p className="leading-relaxed text-rose-600 font-semibold">
+              {loginError}
+            </p>
+            <div className="text-[10px] text-gray-500 mt-1 pt-1.5 border-t border-rose-100 leading-normal">
+              💡 <b>아이폰/Safari/일부 브라우저</b>에서는 팝업 창이 차단되거나 쿠키 제한으로 인해 소셜 로그인이 불가능할 수 있습니다. 계속 오류가 뜨는 경우 <u>[오른쪽 상단 새창 열기]</u>를 이용하시거나 <b>'로그인 없이 체험하기'</b>를 선택해 주세요!
+            </div>
+          </motion.div>
+        )}
+
+        <Button 
+          onClick={onLogin} 
+          className="w-full py-4 text-lg mb-4" 
+          disabled={isLoggingIn}
+          icon={isLoggingIn ? SpinningLoader : UserCircle}
+        >
+          {isLoggingIn ? "로그인 정보 검증 중..." : "구글 계정으로 시작하기"}
         </Button>
         <Button 
           variant="secondary" 
           onClick={onGuestLogin} 
+          disabled={isLoggingIn}
           className="w-full py-4 text-lg mb-2 bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
         >
           로그인 없이 체험하기

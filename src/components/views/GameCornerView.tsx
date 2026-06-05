@@ -52,8 +52,8 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
     { id: 'mario', name: 'IB 마리오', icon: Gamepad2, color: 'bg-red-600', unlockXp: 0, description: '장애물을 뛰어넘으세요!', bgImage: 'https://i.imgur.com/xBUw4hj.png' },
     { id: 'rhythm', name: 'IB 리듬 트레이닝', icon: Trophy, color: 'bg-yellow-500', unlockXp: 0, description: '박자에 맞춰 화살표를 눌러보세요!', bgImage: 'https://i.imgur.com/rLktNhW.png' },
     { id: 'drawing', name: '10초 드로잉', icon: Pencil, color: 'bg-indigo-600', unlockXp: 0, description: 'AI가 당신의 그림을 맞힐 수 있을까요?', bgImage: 'https://i.imgur.com/lyCqTY1.png' },
-    { id: 'halligalli', name: 'IB 할리갈리', icon: Bell, color: 'bg-emerald-600', unlockXp: 0, description: '과일 개수의 합이 정확히 5개가 될 때 벨을 울리세요!', bgImage: 'https://imgur.com/xe54lqW' },
-    { id: 'jenga', name: 'IB 젠가', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않도록 블록을 조심히 빼내 쌓으세요!', bgImage: 'https://imgur.com/0wF00pI' },
+    { id: 'halligalli', name: 'IB 할리갈리', icon: Bell, color: 'bg-emerald-600', unlockXp: 0, description: '과일 개수의 합이 정확히 5개가 될 때 벨을 울리세요!', bgImage: 'https://i.imgur.com/xe54lqW.png' },
+    { id: 'jenga', name: 'IB 젠가', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않도록 블록을 조심히 빼내 쌓으세요!', bgImage: 'https://i.imgur.com/0wF00pI.png' },
   ];
 
   if (selectedGame) {
