@@ -103,6 +103,45 @@ export default function App() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   };
 
+  // Load guest profile from localStorage on mount
+  useEffect(() => {
+    const persistedIsGuest = localStorage.getItem('isGuest') === 'true';
+    if (persistedIsGuest) {
+      setIsGuest(true);
+      const persistedProfile = localStorage.getItem('guestProfile');
+      if (persistedProfile) {
+        try {
+          const parsed = JSON.parse(persistedProfile);
+          setProfile(parsed);
+        } catch (e) {
+          console.error("Failed to parse guest profile", e);
+        }
+      } else {
+        setProfile({
+          uid: 'guest',
+          name: '게스트 탐험가',
+          grade: '게스트',
+          class: '탐험대',
+          role: 'student',
+          score: 0,
+          gameTickets: 0,
+          completedStudyItems: [],
+          dailyXP: 0,
+          dailyScore: 0,
+          lastXPDate: getCurrentDate(),
+        });
+      }
+    }
+  }, []);
+
+  // Save guest profile to localStorage when it changes
+  useEffect(() => {
+    if (isGuest && profile && profile.uid === 'guest') {
+      localStorage.setItem('isGuest', 'true');
+      localStorage.setItem('guestProfile', JSON.stringify(profile));
+    }
+  }, [isGuest, profile]);
+
   const logActivity = async (log: Omit<ActivityLog, 'uid' | 'userName' | 'grade' | 'class' | 'timestamp'>) => {
     if (!profile) return;
     const fullLog: ActivityLog = {
@@ -356,7 +395,8 @@ export default function App() {
 
   const handleGuestLogin = () => {
     setIsGuest(true);
-    setProfile({
+    localStorage.setItem('isGuest', 'true');
+    const defaultGuest: UserProfile = {
       uid: 'guest',
       name: '게스트 탐험가',
       grade: '게스트',
@@ -368,11 +408,15 @@ export default function App() {
       dailyXP: 0,
       dailyScore: 0,
       lastXPDate: getCurrentDate(),
-    });
+    };
+    setProfile(defaultGuest);
+    localStorage.setItem('guestProfile', JSON.stringify(defaultGuest));
     setView('home');
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('isGuest');
+    localStorage.removeItem('guestProfile');
     if (isGuest) {
       setIsGuest(false);
       setProfile(null);
