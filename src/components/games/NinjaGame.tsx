@@ -504,6 +504,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
   // 미디어파이프 상태
   const [isMediaPipeLoading, setIsMediaPipeLoading] = useState<boolean>(true);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
+  const cameraActiveRef = useRef<boolean>(false);
   const [cameraError, setCameraError] = useState<boolean>(false);
 
   // 사운드 FX 관리
@@ -531,6 +532,10 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
   // 미디어파이프 가상 인스턴스 소유
   const mediaPipeHandsInstanceRef = useRef<any>(null);
   const mediaPipeCameraInstanceRef = useRef<any>(null);
+
+  // 실시간 손가락 랜드마크 데이터 자취 보조
+  const latestHandResultsRef = useRef<any>(null);
+  const lastHandDetectionTimeRef = useRef<number>(0);
 
   // 사운드 갱신 동기화
   useEffect(() => {
@@ -755,7 +760,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
       if (videoRef.current) {
         const camera = new CameraClass(videoRef.current, {
           onFrame: async () => {
-            if (gameStateRef.current === 'PLAYING' && mediaPipeHandsInstanceRef.current) {
+            if (mediaPipeHandsInstanceRef.current && videoRef.current) {
               await mediaPipeHandsInstanceRef.current.send({ image: videoRef.current });
             }
           },
@@ -766,6 +771,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
         camera.start()
           .then(() => {
             setCameraActive(true);
+            cameraActiveRef.current = true;
             setIsMediaPipeLoading(false);
           })
           .catch((e: any) => {
@@ -788,6 +794,9 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
     if (!canvas) return;
 
     if (results && results.multiHandLandmarks) {
+      latestHandResultsRef.current = results;
+      lastHandDetectionTimeRef.current = Date.now();
+
       results.multiHandLandmarks.forEach((landmarks: any[], handIndex: number) => {
         const wrist = landmarks[0];
         const indexTip = landmarks[8];
@@ -930,15 +939,15 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 미러링 비디오 렌더링
-    if (cameraActive && videoRef.current) {
+    if (cameraActiveRef.current && videoRef.current) {
       ctx.save();
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // 어두운 아케이드 터치 필터 오버레이
-      ctx.fillStyle = 'rgba(3, 3, 5, 0.65)';
+      // 어두운 아케이드 터치 필터 오버레이 (사용자가 배경에 뚜렷이 보이도록 불투명도를 적절히 조절)
+      ctx.fillStyle = 'rgba(3, 3, 5, 0.35)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
       ctx.fillStyle = '#030305';
@@ -957,53 +966,113 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
     ctx.stroke();
     ctx.restore();
 
+    // 1. 진행 중인 게임 플레이 오브젝트 (오직 PLAYING 시에만 렌더링)
     if (gameStateRef.current === 'PLAYING') {
-      // 렌더 패스들
       fruitsRef.current.forEach(f => f.draw(ctx));
       shardsRef.current.forEach(s => s.draw(ctx));
       shockwavesRef.current.forEach(w => w.draw(ctx));
       particlesRef.current.forEach(p => p.draw(ctx));
       comboTextsRef.current.forEach(t => t.draw(ctx));
+    }
 
-      // 마우스 궤적 그리기
-      const mouseTrail = mouseTrailRef.current;
-      if (mouseTrail.length > 1) {
+    // 2. 마우스 드래그 궤적 그리기 (언제나 활성)
+    const mouseTrail = mouseTrailRef.current;
+    if (mouseTrail.length > 1) {
+      ctx.save();
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#00f0ff';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(mouseTrail[0].x, mouseTrail[0].y);
+      for (let i = 1; i < mouseTrail.length; i++) {
+        ctx.lineTo(mouseTrail[i].x, mouseTrail[i].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 3. 카메라 핸드 궤적 칼날 렌더링 (언제나 활성)
+    const trails = handTrailsRef.current;
+    trails.forEach((trail) => {
+      if (trail.length > 1) {
         ctx.save();
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 25;
         ctx.shadowColor = '#00f0ff';
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 8;
+        ctx.lineWidth = 12;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        
         ctx.beginPath();
-        ctx.moveTo(mouseTrail[0].x, mouseTrail[0].y);
-        for (let i = 1; i < mouseTrail.length; i++) {
-          ctx.lineTo(mouseTrail[i].x, mouseTrail[i].y);
+        ctx.moveTo(trail[0].x, trail[0].y);
+        for (let i = 1; i < trail.length; i++) {
+          ctx.lineTo(trail[i].x, trail[i].y);
         }
         ctx.stroke();
         ctx.restore();
       }
+    });
 
-      // 카메라 핸드 궤적 칼날 렌더링
-      const trails = handTrailsRef.current;
-      trails.forEach((trail) => {
-        if (trail.length > 1) {
-          ctx.save();
-          ctx.shadowBlur = 25;
-          ctx.shadowColor = '#00f0ff';
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 12;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          
-          ctx.beginPath();
-          ctx.moveTo(trail[0].x, trail[0].y);
-          for (let i = 1; i < trail.length; i++) {
-            ctx.lineTo(trail[i].x, trail[i].y);
-          }
-          ctx.stroke();
-          ctx.restore();
-        }
+    // 4. 손맛을 극대화하는 실시간 광선검(손목->검지끝) 레이저 및 네온 코어 광선 그리기 (언제나 활성)
+    const results = latestHandResultsRef.current;
+    const isDetectionFresh = Date.now() - lastHandDetectionTimeRef.current < 500;
+    if (results && results.multiHandLandmarks && isDetectionFresh) {
+      results.multiHandLandmarks.forEach((landmarks: any[]) => {
+        const wrist = landmarks[0];
+        const indexTip = landmarks[8];
+
+        const currentWristPt = {
+          x: (1 - wrist.x) * canvas.width,
+          y: wrist.y * canvas.height
+        };
+        const currentIndexPt = {
+          x: (1 - indexTip.x) * canvas.width,
+          y: indexTip.y * canvas.height
+        };
+
+        // 1. 네온 빛 아우라 (두껍고 밝은 사이언 주위광)
+        ctx.save();
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#00ffff';
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.85)';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(currentWristPt.x, currentWristPt.y);
+        ctx.lineTo(currentIndexPt.x, currentIndexPt.y);
+        ctx.stroke();
+
+        // 2. 초광택 하얀색 검정 코어광 (실제 Lightsaber처럼 가운데가 극광으로 빛나는 효과)
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(currentWristPt.x, currentWristPt.y);
+        ctx.lineTo(currentIndexPt.x, currentIndexPt.y);
+        ctx.stroke();
+
+        // 3. 광선검 양끝 충전 구슬 가이드 (노란색 아우라)
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ffea00';
+        ctx.fillStyle = '#ffea00';
+        
+        ctx.beginPath();
+        ctx.arc(currentIndexPt.x, currentIndexPt.y, 10, 0, Math.PI * 2);
+        ctx.arc(currentWristPt.x, currentWristPt.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. 충전 구슬 중심의 초고밀도 흰색 코어
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(currentIndexPt.x, currentIndexPt.y, 5, 0, Math.PI * 2);
+        ctx.arc(currentWristPt.x, currentWristPt.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
       });
     }
   };
@@ -1197,7 +1266,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black/95 px-4 overflow-y-auto"
+            className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-zinc-950/60 backdrop-blur-md px-4 overflow-y-auto"
           >
             <div className="max-w-3xl w-full flex flex-col items-center py-6 text-center">
               <div className="text-[10px] md:text-xs font-semibold uppercase tracking-widest text-yellow-400 mb-2 border border-yellow-500/30 px-4 py-1 rounded-full bg-yellow-950/10">
@@ -1247,9 +1316,23 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
                     <span>AI 웹캠 모션 추적 장치 로드 중...</span>
                   </div>
                 ) : cameraError ? (
-                  <div className="text-amber-400 flex items-center gap-1.5 text-xs font-semibold bg-amber-950/20 border border-amber-500/30 px-3 py-1.5 rounded-lg max-w-md">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>전면 웹캠 미검출 또는 접근 거부됨 (마우스 및 터치를 사용해 플레이!)</span>
+                  <div className="text-amber-300 flex flex-col gap-2 text-xs font-semibold bg-amber-950/40 border border-amber-500/40 p-4 rounded-xl max-w-lg text-center shadow-lg backdrop-blur-sm">
+                    <div className="flex items-center justify-center gap-2 text-sm font-bold text-amber-400">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      <span>웹캠 연결이 거부되었거나 탐색 불가</span>
+                    </div>
+                    <p className="text-gray-300 leading-relaxed font-normal">
+                      현재 웹브라우저의 보안 정책상 모션 추적을 위해서는 <strong className="text-yellow-300">카메라 권한 허용</strong>이 꼭 필요합니다!
+                    </p>
+                    <div className="text-left text-[11px] bg-black/40 p-2.5 rounded border border-amber-500/20 text-gray-400 space-y-1 mt-1 font-sans">
+                      <p className="font-semibold text-amber-400">💡 정상적으로 실행하는 방법:</p>
+                      <p>1️⃣ 우측 상단의 <strong className="text-white">"새 창에서 열기" (Open in new window)</strong> 아이콘을 눌러 새 탭에서 열어주세요.</p>
+                      <p>2️⃣ 주소창 좌측의 카메라/안전 열쇠(🔒) 아이콘을 눌러 <strong className="text-white">카메라 권한을 "허용"</strong>해 주세요.</p>
+                      <p>3️⃣ 다른 회의 프로그램(Zoom, Teams 등)이 카메라를 사용 중인지 확인해 주세요.</p>
+                    </div>
+                    <p className="text-shadow-sm text-[11px] text-amber-400 font-semibold mt-1">
+                      ※ 카메라 없이도 마우스 드래그나 모바일 화면 터치(스와이프)로 게임을 신나게 즐길 수 있습니다!
+                    </p>
                   </div>
                 ) : (
                   <div className="text-emerald-400 flex items-center gap-1.5 text-sm font-semibold">
@@ -1277,7 +1360,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black/98 px-4 overflow-y-auto"
+            className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-zinc-950/65 backdrop-blur-md px-4 overflow-y-auto"
           >
             <div className="max-w-2xl w-full text-center py-6">
               <h2 className="text-4xl md:text-6xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-cyan-400 mb-1">
@@ -1371,10 +1454,10 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
       {/* 플레이 빌드 극적 무대 영역 (통합 캔버스) */}
       <main className="w-full flex-1 max-w-5xl px-3 flex items-center justify-center relative my-2 overflow-hidden">
         <div className="w-full h-full relative aspect-video bg-[#000002] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center">
-          {/* 안보이는 비디오 프레임 추출기 */}
+          {/* 안보이는 비디오 프레임 추출기 (브라우저 정책 우회를 위해 오프스크린 배치) */}
           <video 
             ref={videoRef} 
-            className="hidden" 
+            style={{ position: 'absolute', width: '640px', height: '480px', opacity: 0, pointerEvents: 'none', left: '-9999px', top: '-9999px' }}
             autoPlay 
             playsInline 
             muted 
