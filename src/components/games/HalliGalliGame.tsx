@@ -50,13 +50,14 @@ interface RenderCardProps {
   card: Card | null;
   label?: string;
   isCpu?: boolean;
+  playedCount?: number;
 }
 
-const RenderCard = ({ card, label, isCpu }: RenderCardProps) => {
+const RenderCard = ({ card, label, isCpu, playedCount = 0 }: RenderCardProps) => {
   if (!card) {
     return (
-      <div className="w-18 h-26 sm:w-22 sm:h-30 md:w-24 md:h-34 border-2 border-dashed border-white/20 rounded-xl bg-black/20 flex flex-col items-center justify-center text-zinc-400 text-[10px] font-bold shadow-inner">
-        <span className="opacity-40 text-[9px] uppercase tracking-wider">{label || '배치 대기'}</span>
+      <div className="w-28 h-40 sm:w-32 sm:h-44 md:w-36 md:h-50 border-2 border-dashed border-white/20 rounded-xl bg-black/20 flex flex-col items-center justify-center text-zinc-400 text-xs font-bold shadow-inner">
+        <span className="opacity-40 text-[10px] uppercase tracking-wider">{label || '배치 대기'}</span>
       </div>
     );
   }
@@ -67,19 +68,12 @@ const RenderCard = ({ card, label, isCpu }: RenderCardProps) => {
   const renderFruitContents = () => {
     const list = Array.from({ length: card.count });
     
-    let gridStyle = "grid gap-1 justify-center items-center";
-    if (card.count === 1) gridStyle += " grid-cols-1";
-    else if (card.count === 2) gridStyle += " grid-cols-2";
-    else if (card.count === 3) gridStyle += " grid-cols-3";
-    else if (card.count === 4) gridStyle += " grid-cols-2_gap-1.5";
-    else if (card.count === 5) gridStyle += " grid-cols-3_gap-1";
-
     const getGridCols = () => {
       if (card.count === 1) return "flex flex-col items-center justify-center";
-      if (card.count === 2) return "grid grid-cols-2 gap-2";
-      if (card.count === 3) return "grid grid-cols-3 gap-1.5";
-      if (card.count === 4) return "grid grid-cols-2 gap-2";
-      return "grid grid-cols-3 gap-1.5";
+      if (card.count === 2) return "grid grid-cols-2 gap-4";
+      if (card.count === 3) return "grid grid-cols-3 gap-3";
+      if (card.count === 4) return "grid grid-cols-2 gap-4";
+      return "grid grid-cols-3 gap-3";
     };
 
     return (
@@ -89,10 +83,10 @@ const RenderCard = ({ card, label, isCpu }: RenderCardProps) => {
             key={i} 
             className={`select-none hover:scale-110 transition-transform duration-200 block text-center leading-none ${
               card.count === 1 
-                ? 'text-3xl sm:text-4xl' 
+                ? 'text-5xl sm:text-6xl' 
                 : card.count >= 4 
-                  ? 'text-base sm:text-xl' 
-                  : 'text-xl sm:text-2xl'
+                  ? 'text-3xl sm:text-4xl' 
+                  : 'text-4xl sm:text-5xl'
             }`}
           >
             {fruitChar}
@@ -102,23 +96,53 @@ const RenderCard = ({ card, label, isCpu }: RenderCardProps) => {
     );
   };
 
+  // Stack range offsets for pile density
+  const pileOffsets = playedCount > 15 ? 4 : playedCount > 8 ? 3 : playedCount > 4 ? 2 : playedCount > 1 ? 1 : 0;
+
   return (
-    <div className={`w-18 h-26 sm:w-22 sm:h-30 md:w-24 md:h-34 bg-white border border-zinc-100 text-zinc-900 rounded-xl flex flex-col justify-between p-1.5 sm:p-2 shadow-xl relative select-none transform transition-all hover:scale-[1.02] hover:shadow-2xl`}>
-      {/* Mini top badge */}
-      <div className="flex justify-between items-center w-full">
-        <span className="text-[11px] sm:text-sm font-black text-indigo-600 font-mono leading-none">{card.count}</span>
-        <span className="text-[8px] sm:text-[9px] font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
-      </div>
+    <div className="relative">
+      {/* 바닥에 은은하게 누적되어 보이는 카드 스택들 */}
+      {Array.from({ length: pileOffsets }).map((_, i) => {
+        const rotateDeg = (i + 1) * (i % 2 === 0 ? 3.5 : -3.5);
+        const translateX = (i + 1) * (i % 2 === 0 ? 3 : -3);
+        const translateY = (i + 1) * 4;
+        return (
+          <div 
+            key={i}
+            className="absolute inset-0 bg-white border border-zinc-200/90 rounded-xl shadow-md pointer-events-none"
+            style={{ 
+              transform: `translate(${translateX}px, ${translateY}px) rotate(${rotateDeg}deg)`,
+              zIndex: -1 - i,
+              opacity: 0.9 - i * 0.2
+            }}
+          />
+        );
+      })}
 
-      {/* Center Fruit display */}
-      <div className="flex-1 flex items-center justify-center p-0.5 overflow-hidden">
-        {renderFruitContents()}
-      </div>
+      <div className={`w-28 h-40 sm:w-32 sm:h-44 md:w-36 md:h-50 bg-white border border-zinc-100 text-zinc-900 rounded-xl flex flex-col justify-between p-3 shadow-xl relative select-none transform transition-all hover:scale-[1.02] hover:shadow-2xl`}>
+        {/* Mini top badge */}
+        <div className="flex justify-between items-center w-full">
+          <span className="text-sm sm:text-lg font-black text-indigo-600 font-mono leading-none">{card.count}</span>
+          <span className="text-[10px] sm:text-xs font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
+        </div>
 
-      {/* Mini bottom inverted badge */}
-      <div className="flex justify-between items-center w-full rotate-180 select-none">
-        <span className="text-[11px] sm:text-sm font-black text-indigo-600 font-mono leading-none">{card.count}</span>
-        <span className="text-[8px] sm:text-[9px] font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
+        {/* Center Fruit display */}
+        <div className="flex-1 flex items-center justify-center p-1 overflow-hidden">
+          {renderFruitContents()}
+        </div>
+
+        {/* Mini bottom inverted badge */}
+        <div className="flex justify-between items-center w-full rotate-180 select-none">
+          <span className="text-sm sm:text-lg font-black text-indigo-600 font-mono leading-none">{card.count}</span>
+          <span className="text-[10px] sm:text-xs font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
+        </div>
+
+        {/* 바닥에 깔린 총 개수 서브 알림배지 */}
+        {playedCount > 0 && (
+          <div className="absolute -bottom-2 -right-2 bg-rose-600 border border-white text-[9px] font-black text-white px-2 py-0.5 rounded-full shadow-md z-30 transform hover:scale-110 transition-transform">
+            {playedCount}장 쌓임
+          </div>
+        )}
       </div>
     </div>
   );
@@ -134,17 +158,17 @@ interface RenderDeckProps {
 
 const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDeckProps) => {
   const hasCards = count > 0;
-  const stackOffsets = count > 20 ? 3 : count > 10 ? 2 : count > 3 ? 1 : 0;
+  const stackOffsets = count > 20 ? 5 : count > 10 ? 3 : count > 3 ? 2 : count > 0 ? 1 : 0;
 
   return (
-    <div className="relative select-none" style={{ paddingBottom: `${stackOffsets * 2}px` }}>
+    <div className="relative select-none" style={{ paddingBottom: `${stackOffsets * 3}px` }}>
       {/* 3D Stack Effect Layers */}
       {hasCards && Array.from({ length: stackOffsets }).map((_, i) => (
         <div 
           key={i}
           className="absolute inset-0 bg-indigo-950 border border-indigo-700/20 rounded-xl pointer-events-none"
           style={{ 
-            transform: `translate(${ (i + 1) * 1.5 }px, ${ (i + 1) * -1.5 }px)`,
+            transform: `translate(${ (i + 1) * 2 }px, ${ (i + 1) * -2 }px)`,
             zIndex: -1 - i
           }}
         />
@@ -154,10 +178,10 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
         type="button"
         disabled={disabled || !hasCards}
         onClick={onClick}
-        className={`w-18 h-26 sm:w-22 sm:h-30 md:w-24 md:h-34 rounded-xl flex flex-col justify-between p-1.5 sm:p-2 shadow-lg transition-all border outline-none select-none relative ${
+        className={`w-28 h-40 sm:w-32 sm:h-44 md:w-36 md:h-50 rounded-xl flex flex-col justify-between p-3 shadow-lg transition-all border outline-none select-none relative ${
           hasCards 
             ? isPlayerTurn
-              ? 'bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 border-amber-300 cursor-pointer hover:shadow-amber-500/10 hover:scale-105 active:scale-95'
+              ? 'bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 border-amber-300 cursor-pointer hover:shadow-amber-500/15 hover:scale-105 active:scale-95'
               : 'bg-gradient-to-br from-indigo-700 to-indigo-950 border-indigo-500/30'
             : 'bg-zinc-950/40 border-white/5 border-dashed cursor-not-allowed'
         }`}
@@ -165,23 +189,23 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
         {hasCards ? (
           <>
             {/* Cards remaining display */}
-            <div className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-black font-mono leading-none bg-black/25 ${
+            <div className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-black font-mono leading-none bg-black/25 ${
               isPlayerTurn ? 'text-amber-950' : 'text-indigo-200'
             }`}>
               {count}장
             </div>
 
             {/* Middle visual icon */}
-            <div className="flex-1 flex flex-col items-center justify-center my-1 select-none">
-              <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${
+            <div className="flex-1 flex flex-col items-center justify-center my-2 select-none">
+              <span className={`text-xs sm:text-sm font-black uppercase tracking-wider ${
                 isPlayerTurn ? 'text-amber-950' : 'text-indigo-200'
               }`}>
                 {isPlayerTurn ? 'TAP' : 'IB봇'}
               </span>
-              <span className={`text-xl sm:text-2xl leading-none my-0.5 animate-pulse`}>
+              <span className={`text-3xl sm:text-4xl leading-none my-1.5 animate-pulse`}>
                 {isPlayerTurn ? '✨' : '📚'}
               </span>
-              <span className={`text-[8px] font-bold uppercase tracking-widest ${
+              <span className={`text-[9px] font-black uppercase tracking-widest ${
                 isPlayerTurn ? 'text-amber-900' : 'text-indigo-400'
               }`}>
                 {label}
@@ -189,7 +213,7 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
             </div>
 
             {/* Bottom notification */}
-            <div className={`text-[7px] sm:text-[8px] font-extrabold uppercase py-0.5 px-1.5 rounded bg-black/10 tracking-widest ${
+            <div className={`text-[8px] sm:text-[9px] font-black uppercase py-1 px-2.5 rounded bg-black/10 tracking-widest ${
               isPlayerTurn ? 'text-amber-950' : 'text-indigo-400'
             }`}>
               {isPlayerTurn ? '뒤집기' : '대기중'}
@@ -197,8 +221,8 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center">
-            <span className="text-lg">🫙</span>
-            <span className="text-[7px] font-bold text-zinc-500 mt-1 uppercase leading-none">카드 소진</span>
+            <span className="text-3xl">🫙</span>
+            <span className="text-[10px] font-bold text-zinc-500 mt-2 uppercase leading-none">카드 소진</span>
           </div>
         )}
       </button>
@@ -653,18 +677,13 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               className="w-12 h-12 object-contain"
             />
           </div>
-          <h2 className="text-lg font-black text-amber-200 mb-1 leading-snug">실시간 과일 세기 대결</h2>
-          <p className="text-[11px] text-emerald-200 font-bold mb-4 leading-relaxed">
-            바닥에 공개된 카드 중 같은 종류 과일 수의 합이 <br/>
-            <span className="text-amber-300 font-black">정확히 5개</span>가 되는 순간!<br/>
-            재빨리 황금색 벨 🛎️ 을 터치하세요!
-          </p>
-
-          <div className="w-full bg-zinc-950/40 p-3 rounded-xl border border-white/5 space-y-1.5 text-left text-[10px] text-zinc-300 mb-4 font-semibold leading-tight">
-            <p className="font-extrabold text-[#ca8a04]">📱 터치 및 클릭 조작 안내</p>
-            <p>• <b>카드 뒤집기</b>: 내 덱 📚 카드 스택을 가볍게 탭합니다.</p>
-            <p>• <b>종 치기</b>: 가운데 동그란 황금 벨 🛎️ 을 곧바로 터치합니다.</p>
-            <p>• <b>정답</b>: 카드를 모두 가져갑니다. 오답 시 1장 패널티가 발생해요!</p>
+          <h2 className="text-lg font-black text-amber-200 mb-2 leading-snug">💡 진짜 할리갈리 규칙 안내</h2>
+          <div className="w-full bg-emerald-950/65 p-3.5 rounded-xl border border-emerald-500/20 text-left text-[11px] text-emerald-100 mb-4 space-y-2 leading-relaxed">
+            <p>1. <b>카드 뒤집기</b>: 내 턴일 때 덱을 탭하여 바닥(공개 카드 영역)에 카드를 1장 오픈합니다.</p>
+            <p>2. <b>새 카드 덮기</b>: 새로운 카드를 뒤집으면, 이전에 내가 냈던 카드는 그 아래로 <b>차곡차곡 바닥에 깔립니다(누적됨).</b></p>
+            <p>3. <b>종 치기(🛎️)</b>: 바닥에 <b>가장 위에 펼쳐진 두 장의 카드</b> 속 과일들을 보았을 때, <b>단 한 종류라도 과일 개수의 합이 정확히 5개</b>가 되면 재빨리 종을 칩니다!</p>
+            <p>4. <b>가져가기</b>: 먼저 올바르게 종을 친 탐험가는 <b>바닥 아래에 누적되어 깔린 모든 카드</b>를 싹 쓸어 자신의 덱으로 가져갑니다.</p>
+            <p>5. <b>주의</b>: 5개가 아닐 때 실수로 종을 치면, 라이벌(CPU)에게 패널티 카드를 넘겨주어야 합니다!</p>
           </div>
 
           <Button 
@@ -715,7 +734,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">상대 공개 카드</span>
-                <RenderCard card={cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null} label="빈 필드" />
+                <RenderCard card={cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null} label="빈 필드" playedCount={cpuPlayed.length} />
               </div>
             </div>
 
@@ -756,7 +775,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pb-1">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">내 공개 카드</span>
-                <RenderCard card={playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null} label="빈 필드" />
+                <RenderCard card={playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null} label="빈 필드" playedCount={playerPlayed.length} />
               </div>
 
               <div className="flex flex-col items-center gap-1">

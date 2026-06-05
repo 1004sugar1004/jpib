@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -109,6 +109,56 @@ interface Cell {
   marked: boolean;
 }
 
+// Calculate completed bingo lines (returns array of winning line indices: rows 0-4, cols 5-9, diag 10, diag 11)
+const calculateCompletedLines = (board: Cell[]): number[] => {
+  if (board.length === 0) return [];
+  const lines: number[] = [];
+
+  // Rows
+  for (let r = 0; r < 5; r++) {
+    if (board.slice(r * 5, r * 5 + 5).every(cell => cell.marked)) {
+      lines.push(r); // rows index 0-4
+    }
+  }
+
+  // Columns
+  for (let c = 0; c < 5; c++) {
+    let isColComplete = true;
+    for (let r = 0; r < 5; r++) {
+      if (!board[r * 5 + c].marked) {
+        isColComplete = false;
+        break;
+      }
+    }
+    if (isColComplete) {
+      lines.push(5 + c); // cols index 5-9
+    }
+  }
+
+  // Diagonal top-left to bottom-right
+  let diag1 = true;
+  for (let i = 0; i < 5; i++) {
+    if (!board[i * 5 + i].marked) {
+      diag1 = false;
+      break;
+    }
+  }
+  if (diag1) lines.push(10);
+
+  // Diagonal top-right to bottom-left
+  let diag2 = true;
+  for (let i = 0; i < 5; i++) {
+    if (!board[i * 5 + (4 - i)].marked) {
+      diag2 = false;
+      break;
+    }
+  }
+  if (diag2) lines.push(11);
+
+  return lines;
+};
+
+
 interface BingoGameViewProps {
   setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'bingo') => void;
   onEarnXP: (xp: number, activityType?: string) => void;
@@ -123,8 +173,8 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
   const [computerBoard, setComputerBoard] = useState<Cell[]>([]);
   const [markedValues, setMarkedValues] = useState<Set<string>>(new Set());
   
-  const [playerBingos, setPlayerBingos] = useState<number>(0);
-  const [computerBingos, setComputerBingos] = useState<number>(0);
+  const playerBingos = useMemo(() => calculateCompletedLines(playerBoard).length, [playerBoard]);
+  const computerBingos = useMemo(() => calculateCompletedLines(computerBoard).length, [computerBoard]);
   const [turn, setTurn] = useState<'player' | 'computer'>('player');
   const [lastSelectedValue, setLastSelectedValue] = useState<string | null>(null);
   const [winner, setWinner] = useState<'player' | 'computer' | null>(null);
@@ -211,8 +261,6 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
 
     setComputerBoard(computerWords.map(w => ({ value: w, marked: false })));
     setMarkedValues(new Set());
-    setPlayerBingos(0);
-    setComputerBingos(0);
     setLastSelectedValue(null);
     setWinner(null);
     setTurn('player');
@@ -229,57 +277,10 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
   };
 
   useEffect(() => {
-    initializeSetupBoard();
-  }, [gameState === 'setup']);
-
-  // Calculate completed bingo lines (returns array of winning line indices: rows 0-4, cols 5-9, diag 10, diag 11)
-  const calculateCompletedLines = (board: Cell[]): number[] => {
-    if (board.length === 0) return [];
-    const lines: number[] = [];
-
-    // Rows
-    for (let r = 0; r < 5; r++) {
-      if (board.slice(r * 5, r * 5 + 5).every(cell => cell.marked)) {
-        lines.push(r); // rows index 0-4
-      }
+    if (gameState === 'setup') {
+      initializeSetupBoard();
     }
-
-    // Columns
-    for (let c = 0; c < 5; c++) {
-      let isColComplete = true;
-      for (let r = 0; r < 5; r++) {
-        if (!board[r * 5 + c].marked) {
-          isColComplete = false;
-          break;
-        }
-      }
-      if (isColComplete) {
-        lines.push(5 + c); // cols index 5-9
-      }
-    }
-
-    // Diagonal top-left to bottom-right
-    let diag1 = true;
-    for (let i = 0; i < 5; i++) {
-      if (!board[i * 5 + i].marked) {
-        diag1 = false;
-        break;
-      }
-    }
-    if (diag1) lines.push(10);
-
-    // Diagonal top-right to bottom-left
-    let diag2 = true;
-    for (let i = 0; i < 5; i++) {
-      if (!board[i * 5 + (4 - i)].marked) {
-        diag2 = false;
-        break;
-      }
-    }
-    if (diag2) lines.push(11);
-
-    return lines;
-  };
+  }, [gameState]);
 
   // Check Game State and trigger Bingos counting
   const handleMark = (value: string | number) => {
@@ -294,30 +295,20 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
     // Sound effect
     if (isMusicEnabled) playSynthSound('select');
 
-    // Make updates to cells
-    const newPlayerBoard = playerBoard.map(cell => 
-      cell.value === value ? { ...cell, marked: true } : cell
-    );
-    const newComputerBoard = computerBoard.map(cell => 
-      cell.value === value ? { ...cell, marked: true } : cell
-    );
-
-    setPlayerBoard(newMarkedBoard => {
-      const updated = playerBoard.map(cell => 
+    setPlayerBoard(prevBoard => {
+      const updated = prevBoard.map(cell => 
         cell.value === value ? { ...cell, marked: true } : cell
       );
-      const prevL = calculateCompletedLines(playerBoard).length;
+      const prevL = calculateCompletedLines(prevBoard).length;
       const newL = calculateCompletedLines(updated).length;
       if (newL > prevL && isMusicEnabled) setTimeout(() => playSynthSound('bingo'), 80);
-      setPlayerBingos(newL);
       return updated;
     });
 
-    setComputerBoard(newMarkedBoard => {
-      const updated = computerBoard.map(cell => 
+    setComputerBoard(prevBoard => {
+      const updated = prevBoard.map(cell => 
         cell.value === value ? { ...cell, marked: true } : cell
       );
-      setComputerBingos(calculateCompletedLines(updated).length);
       return updated;
     });
   };

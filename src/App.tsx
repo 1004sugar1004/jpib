@@ -269,7 +269,10 @@ export default function App() {
           // Don't throw here to avoid breaking the auth listener flow
         }
       } else {
-        setProfile(null);
+        const persistedIsGuest = localStorage.getItem('isGuest') === 'true';
+        if (!persistedIsGuest) {
+          setProfile(null);
+        }
       }
       setIsAuthReady(true);
     });
