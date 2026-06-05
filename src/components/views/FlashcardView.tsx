@@ -142,8 +142,12 @@ export const FlashcardView = ({ setView, onEarnXP, soundEnabled }: FlashcardView
                 setSelectedCategory(cat.id);
                 setCurrentIndex(0);
                 setIsFlipped(false);
+                setHasFlipped(false);
+                setIsReadComplete(false);
+                setReadingTimer(0);
                 setLearnedCount(0);
                 setShowCompletion(false);
+                startTimeRef.current = Date.now();
               }}
               className="cursor-pointer group"
             >

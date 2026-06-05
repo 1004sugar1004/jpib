@@ -9,7 +9,8 @@ export const Button = ({
   disabled,
   size = 'md',
   icon: Icon,
-  type = 'button'
+  type = 'button',
+  id
 }: { 
   children: React.ReactNode; 
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; 
@@ -19,6 +20,7 @@ export const Button = ({
   size?: 'sm' | 'md' | 'lg';
   icon?: any;
   type?: 'button' | 'submit' | 'reset';
+  id?: string;
 }) => {
   const variants = {
     primary: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100",
@@ -35,6 +37,7 @@ export const Button = ({
 
   return (
     <button 
+      id={id}
       onClick={onClick}
       disabled={disabled}
       type={type}

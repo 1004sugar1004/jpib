@@ -3,14 +3,14 @@
 
 export const ASSETS = {
   characters: {
-    explorer_lv1: 'https://i.imgur.com/ErsamDP.png',
-    explorer_lv2: 'https://i.imgur.com/F4WLrB5.png',
-    explorer_lv3: 'https://i.imgur.com/OnqILAz.png',
-    explorer_lv4: 'https://i.imgur.com/ro5sOug.png',
-    explorer_lv5: 'https://i.imgur.com/C0iUprq.png',
-    explorer_lv6: 'https://i.imgur.com/funtHbs.png',
-    explorer_lv7: 'https://i.imgur.com/xKEWBAv.png',
-    explorer_lv8: 'https://i.imgur.com/O3NcY3z.png',
+    explorer_lv1: 'https://i.imgur.com/F4WLrB5.png',
+    explorer_lv2: 'https://i.imgur.com/ErsamDP.png',
+    explorer_lv3: 'https://i.imgur.com/O3NcY3z.png',
+    explorer_lv4: 'https://i.imgur.com/xKEWBAv.png',
+    explorer_lv5: 'https://i.imgur.com/funtHbs.png',
+    explorer_lv6: 'https://i.imgur.com/C0iUprq.png',
+    explorer_lv7: 'https://i.imgur.com/ro5sOug.png',
+    explorer_lv8: 'https://i.imgur.com/OnqILAz.png',
     explorer_lv9: 'https://i.imgur.com/Q6xAjSK.png',
     explorer_lv10: 'https://i.imgur.com/9PGDj5M.png',
     level_up: 'https://i.imgur.com/bq8MGQB.png',

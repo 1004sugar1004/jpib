@@ -2,457 +2,798 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/Button';
 import { ASSETS } from '../../assets';
-import { ArrowLeft, RefreshCw, Volume2, VolumeX, AlertCircle } from 'lucide-react';
+import { 
+  Volume2, 
+  VolumeX, 
+  RefreshCw, 
+  Play, 
+  HelpCircle, 
+  Sparkles, 
+  Award,
+  BellRing,
+  Smartphone,
+  MousePointer
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface Card {
-  id: string;
-  fruit: '🍓' | '🍌' | '🍋' | '🍇';
-  count: number;
+  fruit: number; // 0: 🍓, 1: 🍌, 2: 🫐, 3: 🍋
+  count: number; // 1 to 5
 }
 
-const FRUITS: ('🍓' | '🍌' | '🍋' | '🍇')[] = ['🍓', '🍌', '🍋', '🍇'];
+const FRUITS = ['🍓', '🍌', '🫐', '🍋'];
+const FRUIT_NAMES = ['딸기', '바나나', '자두', '라임'];
 
-const generateDeck = (): Card[] => {
-  const deck: Card[] = [];
-  // For each fruit, generate cards:
-  // 5 cards of 1, 3 cards of 2, 3 cards of 3, 2 cards of 4, 1 card of 5
-  FRUITS.forEach(fruit => {
-    // 5 of count 1
-    for (let i = 0; i < 5; i++) deck.push({ id: `${fruit}-1-${i}-${Math.random()}`, fruit, count: 1 });
-    // 3 of count 2
-    for (let i = 0; i < 3; i++) deck.push({ id: `${fruit}-2-${i}-${Math.random()}`, fruit, count: 2 });
-    // 3 of count 3
-    for (let i = 0; i < 3; i++) deck.push({ id: `${fruit}-3-${i}-${Math.random()}`, fruit, count: 3 });
-    // 2 of count 4
-    for (let i = 0; i < 2; i++) deck.push({ id: `${fruit}-4-${i}-${Math.random()}`, fruit, count: 4 });
-    // 1 of count 5
-    for (let i = 0; i < 1; i++) deck.push({ id: `${fruit}-5-${i}-${Math.random()}`, fruit, count: 5 });
-  });
-
-  // Shuffle deck
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
+function makeDeck(): Card[] {
+  const d: Card[] = [];
+  for (let f = 0; f < 4; f++) {
+    for (let n = 1; n <= 5; n++) {
+      // 3 cards of each combination (60 cards total)
+      for (let i = 0; i < 3; i++) {
+        d.push({ fruit: f, count: n });
+      }
+    }
   }
-  return deck;
-};
+  return shuffle(d);
+}
+
+function shuffle(arr: Card[]): Card[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
-  const [userDeck, setUserDeck] = useState<Card[]>([]);
-  const [aiDeck, setAiDeck] = useState<Card[]>([]);
-  
-  // Current face-up cards on the table
-  const [userTopCard, setUserTopCard] = useState<Card | null>(null);
-  const [aiTopCard, setAiTopCard] = useState<Card | null>(null);
-  
-  // Accumulated card piles on the table
-  const [userTablePile, setUserTablePile] = useState<Card[]>([]);
-  const [aiTablePile, setAiTablePile] = useState<Card[]>([]);
-  
-  const [turn, setTurn] = useState<'USER' | 'AI'>('USER');
-  const [message, setMessage] = useState<string>('카드를 뒤집거나 벨을 누르세요!');
-  const [aiReactionTime, setAiReactionTime] = useState<number>(1800); // ms
-  const [isRinging, setIsRinging] = useState<boolean>(false);
-  const [winner, setWinner] = useState<'USER' | 'AI' | null>(null);
+  const [playerDeck, setPlayerDeck] = useState<Card[]>([]);
+  const [cpuDeck, setCpuDeck] = useState<Card[]>([]);
+  const [playerPlayed, setPlayerPlayed] = useState<Card[]>([]);
+  const [cpuPlayed, setCpuPlayed] = useState<Card[]>([]);
+  const [currentTurn, setCurrentTurn] = useState<'player' | 'cpu'>('player');
+  const [gameOver, setGameOver] = useState<boolean>(false);
+  const [winner, setWinner] = useState<'player' | 'cpu' | null>(null);
 
-  // Auto AI Flip Timer & Bell Check Refs
-  const aiActionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const aiBellTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [message, setMessage] = useState<string>('카드를 뒤집어 시작하세요! 👇');
+  const [toastText, setToastText] = useState<{ main: string; sub: string } | null>(null);
+  
+  const [isRinging, setIsRinging] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(!soundEnabled);
+  const [showHelp, setShowHelp] = useState<boolean>(false);
+
+  const cpuActionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const processingBellRef = useRef<boolean>(false);
+
+  // Play synthetic beeps so there are no network delay or loading issues on schools iPads!
+  const playSound = useCallback((type: 'beep' | 'win' | 'fail' | 'flip') => {
+    if (isMuted) return;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'beep') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.15);
+      } else if (type === 'win') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.stop(ctx.currentTime + 0.35);
+      } else if (type === 'fail') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(250, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.35);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.stop(ctx.currentTime + 0.35);
+      } else if (type === 'flip') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(350, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(450, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.stop(ctx.currentTime + 0.08);
+      }
+    } catch (e) {
+      console.log('Synth play error', e);
+    }
+  }, [isMuted]);
+
+  const initGame = useCallback(() => {
+    if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+    processingBellRef.current = false;
+    setGameOver(false);
+    setWinner(null);
+    setToastText(null);
+
+    const full = makeDeck();
+    setPlayerDeck(full.slice(0, 30));
+    setCpuDeck(full.slice(30, 60));
+    setPlayerPlayed([]);
+    setCpuPlayed([]);
+    setCurrentTurn('player');
+    setGameState('PLAYING');
+    setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+  }, []);
+
+  const getTopFruitCounts = useCallback(() => {
+    const counts: Record<number, number> = {};
+    const tops = [
+      playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null,
+      cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null,
+    ].filter(Boolean) as Card[];
+
+    tops.forEach(c => {
+      counts[c.fruit] = (counts[c.fruit] || 0) + c.count;
+    });
+    return counts;
+  }, [playerPlayed, cpuPlayed]);
+
+  const hasFiveActive = useCallback(() => {
+    return Object.values(getTopFruitCounts()).some(v => v === 5);
+  }, [getTopFruitCounts]);
 
   const triggerConfetti = () => {
     confetti({
-      particleCount: 80,
+      particleCount: 50,
       spread: 60,
-      origin: { y: 0.7 }
+      origin: { y: 0.75 },
+      colors: ['#fbbf24', '#f59e0b', '#10b981', '#3b82f6']
     });
   };
 
-  const playSound = useCallback((type: 'bell' | 'flip' | 'correct' | 'wrong') => {
-    if (!soundEnabled) return;
-    let soundSrc = ASSETS.sounds.joyful;
-    if (type === 'bell') soundSrc = 'https://assets.mixkit.co/active_storage/sfx/1932/1932-500.wav'; // Standard bell
-    if (type === 'flip') soundSrc = 'https://assets.mixkit.co/active_storage/sfx/2017/2017-500.wav'; // Card flip
-    if (type === 'correct') soundSrc = ASSETS.sounds.correct;
-    if (type === 'wrong') soundSrc = ASSETS.sounds.wrong;
-    
-    const audio = new Audio(soundSrc);
-    audio.volume = 0.25;
-    audio.play().catch(() => {});
-  }, [soundEnabled]);
-
-  const startGame = () => {
-    const deck = generateDeck();
-    setUserDeck(deck.slice(0, deck.length / 2));
-    setAiDeck(deck.slice(deck.length / 2));
-    setUserTopCard(null);
-    setAiTopCard(null);
-    setUserTablePile([]);
-    setAiTablePile([]);
-    setTurn('USER');
-    setMessage('당신의 차례입니다. 카드를 클릭해 뒤집으세요!');
-    setGameState('PLAYING');
-    setWinner(null);
+  const showToast = (main: string, sub: string, dur: number = 1800) => {
+    setToastText({ main, sub });
+    setTimeout(() => {
+      setToastText(prev => prev && prev.main === main ? null : prev);
+    }, dur);
   };
 
-  // Check if there are EXACTLY 5 of any fruit
-  const checkFiveCondition = useCallback((): boolean => {
-    const currentFruits: { [key: string]: number } = { '🍓': 0, '🍌': 0, '🍋': 0, '🍇': 0 };
-    if (userTopCard) {
-      currentFruits[userTopCard.fruit] += userTopCard.count;
-    }
-    if (aiTopCard) {
-      currentFruits[aiTopCard.fruit] += aiTopCard.count;
-    }
-    
-    // Check if any fruit adds up to exactly 5
-    return Object.values(currentFruits).some(count => count === 5);
-  }, [userTopCard, aiTopCard]);
+  const checkElimination = useCallback((pDeckLen: number, cDeckLen: number, pPlayedLen: number, cPlayedLen: number) => {
+    const pTotal = pDeckLen + pPlayedLen;
+    const cTotal = cDeckLen + cPlayedLen;
 
-  // Handle bell ring (by human or AI)
-  const ringBell = useCallback((ringer: 'USER' | 'AI') => {
+    if (pTotal === 0) {
+      setWinner('cpu');
+      setGameOver(true);
+      setGameState('END');
+      playSound('fail');
+      return true;
+    }
+    if (cTotal === 0) {
+      setWinner('player');
+      setGameOver(true);
+      setGameState('END');
+      playSound('win');
+      triggerConfetti();
+      return true;
+    }
+    return false;
+  }, [playSound]);
+
+  // Handle bell ringing
+  const ringBell = useCallback((who: 'player' | 'cpu') => {
+    if (gameOver || processingBellRef.current) return;
+    const anyCards = playerPlayed.length + cpuPlayed.length > 0;
+    if (!anyCards) return;
+
+    processingBellRef.current = true;
+    if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+
     setIsRinging(true);
-    playSound('bell');
-    setTimeout(() => setIsRinging(false), 300);
+    playSound('beep');
+    setTimeout(() => setIsRinging(false), 250);
 
-    // Cancel all AI triggers during evaluation
-    if (aiActionTimerRef.current) clearTimeout(aiActionTimerRef.current);
-    if (aiBellTimerRef.current) clearTimeout(aiBellTimerRef.current);
+    const correct = hasFiveActive();
+    const allCards = [...playerPlayed, ...cpuPlayed];
 
-    const isFive = checkFiveCondition();
+    let nextPlayerDeck = [...playerDeck];
+    let nextCpuDeck = [...cpuDeck];
+    let nextPlayerPlayed = [...playerPlayed];
+    let nextCpuPlayed = [...cpuPlayed];
 
-    if (isFive) {
-      // SUCCESS!
-      const totalCardsWon = [...userTablePile, ...aiTablePile, ...(userTopCard ? [userTopCard] : []), ...(aiTopCard ? [aiTopCard] : [])];
-      
-      if (ringer === 'USER') {
-        setUserDeck(prev => [...prev, ...totalCardsWon]);
-        setMessage('🎯 벨을 올바르게 누르고 테이블의 모든 카드를 획득했습니다!');
-        playSound('correct');
-        triggerConfetti();
-        setTurn('USER');
+    if (correct) {
+      // Shuffle won cards back to the winner's deck
+      const shuffledWin = shuffle(allCards);
+      if (who === 'player') {
+        nextPlayerDeck = [...nextPlayerDeck, ...shuffledWin];
+        setPlayerDeck(nextPlayerDeck);
+        showToast('🎉 정답!', `바닥의 카드 ${allCards.length}장을 획득했습니다!`);
+        setMessage(`정답! 내가 카드 ${allCards.length}장 획득! 🌟`);
+        setCurrentTurn('player');
       } else {
-        setAiDeck(prev => [...prev, ...totalCardsWon]);
-        setMessage('🤖 AI가 간발의 차이로 먼저 벨을 눌렀습니다! 카드를 뺏겼습니다.');
-        playSound('wrong');
-        setTurn('AI');
+        nextCpuDeck = [...nextCpuDeck, ...shuffledWin];
+        setCpuDeck(nextCpuDeck);
+        showToast('🤖 IB봇 선착!', 'IB봇이 먼저 종을 쳤습니다!');
+        setMessage('IB봇 선착! 카드를 뺏겼습니다 😭');
+        setCurrentTurn('cpu');
       }
-
-      // Reset Table Top and Piles
-      setUserTopCard(null);
-      setAiTopCard(null);
-      setUserTablePile([]);
-      setAiTablePile([]);
+      nextPlayerPlayed = [];
+      nextCpuPlayed = [];
+      setPlayerPlayed([]);
+      setCpuPlayed([]);
+      playSound('win');
     } else {
-      // WRONG PRESS (Penalty: give 1 card to opponent)
-      if (ringer === 'USER') {
-        if (userDeck.length > 0) {
-          const [penaltyCard, ...remaining] = userDeck;
-          setUserDeck(remaining);
-          setAiDeck(prev => [...prev, penaltyCard]);
-          setMessage('❌ 총 과일 개수가 5개가 아닙니다! AI에게 카드 1장을 보냅니다.');
-        } else {
-          setMessage('❌ 카드가 없어 벌칙을 줄 수 없습니다!');
+      // Penalty: give all table cards to the other, and send 1 card from deck as penalty
+      playSound('fail');
+      if (who === 'player') {
+        const shuffledToCpu = shuffle(allCards);
+        nextCpuDeck = [...nextCpuDeck, ...shuffledToCpu];
+        
+        let penaltyDesc = '';
+        if (nextPlayerDeck.length > 0) {
+          const penaltyCard = nextPlayerDeck.shift()!;
+          nextCpuDeck.push(penaltyCard);
+          penaltyDesc = ' (추가 1장 제공)';
         }
-        playSound('wrong');
+        setPlayerDeck(nextPlayerDeck);
+        setCpuDeck(nextCpuDeck);
+        showToast('❌ 틀렸습니다!', `5개가 아닙니다! IB봇에게 카드 제공${penaltyDesc}`);
+        setMessage('실수! 오답 패널티를 냈습니다 😢');
+        setCurrentTurn('player');
       } else {
-        if (aiDeck.length > 0) {
-          const [penaltyCard, ...remaining] = aiDeck;
-          setAiDeck(remaining);
-          setUserDeck(prev => [...prev, penaltyCard]);
-          setMessage('🤖 AI가 실수로 벨을 눌렀습니다! 당신에게 카드 1장을 줍니다!');
+        const shuffledToPlayer = shuffle(allCards);
+        nextPlayerDeck = [...nextPlayerDeck, ...shuffledToPlayer];
+
+        let penaltyDesc = '';
+        if (nextCpuDeck.length > 0) {
+          const penaltyCard = nextCpuDeck.shift()!;
+          nextPlayerDeck.push(penaltyCard);
+          penaltyDesc = ' (추가 1장 획득)';
         }
-        playSound('correct');
+        setPlayerDeck(nextPlayerDeck);
+        setCpuDeck(nextCpuDeck);
+        showToast('🤖 IB봇 오답!', `IB봇 실수! 카드를 몽땅 얻었습니다!${penaltyDesc}`);
+        setMessage('IB봇 오답! 기회가 찾아왔습니다! 🎉');
+        setCurrentTurn('cpu');
       }
+      nextPlayerPlayed = [];
+      nextCpuPlayed = [];
+      setPlayerPlayed([]);
+      setCpuPlayed([]);
     }
 
-    // Adjust AI reaction time based on round performance
-    setAiReactionTime(prev => {
-      if (ringer === 'USER') {
-        return Math.max(1200, prev - 100); // AI gets faster next time
-      } else {
-        return Math.min(2500, prev + 150); // AI gets more generous/slower
-      }
-    });
-  }, [checkFiveCondition, userTablePile, aiTablePile, userTopCard, aiTopCard, userDeck, aiDeck, playSound]);
+    const isFinished = checkElimination(
+      nextPlayerDeck.length,
+      nextCpuDeck.length,
+      nextPlayerPlayed.length,
+      nextCpuPlayed.length
+    );
 
-  // AI Card Flip Logic
-  const executeAiTurn = useCallback(() => {
-    if (gameState !== 'PLAYING') return;
-    if (aiDeck.length === 0) {
-      setGameState('END');
-      setWinner('USER');
-      triggerConfetti();
-      return;
+    if (!isFinished) {
+      setTimeout(() => {
+        processingBellRef.current = false;
+        if (who === 'cpu' || !correct) {
+          // If CPU won or somebody made mistake and it's CPU's turn, trigger CPU
+          if (correct) { // CPU won match, then it plays again
+            triggerCpuFlip();
+          }
+        }
+      }, 1500);
     }
+  }, [playerDeck, cpuDeck, playerPlayed, cpuPlayed, hasFiveActive, gameOver, playSound, checkElimination]);
 
+  // CPU Flip reaction trigger
+  const triggerCpuFlip = useCallback(() => {
+    if (gameOver) return;
+    if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+
+    cpuActionTimerRef.current = setTimeout(() => {
+      setCpuDeck(prevCpu => {
+        if (prevCpu.length === 0) {
+          setCurrentTurn('player');
+          setMessage('IB봇 카드 바닥남! 내 차례입니다.');
+          return prevCpu;
+        }
+        const next = [...prevCpu];
+        const card = next.shift()!;
+        
+        setCpuPlayed(prevPlayed => {
+          const updated = [...prevPlayed, card];
+          playSound('flip');
+          setCurrentTurn('player');
+          
+          const tops = {
+            player: playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null,
+            cpu: card
+          };
+          const totalCounts: Record<number, number> = {};
+          if (tops.player) totalCounts[tops.player.fruit] = (totalCounts[tops.player.fruit] || 0) + tops.player.count;
+          totalCounts[tops.cpu.fruit] = (totalCounts[tops.cpu.fruit] || 0) + tops.cpu.count;
+          const hasFive = Object.values(totalCounts).some(v => v === 5);
+
+          if (hasFive) {
+            setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
+            
+            // AI reaction timer
+            const reactTime = 1400 + Math.random() * 1200;
+            if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+            cpuActionTimerRef.current = setTimeout(() => {
+              ringBell('cpu');
+            }, reactTime);
+          } else {
+            setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+          }
+          return updated;
+        });
+
+        return next;
+      });
+    }, 1200 + Math.random() * 800);
+  }, [playerPlayed, ringBell, playSound, gameOver]);
+
+  const playerFlip = () => {
+    if (gameOver || processingBellRef.current || currentTurn !== 'player') return;
+    if (playerDeck.length === 0) return;
+
+    const nextDeck = [...playerDeck];
+    const card = nextDeck.shift()!;
+    setPlayerDeck(nextDeck);
+
+    const nextPlayed = [...playerPlayed, card];
+    setPlayerPlayed(nextPlayed);
     playSound('flip');
-    const [flipped, ...remainingDeck] = aiDeck;
-    setAiDeck(remainingDeck);
-    
-    // Save old top card to table pile
-    if (aiTopCard) {
-      setAiTablePile(prev => [...prev, aiTopCard]);
-    }
-    setAiTopCard(flipped);
-    setTurn('USER');
-    setMessage('당신의 차례입니다. 카드를 뒤집으세요!');
-  }, [aiDeck, aiTopCard, gameState, playSound]);
+    setCurrentTurn('cpu');
+    setMessage('IB봇이 차례를 진행 중입니다... 🤖');
 
-  // Check Game End Condition every turn
-  useEffect(() => {
-    if (gameState !== 'PLAYING') return;
-
-    if (userDeck.length === 0 && !userTopCard) {
-      setGameState('END');
-      setWinner('AI');
-    } else if (aiDeck.length === 0 && !aiTopCard) {
-      setGameState('END');
-      setWinner('USER');
-      triggerConfetti();
-    }
-  }, [userDeck, aiDeck, userTopCard, aiTopCard, gameState]);
-
-  // Active Monitoring for Bell / Auto AI reactions
-  useEffect(() => {
-    if (gameState !== 'PLAYING') return;
-
-    // Is there a 5-fruit match active?
-    const standsAtFive = checkFiveCondition();
-
-    if (standsAtFive) {
-      // AI rolls a reaction time to press the bell
-      const simulatedDelay = aiReactionTime + Math.random() * 400 - 200;
-      aiBellTimerRef.current = setTimeout(() => {
-        ringBell('AI');
-      }, simulatedDelay);
-    } else {
-      // Opponent might randomly click wrong bell if very fast, but usually stays quiet.
-      // If AI's turn, trigger auto-flip after a delay
-      if (turn === 'AI') {
-        aiActionTimerRef.current = setTimeout(() => {
-          executeAiTurn();
-        }, 1500);
-      }
-    }
-
-    return () => {
-      if (aiActionTimerRef.current) clearTimeout(aiActionTimerRef.current);
-      if (aiBellTimerRef.current) clearTimeout(aiBellTimerRef.current);
+    // Assess 5 condition immediately
+    const tops = {
+      player: card,
+      cpu: cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null
     };
-  }, [turn, userTopCard, aiTopCard, gameState, checkFiveCondition, ringBell, executeAiTurn, aiReactionTime]);
+    const totalCounts: Record<number, number> = {};
+    totalCounts[tops.player.fruit] = (totalCounts[tops.player.fruit] || 0) + tops.player.count;
+    if (tops.cpu) totalCounts[tops.cpu.fruit] = (totalCounts[tops.cpu.fruit] || 0) + tops.cpu.count;
+    const hasFive = Object.values(totalCounts).some(v => v === 5);
 
-  const handleUserFlip = () => {
-    if (gameState !== 'PLAYING' || turn !== 'USER') return;
-    if (userDeck.length === 0) return;
-
-    playSound('flip');
-    const [flipped, ...remainingDeck] = userDeck;
-    setUserDeck(remainingDeck);
-
-    // Save old top card to pile
-    if (userTopCard) {
-      setUserTablePile(prev => [...prev, userTopCard]);
+    if (hasFive) {
+      setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
+      
+      // AI Reaction
+      const reactTime = 1300 + Math.random() * 1100;
+      if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+      cpuActionTimerRef.current = setTimeout(() => {
+        ringBell('cpu');
+      }, reactTime);
+    } else {
+      triggerCpuFlip();
     }
-    setUserTopCard(flipped);
-    setTurn('AI');
-    setMessage('🤖 AI 차례입니다. 과일을 지켜보세요...');
   };
+
+  // Keyboard integration as fallback and for accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        ringBell('player');
+      }
+      if (e.code === 'Enter' || e.code === 'ArrowRight') {
+        e.preventDefault();
+        playerFlip();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+    };
+  }, [ringBell, playerFlip]);
+
+  // Counts for visible items
+  const activeTally = getTopFruitCounts();
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-between bg-emerald-950 text-white p-4 font-sans relative select-none">
-      <header className="w-full flex items-center justify-between pb-2 border-b border-white/10 z-10">
+    <div className="w-full h-full bg-[#124d1e] text-white flex flex-col justify-between selection:bg-none relative font-sans overflow-hidden">
+      
+      {/* Felt background texture simulation */}
+      <div className="absolute inset-0 bg-radial-at-c from-[#1d7c35] to-[#0a3313] opacity-90 pointer-events-none z-0" />
+
+      {/* HEADER BAR */}
+      <header className="px-4 py-2 border-b border-white/10 z-10 flex items-center justify-between bg-black/20">
         <div className="flex items-center gap-2">
           <img 
             src="https://i.imgur.com/xe54lqW.png" 
-            alt="할리갈리 아이콘" 
+            alt="HalliGalli Icon" 
             referrerPolicy="no-referrer"
-            className="w-10 h-10 object-contain bg-white/10 p-1 rounded-xl"
+            className="w-8 h-8 object-contain bg-white/10 p-1 rounded-lg"
           />
           <div>
-            <h1 className="text-sm md:text-base font-black tracking-tight leading-none text-white">IB 할리갈리</h1>
-            <p className="text-[10px] text-emerald-400 font-bold mt-0.5">과일 합이 정확히 5개면 벨을 치세요!</p>
+            <h1 className="text-xs md:text-sm font-black tracking-tight leading-none text-amber-300">신나는 한글 할리갈리</h1>
+            <p className="text-[9px] text-[#86efac] font-bold mt-0.5 sm:mt-1">바닥 과일 합계가 무조건 5개면 종을 칩니다!</p>
           </div>
         </div>
-        <div className="text-xs bg-emerald-900 border border-emerald-800 px-3 py-1 rounded-xl font-bold flex gap-4">
-          <span className="text-amber-400">내 카드: {userDeck.length + (userTopCard ? 1 : 0)}장</span>
-          <span className="text-teal-400">AI 카드: {aiDeck.length + (aiTopCard ? 1 : 0)}장</span>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowHelp(p => !p)}
+            className="p-1 px-2.5 rounded-lg bg-emerald-800/80 hover:bg-emerald-700/80 border border-emerald-600/30 text-[10px] font-bold flex items-center gap-1 transition-all"
+            id="halli-help-btn"
+          >
+            <HelpCircle className="w-3 h-3 text-amber-300" />
+            <span>도움말</span>
+          </button>
+          <button 
+            onClick={() => setIsMuted(prev => !prev)}
+            className="p-1 bg-emerald-800/80 hover:bg-emerald-700/80 border border-emerald-600/30 rounded-lg text-emerald-300 transition-all cursor-pointer"
+            id="halli-sound-btn"
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-amber-300" />}
+          </button>
         </div>
       </header>
 
       {gameState === 'START' && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-md">
-          <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mb-6 border border-white/20">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center z-10 max-w-sm mx-auto overflow-y-auto">
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-3.5 border border-white/20 shadow">
             <img 
               src="https://i.imgur.com/xe54lqW.png" 
-              alt="할리갈리 아이콘" 
-              referrerPolicy="no-referrer" 
-              className="w-16 h-16 object-contain"
+              alt="HalliGalli Bell" 
+              referrerPolicy="no-referrer"
+              className="w-12 h-12 object-contain"
             />
           </div>
-          <h2 className="text-2xl font-black mb-3">신나는 실시간 과일 세기!</h2>
-          <p className="text-sm text-emerald-200 font-medium mb-8 leading-relaxed">
-            나와 AI가 뒤집어 놓은 카드들 중에서 <br/>
-            어느 한 종류의 과일 수가 <span className="text-amber-300 font-black">정확히 5개</span>가 되면 <br/>
-            재빨리 가운데에 있는 벨을 두드리세요! 🛎️
+          <h2 className="text-lg font-black text-amber-200 mb-1 leading-snug">실시간 과일 세기 대결</h2>
+          <p className="text-[11px] text-emerald-200 font-bold mb-4 leading-relaxed">
+            바닥에 공개된 카드 중 같은 종류 과일 수의 합이 <br/>
+            <span className="text-amber-300 font-black">정확히 5개</span>가 되는 순간!<br/>
+            재빨리 황금색 벨 🛎️ 을 터치하세요!
           </p>
+
+          <div className="w-full bg-zinc-950/40 p-3 rounded-xl border border-white/5 space-y-1.5 text-left text-[10px] text-zinc-300 mb-4 font-semibold leading-tight">
+            <p className="font-extrabold text-[#ca8a04]">📱 터치 및 클릭 조작 안내</p>
+            <p>• <b>카드 뒤집기</b>: 내 덱 📚 카드 스택을 가볍게 탭합니다.</p>
+            <p>• <b>종 치기</b>: 가운데 동그란 황금 벨 🛎️ 을 곧바로 터치합니다.</p>
+            <p>• <b>정답</b>: 카드를 모두 가져갑니다. 오답 시 1장 패널티가 발생해요!</p>
+          </div>
+
           <Button 
-            onClick={startGame}
-            className="px-10 py-5 text-lg font-black bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-2xl w-full border-b-4 border-amber-700 active:transform active:translate-y-1 transition-all"
+            onClick={initGame}
+            icon={Play}
+            className="py-3 px-8 text-xs font-black bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 rounded-xl w-full border-b-4 border-amber-800 shadow-lg active:scale-95 transition-all"
+            id="start-halligalli-btn"
           >
-            게임 시작하기
+            대결 시작하기
           </Button>
         </div>
       )}
 
       {gameState === 'PLAYING' && (
-        <div className="flex-1 w-full flex flex-col justify-between py-2 relative">
-          
-          {/* AI Zone (Opponent) */}
-          <div className="flex justify-between items-center px-4 py-2 bg-emerald-900/30 rounded-2xl border border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-500 rounded-2xl flex items-center justify-center text-lg shadow font-black">🤖</div>
+        <div className="flex-1 flex flex-col justify-between p-3 relative z-10 h-full">
+
+          {/* 1. CPU (IB봇) AREA */}
+          <div className="flex items-center justify-between. bg-emerald-950/40 border border-green-800/10 p-2.5 rounded-xl gap-2 w-full">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center font-extrabold shadow text-base">🤖</div>
               <div>
-                <p className="text-xs font-black text-white">IB AI 타자</p>
-                <p className="text-[10px] text-gray-400 font-bold">반응 스피드: {(aiReactionTime/1000).toFixed(1)}초</p>
+                <h4 className="text-xs font-black">IB봇 (CPU)</h4>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[9px] bg-amber-500/15 border border-amber-500/20 px-1.5 py-0.5 rounded text-amber-300 font-bold">
+                    실시간 지능형
+                  </span>
+                  <span className="text-[9px] text-emerald-300 font-bold">
+                    카드 {cpuDeck.length + cpuPlayed.length}장
+                  </span>
+                </div>
               </div>
             </div>
-            
-            <div className="flex gap-4">
-              {/* AI Deck back (Unopened) */}
-              <div className="w-16 h-24 bg-gradient-to-br from-indigo-600 to-indigo-800 border-2 border-white/30 rounded-xl flex flex-col items-center justify-center shadow-md relative">
-                <div className="absolute top-1 right-2 text-[10px] font-black">{aiDeck.length}</div>
-                <div className="text-sm">📚</div>
+
+            <div className="ml-auto flex items-center gap-3">
+              {/* Turn indicator badge */}
+              <div className={`px-2 py-0.5 rounded-full text-[9px] text-zinc-300 font-bold transition-all ${
+                currentTurn === 'cpu' ? 'bg-[#ca8a04]/40 text-amber-200 border border-[#ca8a04]/40 animate-pulse' : 'opacity-30'
+              }`}>
+                {currentTurn === 'cpu' ? '▶ 생각하는 중...' : '대기 중'}
               </div>
 
-              {/* AI Face up card */}
-              <div className="w-16 h-24 bg-white border-2 border-slate-300 rounded-xl flex items-center justify-center shadow-lg relative">
-                {aiTopCard ? (
+              {/* CPU deck pile */}
+              <div className="relative w-11 h-15 bg-gradient-to-br from-indigo-800 to-indigo-950 border border-white/20 rounded-lg flex flex-col items-center justify-center shadow">
+                <div className="absolute top-0.5 right-1.5 text-[8px] font-black text-indigo-200">{cpuDeck.length}</div>
+                <div className="text-xs">📚</div>
+              </div>
+
+              {/* CPU Face up card slot */}
+              <div className="w-12 h-16 bg-white/95 border border-zinc-200 rounded-lg flex items-center justify-center shadow-md relative">
+                {cpuPlayed.length > 0 ? (
                   <div className="flex flex-col items-center justify-center">
-                    <div className="text-3xl mb-1">{aiTopCard.fruit}</div>
-                    <div className="text-sm font-black text-slate-800 bg-slate-100 rounded-full px-2">{aiTopCard.count}개</div>
+                    <span className="text-xl leading-none">{cpuPlayed[cpuPlayed.length - 1].fruit !== undefined ? FRUITS[cpuPlayed[cpuPlayed.length - 1].fruit] : ''}</span>
+                    <span className="text-[10px] font-black font-mono text-zinc-700 bg-zinc-100 rounded px-1 mt-1 leading-none">
+                      {cpuPlayed[cpuPlayed.length - 1].count}
+                    </span>
                   </div>
                 ) : (
-                  <div className="text-[10px] text-slate-400 font-bold">빈 자리</div>
+                  <span className="text-[8px] text-zinc-400 font-bold">빈 필드</span>
+                )}
+                {cpuPlayed.length > 0 && (
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[7px] text-zinc-300 font-extrabold bg-zinc-950/70 border border-zinc-800 rounded px-1">
+                    {cpuPlayed.length}장
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Table Center (Bell Scene) */}
-          <div className="flex flex-row justify-center items-center my-6 relative">
-            <div className="w-64 h-64 rounded-full bg-emerald-900/60 border-4 border-emerald-800/80 flex items-center justify-center shadow-inner relative">
-              
-              {/* Outer decorative halo for card zone */}
-              <div className="absolute inset-4 rounded-full border border-emerald-700/50 pointer-events-none" />
+          {/* 2. LIVE FIELD STATUS CHIPS (Displays current totals and flashes on 5) */}
+          <div className="my-2 p-1.5 bg-black/20 border border-white/5 rounded-xl text-center">
+            <span className="text-[10px] font-bold text-emerald-200 block mb-1">바닥의 과일 누적합계</span>
+            <div className="flex justify-center flex-wrap gap-1.5">
+              {FRUITS.map((f, idx) => {
+                const count = activeTally[idx] || 0;
+                const isFive = count === 5;
+                return (
+                  <div 
+                    key={idx}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black transition-all ${
+                      isFive 
+                        ? 'bg-amber-400 border border-amber-500 text-slate-950 scale-110 shadow-lg animate-bounce' 
+                        : 'bg-emerald-900/50 border border-emerald-800/40 text-emerald-100'
+                    }`}
+                  >
+                    <span className="text-sm leading-none">{f}</span>
+                    <span className="text-[9px] font-bold text-zinc-300">{FRUIT_NAMES[idx]}</span>
+                    <span className={isFive ? 'font-black font-mono text-xs' : 'font-semibold text-zinc-200'}>
+                      {count}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-              {/* The Central Bell */}
+          {/* 3. TABLE FELT & CENTRAL BELL SCREEN */}
+          <div className="flex-1 min-h-[140px] flex items-center justify-center gap-8 relative">
+            <div className="w-52 h-52 rounded-full border-4 border-emerald-800/40 flex items-center justify-center shadow-inner relative bg-zinc-900/10">
+              <div className="absolute inset-2.5 rounded-full border border-emerald-700/20 pointer-events-none" />
+
+              {/* The Gold Bell */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => ringBell('USER')}
-                className="w-32 h-32 rounded-full cursor-pointer bg-gradient-to-t from-gray-300 via-gray-100 to-white hover:from-white hover:to-gray-100 shadow-[0_15px_30px_rgba(0,0,0,0.5)] border-4 border-slate-400 flex items-center justify-center relative active:border-b-2 z-20"
+                onClick={() => ringBell('player')}
+                className="w-24 h-24 rounded-full cursor-pointer bg-gradient-to-t from-zinc-300 via-zinc-100 to-white hover:from-white hover:to-zinc-100 shadow-2xl border-4 border-zinc-400 flex items-center justify-center relative select-none z-20"
                 animate={isRinging ? { scale: [1, 1.15, 0.95, 1], rotate: [0, -10, 10, 0] } : {}}
                 transition={{ duration: 0.2 }}
-                title="벨을 누르세요!"
+                id="halligalli-bell-dome"
               >
-                {/* Brass Core Dome */}
-                <div className="w-24 h-24 rounded-full bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 border border-amber-300 flex items-center justify-center shadow-inner">
-                  {/* Push Pin */}
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-b from-gray-700 to-gray-900 border border-gray-600 shadow shadow-inner" />
+                {/* Bell center brass piece */}
+                <div className="w-18 h-18 rounded-full bg-gradient-to-b from-amber-200 via-amber-400 to-[#b45309] border border-amber-300 flex items-center justify-center shadow-inner">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-b from-zinc-700 to-zinc-950 border border-zinc-600 flex items-center justify-center shadow shadow-inner text-[10px]">🛎️</div>
                 </div>
 
-                {/* Ring wave indicator */}
-                {checkFiveCondition() && (
+                {/* Pulsing halo if 5 is reached */}
+                {hasFiveActive() && (
                   <div className="absolute -inset-2 rounded-full border-4 border-amber-400 animate-ping opacity-60 pointer-events-none" />
                 )}
               </motion.button>
 
-              <div className="absolute bottom-3 text-[10px] text-emerald-300 font-black uppercase tracking-widest bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800">
-                BELL 🛎️
-              </div>
+              <span className="absolute bottom-3 text-[8px] font-extrabold text-emerald-400 tracking-widest uppercase py-0.5 px-2 bg-emerald-950/80 border border-emerald-800/40 rounded-full">
+                TOUCH TO RING 🔔
+              </span>
             </div>
           </div>
 
-          {/* User Zone */}
-          <div className="flex justify-between items-center px-4 py-2 bg-emerald-900/30 rounded-2xl border border-white/5">
-            <div className="flex gap-4">
-              {/* User Face up card */}
-              <div className="relative w-16 h-24 bg-white border-2 border-slate-300 rounded-xl flex items-center justify-center shadow-lg transition-transform">
-                {userTopCard ? (
+          {/* EVENT MESSAGE LOG */}
+          <div className="text-center bg-black/35 py-1 px-4 rounded-lg max-w-xs mx-auto mb-2.5 border border-white/5 flex items-center justify-center gap-1 shadow">
+            <p className="text-[10px] text-emerald-500 font-black animate-pulse">●</p>
+            <p className="text-[10px] text-emerald-100 font-extrabold">{message}</p>
+          </div>
+
+          {/* 4. PLAYER AREA */}
+          <div className="flex items-center justify-between bg-[#14532d]/40 border border-green-800/30 p-2.5 rounded-xl gap-2 w-full">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-extrabold shadow text-base">👦</div>
+              <div>
+                <h4 className="text-xs font-black">나 (학습자)</h4>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[9px] bg-indigo-500/15 border border-indigo-500/20 px-1.5 py-0.5 rounded text-indigo-300 font-bold">
+                    탐험가 학생
+                  </span>
+                  <span className="text-[9px] text-emerald-300 font-bold">
+                    카드 {playerDeck.length + playerPlayed.length}장
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="ml-auto flex items-center gap-3">
+              {/* Action notice */}
+              <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold transition-all ${
+                currentTurn === 'player' ? 'bg-amber-400/90 text-slate-950 font-black animate-pulse' : 'text-zinc-500 opacity-40'
+              }`}>
+                {currentTurn === 'player' ? '내 차례! 📚 카드 탭!' : '상대 턴'}
+              </div>
+
+              {/* Player face up card display */}
+              <div className="w-12 h-16 bg-white/95 border border-zinc-200 rounded-lg flex items-center justify-center shadow-md relative">
+                {playerPlayed.length > 0 ? (
                   <div className="flex flex-col items-center justify-center">
-                    <div className="text-3xl mb-1">{userTopCard.fruit}</div>
-                    <div className="text-sm font-black text-slate-800 bg-slate-100 rounded-full px-2">{userTopCard.count}개</div>
+                    <span className="text-xl leading-none">{playerPlayed[playerPlayed.length - 1].fruit !== undefined ? FRUITS[playerPlayed[playerPlayed.length - 1].fruit] : ''}</span>
+                    <span className="text-[10px] font-black font-mono text-zinc-700 bg-zinc-100 rounded px-1 mt-1 leading-none">
+                      {playerPlayed[playerPlayed.length - 1].count}
+                    </span>
                   </div>
                 ) : (
-                  <div className="text-[10px] text-slate-400 font-bold">빈 자리</div>
+                  <span className="text-[8px] text-zinc-400 font-bold">빈 필드</span>
+                )}
+                {playerPlayed.length > 0 && (
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[7px] text-zinc-300 font-extrabold bg-zinc-950/70 border border-zinc-800 rounded px-1">
+                    {playerPlayed.length}장
+                  </div>
                 )}
               </div>
 
-              {/* User Deck back (Click to flip) */}
+              {/* Player unopened deck with touch-to-flip */}
               <motion.button
-                whileHover={turn === 'USER' && userDeck.length > 0 ? { scale: 1.05 } : {}}
-                whileTap={turn === 'USER' && userDeck.length > 0 ? { scale: 0.95 } : {}}
-                onClick={handleUserFlip}
-                disabled={turn !== 'USER' || userDeck.length === 0}
-                className={`w-16 h-24 bg-gradient-to-br from-amber-500 to-amber-700 border-2 border-white rounded-xl flex flex-col items-center justify-center shadow-md relative cursor-pointer ${
-                  turn !== 'USER' ? 'opacity-40 cursor-not-allowed hover:scale-100' : 'hover:shadow-amber-500/20'
-                }`}
+                whileHover={currentTurn === 'player' ? { scale: 1.05 } : {}}
+                whileTap={currentTurn === 'player' ? { scale: 0.95 } : {}}
+                onClick={playerFlip}
+                disabled={currentTurn !== 'player' || playerDeck.length === 0}
+                className={`relative w-11 h-15 bg-gradient-to-br from-amber-500 to-amber-600 border ${
+                  currentTurn === 'player' ? 'border-amber-300 shadow cursor-pointer' : 'border-zinc-700 opacity-40 cursor-not-allowed'
+                } rounded-lg flex flex-col items-center justify-center`}
+                id="player-halli-deck-stack"
               >
-                <div className="absolute top-1 left-2 text-[10px] font-black">{userDeck.length}</div>
-                <span className="text-sm">📚</span>
-                <span className="text-[8px] font-black bg-white/20 px-1 py-0.5 rounded border border-white/10 mt-1">
-                  TAP FLIP
+                <div className="absolute top-0.5 right-1.5 text-[8px] font-black text-amber-100">{playerDeck.length}</div>
+                <div className="text-xs">📚</div>
+                <span className="text-[6px] font-black bg-white/20 text-white rounded px-0.5 mt-0.5 pointer-events-none">
+                  TAP
                 </span>
               </motion.button>
             </div>
-
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-xs font-black text-white">나 (탐험가)</p>
-                <p className="text-[10px] text-amber-300 font-bold">
-                  {turn === 'USER' ? '💡 내 차례입니다!' : '기다리세요...'}
-                </p>
-              </div>
-              <div className="w-10 h-10 bg-amber-400 text-slate-900 rounded-2xl flex items-center justify-center text-lg shadow font-black">👨‍🎓</div>
-            </div>
           </div>
 
-          {/* Feedback log message */}
-          <div className="text-center mt-3 bg-emerald-950/80 border border-emerald-900 py-1.5 px-4 rounded-xl max-w-xs mx-auto flex items-center justify-center gap-1.5 shadow">
-            <span className="text-xs text-emerald-100 font-bold">{message}</span>
+          {/* MOBILE DIRECT CONTROLS */}
+          <div className="flex gap-2 mt-2 font-bold text-[11px]">
+            <button
+              onClick={initGame}
+              className="flex-1 py-2 bg-emerald-900 hover:bg-emerald-800 border border-emerald-700 rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer"
+              id="halligalli-reset-bottom-btn"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-emerald-300" />
+              <span>새 게임</span>
+            </button>
+            <button
+              onClick={playerFlip}
+              disabled={currentTurn !== 'player' || playerDeck.length === 0}
+              className={`flex-[2] py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 border-b-2 border-amber-800 rounded-xl flex items-center justify-center gap-1 transition-all font-black select-none ${
+                currentTurn === 'player' ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed text-zinc-500'
+              }`}
+              id="halligalli-flip-bottom-btn"
+            >
+              <span>카드 뒤집기 ▶</span>
+            </button>
           </div>
 
         </div>
       )}
 
       {gameState === 'END' && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-md w-full">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4">
-            {winner === 'USER' ? (
-              <span className="text-6xl">🏆</span>
-            ) : (
-              <span className="text-6xl">👾</span>
-            )}
+        <div className="flex-1 flex flex-col items-center justify-center p-5 text-center max-w-sm mx-auto z-10 overflow-y-auto w-full">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-950/40 border border-white/10 flex items-center justify-center shadow-lg mb-4 text-3xl">
+            {winner === 'player' ? '🏆' : '👾'}
           </div>
-          <h2 className="text-3xl font-black mb-2">
-            {winner === 'USER' ? '축하합니다! 승리!' : '아쉬운 패배!'}
+          <h2 className="text-xl font-black mb-1.5 text-amber-200">
+            {winner === 'player' ? '축하합니다! 대승리!' : '아쉬운 대결 패배!'}
           </h2>
-          <p className="text-emerald-200 text-sm font-semibold mb-8 leading-relaxed">
-            {winner === 'USER' 
-              ? 'AI의 카드를 전부 가져왔습니다! 순발력이 대단하군요.' 
-              : 'AI가 카드를 모두 가져갔습니다. 조금 더 빠르고 알맞게 확인해 보세요!'}
+          <p className="text-[11px] text-zinc-300 font-semibold mb-6 max-w-[280px] leading-relaxed">
+            {winner === 'player' 
+              ? 'IB봇의 카드를 완벽하게 모두 빼앗았습니다! 엄청난 연산과 터치 속도입니다!' 
+              : 'IB봇이 모든 카드를 휩쓸어갔습니다. 집중력을 발휘해 5개를 찾아보세요!'}
           </p>
 
           <Button 
-            onClick={startGame}
-            className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-emerald-950 text-base font-black py-4 rounded-2xl shadow-lg border-b-4 border-amber-700"
+            onClick={initGame}
+            icon={RefreshCw}
+            className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs font-black py-3 rounded-xl shadow-lg border-b-4 border-amber-700 active:scale-95 cursor-pointer"
+            id="halligalli-restart-end-btn"
           >
-            다시 시작하기
+            다시 도전하기
           </Button>
         </div>
       )}
+
+      {/* FLOATING REAL-TIME TOAST / ALERT */}
+      <AnimatePresence>
+        {toastText && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+            className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-950/95 border-2 border-amber-500/60 p-4 rounded-2xl text-center shadow-2xl z-50 max-w-[250px] w-full"
+          >
+            <h3 className="text-sm font-black text-amber-300 flex items-center justify-center gap-1">
+              <Sparkles className="w-4 h-4 fill-current shrink-0 text-amber-400" />
+              <span>{toastText.main}</span>
+            </h3>
+            <p className="text-[10px] text-zinc-300 font-bold mt-1.5 leading-snug">
+              {toastText.sub}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* IN-GAME EXPLANARY HELPMENU MODAL */}
+      <AnimatePresence>
+        {showHelp && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-4 text-center z-50 backdrop-blur-sm"
+          >
+            <div className="bg-[#123119] border border-green-800 p-5 rounded-2xl max-w-xs w-full text-left relative shadow-2xl">
+              <button 
+                onClick={() => setShowHelp(false)}
+                className="absolute top-2.5 right-2.5 text-zinc-400 hover:text-white p-1 rounded-lg bg-emerald-950"
+              >
+                ✕ 닫기
+              </button>
+              <div className="flex items-center gap-2 mb-3.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-300 shrink-0">
+                  <HelpCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-amber-100">할리갈리 조작법 완벽 가이드</h3>
+                  <p className="text-[8px] text-[#86efac] font-bold">학생 태블릿에 특화된 반응형 UI</p>
+                </div>
+              </div>
+
+              <div className="space-y-3.5 text-[10px] text-zinc-200">
+                <div className="p-2 rounded-xl bg-emerald-950/40 border border-green-800/20">
+                  <h4 className="font-extrabold text-amber-300 mb-0.5 flex items-center gap-1">
+                    <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                    📱 태블릿 (터치스크린)
+                  </h4>
+                  <p className="leading-normal pl-0.5">
+                    • <b>바닥 내 덱 📚</b>을 직접 탭해서 손쉽게 다음 카드를 뒤집으세요.<br/>
+                    • 과일 합계가 <b>정확히 5개</b>가 되는 순간 즉시 <b>가운데 벨 🛎️</b>을 손가락으로 누릅니다.
+                  </p>
+                </div>
+
+                <div className="p-2 rounded-xl bg-emerald-950/40 border border-green-800/20">
+                  <h4 className="font-extrabold text-amber-300 mb-0.5 flex items-center gap-1">
+                    <MousePointer className="w-3.5 h-3.5 shrink-0" />
+                    💻 컴퓨터 (PC 및 키보드 단축키)
+                  </h4>
+                  <p className="leading-normal pl-0.5">
+                    • <b>[SPACE]</b> 스페이스바 키를 눌러 초스피드로 벨을 칠 수 있습니다.<br/>
+                    • <b>[ENTER]</b> 또는 <b>[→ 오른쪽 방향키]</b>로 우회 카드를 뒤집을 수 있습니다!
+                  </p>
+                </div>
+
+                <div className="p-2 rounded-xl bg-amber-950/30 border border-amber-900/30 text-amber-200">
+                  <p className="leading-normal">
+                    💡 <b>과일 세기 연습 팁!</b> 바닥에 펼쳐진 카드 과일 수가 정확하게 도합 5개가 되면 tally 가 실시간으로 주황색 불빛에 리듬 있게 깜빡이니 보고 연습해 보세요!
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowHelp(false)}
+                className="w-full mt-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-2xs rounded-xl shadow cursor-pointer"
+              >
+                닫고 게임으로 복귀하기
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

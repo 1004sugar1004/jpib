@@ -668,25 +668,23 @@ export default function App() {
     const currentCompleted = profile.completedStudyItems || [];
     const isCompleted = currentCompleted.includes(itemId);
     
-    if (!isCompleted && soundEnabled) {
+    // Safety guard to solve the bug of repeated clicks / daily quest logs
+    if (isCompleted) return;
+    
+    if (soundEnabled) {
       const audio = new Audio(ASSETS.sounds.joyful);
       audio.volume = 0.5;
       audio.play().catch(e => console.log('Sound play error:', e));
     }
     
-    let newCompleted;
-    if (isCompleted) {
-      newCompleted = currentCompleted.filter(id => id !== itemId);
-    } else {
-      newCompleted = [...currentCompleted, itemId];
-    }
+    const newCompleted = [...currentCompleted, itemId];
 
     if (isGuest) {
       setProfile(prev => prev ? ({ ...prev, completedStudyItems: newCompleted }) : null);
       return;
     }
     
-    let scoreChange = isCompleted ? -30 : 30;
+    let scoreChange = 30;
     
     const today = getCurrentDate();
     const currentMonth = getCurrentMonth();

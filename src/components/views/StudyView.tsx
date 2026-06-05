@@ -74,16 +74,19 @@ const StudyCheck = ({
 
   return (
     <motion.button
-      whileHover={!isLocked ? { scale: 1.05 } : {}}
-      whileTap={!isLocked ? { scale: 0.95 } : {}}
-      onClick={() => handleToggle(id)}
+      whileHover={!isLocked && !completed ? { scale: 1.05 } : {}}
+      whileTap={!isLocked && !completed ? { scale: 0.95 } : {}}
+      onClick={() => {
+        if (!completed) handleToggle(id);
+      }}
+      disabled={completed}
       className={cn(
         "flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold transition-all border-2 w-fit",
         completed 
-          ? "bg-green-500 border-transparent text-white shadow-lg shadow-green-100" 
+          ? "bg-green-500 border-transparent text-white shadow-lg shadow-green-100 cursor-default opacity-90" 
           : isLocked
             ? "bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed opacity-70"
-            : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+            : "bg-white border-gray-100 text-gray-400 hover:border-gray-200 cursor-pointer"
       )}
     >
       {completed ? (
@@ -232,12 +235,13 @@ export const StudyView = ({
   const isCompletionButtonLocked = !isCurrentCardCompleted && timeInTab < 2000;
 
   const handleToggle = React.useCallback((id: string) => {
-    const now = Date.now();
     const isCompleted = completedItems.includes(id);
+    if (isCompleted) return; // Prevent double-clicks or triggers if completed
     
+    const now = Date.now();
     if (now - lastClickTimeRef.current < 500) return;
 
-    if (!isCompleted && now - tabStartTime < 2000) {
+    if (now - tabStartTime < 2000) {
       setMessage("내용을 충분히 읽고 확인해주세요! (최소 2초)");
       setTimeout(() => setMessage(null), 3000);
       return;
@@ -247,16 +251,14 @@ export const StudyView = ({
     onToggleItem(id);
     setMessage(null);
 
-    if (!isCompleted) {
-      setTimeout(() => {
-        setCurrentCardIndex(prev => {
-          if (prev < currentItems.length - 1) {
-            return prev + 1;
-          }
-          return prev;
-        });
-      }, 600);
-    }
+    setTimeout(() => {
+      setCurrentCardIndex(prev => {
+        if (prev < currentItems.length - 1) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, 600);
   }, [completedItems, onToggleItem, tabStartTime, currentItems.length]);
 
   const currentItem = currentItems[safeIndex];
