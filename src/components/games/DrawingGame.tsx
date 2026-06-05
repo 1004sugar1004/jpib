@@ -121,7 +121,21 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const hasDrawn = pixelBuffer.some(color => color !== 0);
     if (!hasDrawn) return;
 
-    const imageData = canvas.toDataURL("image/png").split(",")[1];
+    // Convert transparent canvas drawing to a white background canvas so vision models can see it clearly
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext("2d");
+    if (!tempCtx) return;
+
+    // Fill white background
+    tempCtx.fillStyle = "#ffffff";
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+    // Draw the drawing canvas on top
+    tempCtx.drawImage(canvas, 0, 0);
+
+    const imageData = tempCanvas.toDataURL("image/png").split(",")[1];
     const currentWord = words[roundRef.current];
 
     setAiThinking(true);
@@ -129,15 +143,17 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
-            { text: `The user is trying to draw: "${currentWord}". 
-            Evaluate this simple black or blue ink sketch on a white background. 
-            Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint of a "${currentWord}"? 
-            Since this is a quick 10-second game for elementary/middle school students, be extremely flexible and generous. 
-            If the drawing has even a slight resemblance or captures the basic essence of "${currentWord}", consider it a match.` },
+            { text: `The user is trying to draw: "${currentWord}" in an interactive 10-second sketching game.
+            Evaluate this indigo ink drawing sketched on a solid white background.
+            Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint of a "${currentWord}"?
+            Since this is a quick 10-second game for elementary/middle school students, be extremely flexible, lenient, and generous.
+            If the drawing has even a slight resemblance, a symbolic simplified icon representation, or captures the basic essence of "${currentWord}", consider it a match (set matched: true).
+            
+            Here is the list of all possible vocabulary words in this game for context: ${WORDS.join(", ")}.` },
             { inlineData: { mimeType: "image/png", data: imageData } }
         ],
         config: {
-          systemInstruction: "You are a professional Quick-Draw recognition engine. You specialize in identifying objects from minimal, rough, hand-drawn sketches. You are extremely generous and lenient, recognizing symbolic representations and simplified icon-like drawings. Even very abstract or incomplete shapes should be matched if they suggest the target word. Provide guesses in Korean.",
+          systemInstruction: "You are an extremely generous and lenient professional Quick-Draw recognition engine. You specialize in identifying objects from minimal, rough, hand-drawn sketches. Even very abstract, simplified icon-style, or incomplete shapes should be matched (matched: true) if they suggest the target word. Provide guesses in Korean, selecting from or matching the essence of the game's vocabulary.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,

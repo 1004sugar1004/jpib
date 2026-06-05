@@ -9,8 +9,8 @@ export const AnnouncementPopup = () => {
   const [dontShowForWeek, setDontShowForWeek] = useState(false);
 
   useEffect(() => {
-    const lastClosed = localStorage.getItem('announcement_last_closed');
-    const dontShowUntil = localStorage.getItem('announcement_dont_show_until');
+    const lastClosed = localStorage.getItem('announcement_june_last_closed');
+    const dontShowUntil = localStorage.getItem('announcement_june_dont_show_until');
     const now = Date.now();
     const today = new Date().toDateString();
     
@@ -27,10 +27,10 @@ export const AnnouncementPopup = () => {
   const handleClose = () => {
     if (dontShowForWeek) {
       const nextWeek = Date.now() + 7 * 24 * 60 * 60 * 1000;
-      localStorage.setItem('announcement_dont_show_until', nextWeek.toString());
+      localStorage.setItem('announcement_june_dont_show_until', nextWeek.toString());
     } else if (dontShowToday) {
       const today = new Date().toDateString();
-      localStorage.setItem('announcement_last_closed', today);
+      localStorage.setItem('announcement_june_last_closed', today);
     }
     setIsOpen(false);
   };
@@ -64,25 +64,27 @@ export const AnnouncementPopup = () => {
               </div>
 
               <h3 className="text-xl font-black text-gray-900 mb-2 tracking-tight">
-                🎉 4월 시상식 & 5월 공지
+                🎉 5월 시상식 & 6월 랭킹 안내
               </h3>
               
               <div className="space-y-2 text-gray-600 font-medium leading-relaxed max-h-[65vh] overflow-y-auto px-1 custom-scrollbar">
                 {/* 1. 우수학생/학급 (GRID) */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
-                    <h4 className="text-[10px] font-black text-amber-700 mb-1.5 flex items-center gap-1">🏆 4월 우수 학생</h4>
+                    <h4 className="text-[10px] font-black text-amber-700 mb-1.5 flex items-center gap-1">🏆 5월 우수 학생</h4>
                     <div className="space-y-0.5 text-[11px] text-gray-700 font-bold">
-                      <p className="flex justify-between"><span>🥇 1위</span> <span>최진호(4-1)</span></p>
-                      <p className="flex justify-between"><span>🥈 2위</span> <span>김태린(4-1)</span></p>
-                      <p className="flex justify-between"><span>🥉 3위</span> <span>윤태서(4-1)</span></p>
+                      <p className="flex justify-between"><span>🥇 1위</span> <span>윤성빈 (4-4)</span></p>
+                      <p className="flex justify-between"><span>🥈 2위</span> <span>유서준 (4-4)</span></p>
+                      <p className="flex justify-between"><span>🥉 3위</span> <span>최진호 (4-1)</span></p>
                     </div>
                   </div>
                   <div className="bg-blue-50 p-3 rounded-2xl border border-blue-100">
-                    <h4 className="text-[10px] font-black text-blue-700 mb-1.5 flex items-center gap-1">🏫 4월 우수 학급</h4>
-                    <div className="text-[10px] text-gray-700 font-bold leading-tight">
-                      <p>4-1, 5-5, 3-5</p>
-                      <p className="text-[8px] text-blue-500 font-medium mt-1 leading-tight">우수학생과 우수학급에게는 과자박스 선물이 있습니다</p>
+                    <h4 className="text-[10px] font-black text-blue-700 mb-1.5 flex items-center gap-1">🏫 5월 우수 학급</h4>
+                    <div className="space-y-0.5 text-[10px] text-gray-700 font-bold leading-tight">
+                      <p className="flex justify-between"><span>🥇 1위</span> <span>5학년 5반</span></p>
+                      <p className="flex justify-between"><span>🥈 2위</span> <span>4학년 1반</span></p>
+                      <p className="flex justify-between"><span>🥉 3위</span> <span>4학년 4반</span></p>
+                      <p className="text-[8px] text-blue-500 font-medium mt-1 leading-tight">5월 우승 학생 및 우승 학급에는 특별 상품이 곧 지급됩니다! 🎁</p>
                     </div>
                   </div>
                 </div>
@@ -92,24 +94,24 @@ export const AnnouncementPopup = () => {
                   <div className="flex flex-col gap-1 text-[10px] text-gray-700">
                     <p className="flex gap-1.5">
                       <span className="text-indigo-500">🗓️</span>
-                      <span><span className="font-black text-indigo-600">5월 랭킹 시작:</span> 4월 랭킹은 마감 및 초기화되었습니다.</span>
+                      <span><span className="font-black text-indigo-600">6월 랭킹 리셋:</span> 5월 랭킹 마감 및 6월 랭킹 초기화 및 준비 완료!</span>
                     </p>
                     <p className="flex gap-1.5">
                       <span className="text-emerald-500">⚡</span>
-                      <span><span className="font-black text-emerald-600">XP 상향:</span> 일일 최대 경험치가 <span className="font-black">1,000 XP</span>로 늘어났습니다!</span>
+                      <span><span className="font-black text-emerald-600">일일 획득제한:</span> 최대 경험치는 1,000 XP로 계속 적용되어 탐험을 지원합니다.</span>
                     </p>
                     <p className="flex gap-1.5">
-                      <span className="text-amber-500">✨</span>
-                      <span><span className="font-black text-amber-600">업데이트:</span> 5월 중 퀴즈와 게임 속 퀴즈가 업데이트 될 예정입니다!</span>
+                      <span className="text-pink-500">🔥</span>
+                      <span><span className="font-black text-pink-600">모두의 시작선:</span> 6월 1일부터 모두 점수 0점에서 출발하여 새로운 랭킹 경쟁이 치열해집니다!</span>
                     </p>
                   </div>
                 </div>
 
                 {/* 3. 당첨자 & 이벤트 안내 */}
                 <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 text-center">
-                  <h4 className="text-[10px] font-black text-rose-700 mb-1">🎁 후기 이벤트 당첨: 한음 (4-1) ✨</h4>
+                  <h4 className="text-[10px] font-black text-rose-700 mb-1">🎁 다음 6월 우수 상품의 주인공은 누구? ✨</h4>
                   <p className="text-[9px] text-gray-500 leading-tight">
-                    선생님들을 위한 <span className="text-indigo-600 font-bold">커피쿠폰 이벤트</span>는 계속됩니다! ☕
+                    재미있고 깊어지는 <span className="text-indigo-600 font-bold">IB 탐색 퀘스트</span>를 완수하고 정상에 도전하세요!
                   </p>
                 </div>
               </div>

@@ -233,6 +233,65 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Active runtime check to instantly reset daily and monthly statistics (for sleep/wake cycles, active tabs past midnight/month shifts, etc.)
+  useEffect(() => {
+    if (!profile || isGuest) return;
+    const checkAndResetDaily = async () => {
+      const today = getCurrentDate();
+      const currentMonth = getCurrentMonth();
+      
+      const isNewDay = profile.lastXPDate && profile.lastXPDate !== today;
+      const isNewMonth = profile.lastActiveMonth && profile.lastActiveMonth !== currentMonth;
+      
+      if (isNewDay || isNewMonth) {
+        console.log("New calendar day or month detected during active session - resetting stats.");
+        const docRef = doc(db, 'users', profile.uid);
+        
+        const updatedConfig: any = {
+          dailyXP: 0,
+          dailyScore: 0,
+          lastXPDate: today,
+          activityCounts: {},
+          dailyQuests: DEFAULT_DAILY_QUESTS,
+          completedStudyItems: []
+        };
+        
+        const publicUpdates: any = {
+          dailyScore: 0,
+          lastXPDate: today
+        };
+        
+        if (isNewMonth) {
+          updatedConfig.monthlyScore = 0;
+          updatedConfig.lastActiveMonth = currentMonth;
+          publicUpdates.monthlyScore = 0;
+          publicUpdates.lastActiveMonth = currentMonth;
+        }
+        
+        try {
+          await updateDoc(docRef, updatedConfig);
+          // Sync changes directly to publicProfile collection
+          await updateDoc(doc(db, 'publicProfiles', profile.uid), publicUpdates);
+          
+          setProfile(prev => prev ? {
+            ...prev,
+            ...updatedConfig
+          } : null);
+        } catch (error) {
+          console.error("Failed to auto-reset stats on calendar transition:", error);
+        }
+      }
+    };
+
+    checkAndResetDaily();
+    window.addEventListener('focus', checkAndResetDaily);
+    const interval = setInterval(checkAndResetDaily, 30000); // Check every 30 seconds
+    return () => {
+      window.removeEventListener('focus', checkAndResetDaily);
+      clearInterval(interval);
+    };
+  }, [profile, isGuest]);
+
   // Ranking Fetcher (Optimized: Removed onSnapshot to save costs)
   const fetchRankings = React.useCallback(async () => {
     if (!isAuthReady || (!user && !isGuest)) return;
