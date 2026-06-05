@@ -32,6 +32,7 @@ import { FlashcardView } from './components/views/FlashcardView';
 import { MemoryGameView } from './components/views/MemoryGameView';
 import { GameCornerView } from './components/views/GameCornerView';
 import { MusicQuizView } from './components/views/MusicQuizView';
+import { BingoGameView } from './components/views/BingoGameView';
 import { CertificateView } from './components/views/CertificateView';
 import { PlanView } from './components/views/PlanView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
@@ -58,7 +59,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -874,7 +875,7 @@ export default function App() {
 
   // Navigation Guard
   useEffect(() => {
-    const protectedViews = ['quiz', 'music-quiz', 'memory', 'flashcards', 'games'];
+    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games'];
     const isProtected = protectedViews.includes(view);
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -927,7 +928,7 @@ export default function App() {
   };
 
   const handleProtectedViewChange = (newView: typeof view) => {
-    const protectedViews = ['quiz', 'music-quiz', 'memory', 'flashcards', 'games'];
+    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games'];
     const dontShowUntil = localStorage.getItem('dontShowExitConfirmUntil');
     const isMuted = dontShowUntil && new Date().getTime() < parseInt(dontShowUntil);
 
@@ -1101,6 +1102,13 @@ export default function App() {
               <MusicQuizView 
                 onFinish={handleFinishQuiz}
                 onClose={() => handleProtectedViewChange('home')}
+                soundEnabled={soundEnabled}
+              />
+            )}
+            {view === 'bingo' && (
+              <BingoGameView 
+                setView={handleProtectedViewChange}
+                onEarnXP={handleEarnXP}
                 soundEnabled={soundEnabled}
               />
             )}

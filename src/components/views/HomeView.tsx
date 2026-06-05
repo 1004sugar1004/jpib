@@ -35,7 +35,7 @@ interface HomeViewProps {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard') => void;
   rankings: UserProfile[];
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
@@ -514,7 +514,7 @@ export const HomeView = ({
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
           <div 
             onClick={() => setView('study')}
             className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-blue-50 transition-colors group"
@@ -568,6 +568,18 @@ export const HomeView = ({
             </div>
             <h4 className="font-black text-rose-900 text-sm">음악 퀴즈</h4>
             <p className="text-xs text-rose-700 font-bold mt-1">+50 XP</p>
+          </div>
+
+          <div 
+            onClick={() => setView('bingo')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-amber-50 transition-colors group"
+            id="homeview-quick-bingo"
+          >
+            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform">
+              <img src={ASSETS.quiz.game_icon} alt="Bingo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+            </div>
+            <h4 className="font-black text-amber-900 text-sm">지식 빙고</h4>
+            <p className="text-xs text-amber-700 font-bold mt-1">+50 XP</p>
           </div>
         </div>
       </motion.div>
@@ -755,6 +767,29 @@ export const HomeView = ({
               정답당 +50 XP
             </div>
             <div className="mt-6 flex items-center gap-1 text-rose-600 font-bold text-sm">
+              도전하기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('bingo')}
+          className="group"
+          id="homeview-card-bingo"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-amber-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-amber-50/30">
+            <div className="w-20 h-20 bg-amber-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-amber-100 overflow-hidden p-2">
+              <img src={ASSETS.quiz.game_icon} alt="Bingo Game" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">지식 빙고</h3>
+            <p className="text-gray-500 text-sm font-medium mb-2">컴퓨터 AI와 겨루는 지능 빙고 대결!</p>
+            <div className="flex items-center gap-1 px-3 py-1 bg-amber-50 rounded-full text-[10px] font-black text-amber-600 border border-amber-100">
+              <Gamepad2 className="w-3 h-3" />
+              승리 시 +50 XP 획득!
+            </div>
+            <div className="mt-6 flex items-center gap-1 text-amber-600 font-bold text-sm">
               도전하기 <ChevronRight className="w-4 h-4" />
             </div>
           </Card>

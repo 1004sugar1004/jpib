@@ -77,7 +77,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         
         <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
           <div className={cn(
-            "w-full max-w-4xl overflow-hidden relative border-4 md:border-8 shadow-2xl transition-all",
+            "w-full max-w-4xl max-h-[70vh] overflow-hidden relative border-4 md:border-8 shadow-2xl transition-all",
             isDrawingGame 
               ? "bg-transparent border-transparent shadow-none" 
               : "bg-gray-900 border-gray-800 rounded-[1.5rem] md:rounded-[2.5rem]",

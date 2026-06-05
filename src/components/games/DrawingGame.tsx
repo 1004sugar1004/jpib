@@ -45,6 +45,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const apiTimerRef = useRef<any>(null);
   const matchedRef = useRef(false);
   const roundRef = useRef(0);
+  const hasNewStrokeRef = useRef(false);
 
   useEffect(() => { roundRef.current = round; }, [round]);
   useEffect(() => { matchedRef.current = matched; }, [matched]);
@@ -73,6 +74,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasNewStrokeRef.current = false;
   };
 
   const startDrawing = (e: any) => {
@@ -102,6 +104,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     ctx.lineJoin = "round";
     ctx.stroke();
     lastPos.current = pos;
+    hasNewStrokeRef.current = true;
   };
 
   const stopDrawing = () => {
@@ -111,6 +114,8 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
   const checkDrawingWithAI = useCallback(async () => {
     if (matchedRef.current) return;
+    if (!hasNewStrokeRef.current) return;
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -138,6 +143,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const imageData = tempCanvas.toDataURL("image/png").split(",")[1];
     const currentWord = words[roundRef.current];
 
+    hasNewStrokeRef.current = false;
     setAiThinking(true);
     try {
       const response = await ai.models.generateContent({
@@ -219,6 +225,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setAiGuesses([]);
     setMatched(false);
     matchedRef.current = false;
+    hasNewStrokeRef.current = false;
     setAiThinking(false);
     setCountdown(3);
     setPhase("countdown");
@@ -315,8 +322,8 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden select-none">
-      <div className="w-full max-w-lg relative z-10 flex flex-col items-center">
+    <div className="w-full h-full flex flex-col items-center justify-center p-2 md:p-3 overflow-hidden select-none">
+      <div className="w-full max-w-xl md:max-w-4xl relative z-10 flex flex-col items-center">
         <AnimatePresence mode="wait">
           {phase === "intro" && (
             <motion.div 
@@ -324,23 +331,23 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="text-center py-4 flex flex-col items-center"
+              className="text-center py-2 flex flex-col items-center"
             >
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-indigo-100 text-indigo-600 mb-4 shadow-xl">
-                <Pencil size={40} className="animate-bounce" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 mb-2 shadow-lg">
+                <Pencil size={32} className="animate-bounce" />
               </div>
-              <h1 className="text-3xl md:text-5xl font-black text-gray-900 mb-2 tracking-tighter">
+              <h1 className="text-2xl md:text-4xl font-black text-gray-900 mb-1 tracking-tighter">
                 10초 드로잉!
               </h1>
-              <p className="text-base md:text-lg text-gray-500 font-bold mb-6 leading-tight">AI가 10초 안에 여러분의 그림을<br/>맞힐 수 있을까요?</p>
-              <div className="bg-white border-2 border-indigo-100 rounded-2xl px-6 py-2 text-xs md:text-sm text-indigo-600 font-black mb-8 shadow-sm">
+              <p className="text-sm md:text-base text-gray-500 font-bold mb-4 leading-tight">AI가 10초 안에 여러분의 그림을<br/>맞힐 수 있을까요?</p>
+              <div className="bg-white border border-indigo-100 rounded-xl px-4 py-1.5 text-xs text-indigo-600 font-black mb-6 shadow-sm">
                 {ROUND_COUNT} 라운드 · 각 {DRAW_TIME}초
               </div>
               <Button 
                 onClick={() => { setRound(0); roundRef.current = 0; startRound(); }}
-                className="w-full py-4 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200"
+                className="w-full py-3.5 text-base bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100"
               >
-                <Sparkles className="w-5 h-5 mr-2" />
+                <Sparkles className="w-4 h-4 mr-2" />
                 게임 시작하기
               </Button>
             </motion.div>
@@ -352,13 +359,13 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               initial={{ opacity: 0, scale: 1.2 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="text-center py-20 flex flex-col items-center"
+              className="text-center py-6 md:py-10 flex flex-col items-center"
             >
-              <span className="text-indigo-400 font-black text-sm uppercase tracking-widest mb-4">Round {round + 1} / {ROUND_COUNT}</span>
-              <p className="text-xl text-gray-400 font-bold mb-2">이 단어를 그려보세요!</p>
-              <h3 className="text-5xl font-black text-gray-900 mb-12">{currentWord}</h3>
+              <span className="text-indigo-400 font-black text-xs md:text-sm uppercase tracking-widest mb-2">Round {round + 1} / {ROUND_COUNT}</span>
+              <p className="text-sm text-gray-400 font-bold mb-1">이 단어를 그려보세요!</p>
+              <h3 className="text-3xl md:text-5xl font-black text-gray-900 mb-6">{currentWord}</h3>
               <div className={cn(
-                  "text-8xl font-black transition-all duration-300",
+                  "text-6xl md:text-8xl font-black transition-all duration-300",
                   countdown === 1 ? "text-rose-500 scale-125" : "text-indigo-600"
               )}>
                 {countdown === 0 ? "시작!" : countdown}
@@ -372,84 +379,99 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col w-full max-h-full"
+              className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-5 w-full items-center"
             >
-              <div className="flex justify-between items-center mb-2">
-                <div className="bg-white px-3 py-1 rounded-xl border-2 border-indigo-100 text-indigo-900 font-black shadow-sm text-sm">
-                  단어: {currentWord}
-                </div>
-                <div className={cn("text-2xl font-black tabular-nums transition-colors duration-300", timerTextColorClass)}>
-                  {timeLeft}s
-                </div>
-              </div>
-
-              <div className="h-2 w-full bg-gray-200 rounded-full mb-3 overflow-hidden">
-                <div 
-                  className={cn("h-full rounded-full transition-all duration-1000 ease-linear", timerColorClass)}
-                  style={{ width: `${timerPct}%` }}
-                />
-              </div>
-
-              <div className="relative rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-xl border-4 md:border-8 border-white bg-white aspect-[4/3] group">
-                <canvas
-                  ref={canvasRef}
-                  width={480} 
-                  height={360}
-                  className="w-full h-full touch-none cursor-crosshair block bg-blue-50/10 bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]"
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onTouchEnd={stopDrawing}
-                />
-                
-                {matched && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="absolute inset-0 bg-green-500/20 backdrop-blur-[2px] flex items-center justify-center z-10"
-                  >
-                    <div className="bg-white rounded-full p-4 shadow-2xl animate-bounce">
-                      <Check className="w-16 h-16 text-green-500" strokeWidth={5} />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              <div className="mt-4 flex flex-col items-center gap-3">
-                {aiThinking ? (
-                  <div className="flex items-center text-gray-400 font-bold text-xs animate-pulse">
-                    <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-                    분석 중...
+              {/* Left Canvas Column - takes 3/5 width on md screens */}
+              <div className="col-span-1 md:col-span-3 flex flex-col w-full">
+                <div className="flex justify-between items-center mb-1.5">
+                  <div className="bg-white px-3 py-1 rounded-xl border border-indigo-100 text-indigo-950 font-black shadow-sm text-xs md:text-sm">
+                    단어: {currentWord}
                   </div>
-                ) : aiGuesses.length > 0 ? (
-                  <div className="w-full text-center">
-                    <div className="flex flex-wrap gap-1.5 justify-center">
-                      {aiGuesses.map((guess, idx) => (
-                        <span key={idx} className={cn(
-                            "px-3 py-1 rounded-lg text-xs font-black transition-all border-2",
-                            idx === 0 
-                              ? "bg-indigo-600 border-transparent text-white shadow-md scale-105" 
-                              : "bg-white/80 text-gray-600 border-gray-100"
-                        )}>
-                          {guess}
-                        </span>
-                      ))}
-                    </div>
+                  <div className={cn("text-xl font-black tabular-nums transition-colors duration-300", timerTextColorClass)}>
+                    {timeLeft}s
                   </div>
-                ) : (
-                  <div className="text-[10px] font-bold text-gray-400 text-center">그림을 그리면 AI가 실시간으로 분석합니다!</div>
-                )}
+                </div>
+
+                <div className="h-2 w-full bg-gray-200 rounded-full mb-2 overflow-hidden">
+                  <div 
+                    className={cn("h-full rounded-full transition-all duration-1000 ease-linear", timerColorClass)}
+                    style={{ width: `${timerPct}%` }}
+                  />
+                </div>
+
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border-4 border-white bg-white aspect-[4/3] group">
+                  <canvas
+                    ref={canvasRef}
+                    width={480} 
+                    height={360}
+                    className="w-full h-full touch-none cursor-crosshair block bg-blue-50/10 bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]"
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}
+                    onTouchStart={startDrawing}
+                    onTouchMove={draw}
+                    onTouchEnd={stopDrawing}
+                  />
+                  
+                  {matched && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute inset-0 bg-green-500/20 backdrop-blur-[2px] flex items-center justify-center z-10"
+                    >
+                      <div className="bg-white rounded-full p-4 shadow-2xl animate-bounce">
+                        <Check className="w-12 h-12 text-green-500" strokeWidth={5} />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Options Column - takes 2/5 width on md screens */}
+              <div className="col-span-1 md:col-span-2 flex flex-col items-center justify-center gap-3.5 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-indigo-100/40 shadow-sm w-full">
+                <div className="text-center w-full">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-indigo-500 block mb-0.5">AI 실시간 추적 엔진</span>
+                  <p className="text-[10px] font-bold text-gray-400 mb-3">그림을 3초 그리면 추측을 시작합니다!</p>
+                  
+                  <div className="min-h-[64px] flex items-center justify-center w-full">
+                    {aiThinking ? (
+                      <div className="flex items-center text-gray-400 font-bold text-xs animate-pulse">
+                        <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                        분석하는 중...
+                      </div>
+                    ) : aiGuesses.length > 0 ? (
+                      <div className="w-full">
+                        <div className="flex flex-wrap gap-1.5 justify-center">
+                          {aiGuesses.slice(0, 3).map((guess, idx) => (
+                            <span key={idx} className={cn(
+                                "px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border",
+                                idx === 0 
+                                  ? "bg-indigo-600 border-transparent text-white shadow-md scale-105" 
+                                  : "bg-white text-gray-600 border-gray-100"
+                            )}>
+                              {guess}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-gray-400 font-bold py-2 px-3 bg-indigo-50/40 rounded-xl border border-dashed border-indigo-100/60 w-full text-center">
+                        기판 위에 마우스나 손가락으로 쓱쓱 그려보세요!
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="w-full border-t border-indigo-50" />
 
                 <button 
                   onClick={clearCanvas} 
                   disabled={matched}
-                  className="flex items-center px-4 py-2 bg-white/80 hover:bg-white text-gray-500 rounded-xl text-xs font-black transition-all disabled:opacity-30 border border-gray-100 shadow-sm"
+                  className="flex items-center justify-center w-full py-2 bg-rose-50 hover:bg-rose-100 disabled:bg-gray-50 text-rose-600 disabled:text-gray-300 rounded-xl text-xs font-black transition-all border border-rose-100 disabled:border-gray-100 shadow-sm"
                 >
                   <Eraser className="w-3 h-3 mr-2" />
-                  지우기
+                  다시 그리기 (지우기)
                 </button>
               </div>
             </motion.div>
@@ -458,37 +480,37 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           {phase === "roundResult" && (
             <motion.div 
               key="roundResult"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="flex flex-col items-center text-center py-8 w-full"
+              className="flex flex-col items-center text-center py-2 w-full"
             >
               <div className={cn(
-                  "w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-2xl",
+                  "w-16 h-16 rounded-2xl flex items-center justify-center mb-3 shadow-md",
                   roundResults[roundResults.length - 1]?.success ? "bg-green-100 text-green-600" : "bg-rose-100 text-rose-600"
               )}>
-                {roundResults[roundResults.length - 1]?.success ? <Check className="w-12 h-12" strokeWidth={4} /> : <X className="w-12 h-12" strokeWidth={4} />}
+                {roundResults[roundResults.length - 1]?.success ? <Check className="w-8 h-8" strokeWidth={4} /> : <X className="w-8 h-8" strokeWidth={4} />}
               </div>
               
-              <h2 className={cn("text-4xl font-black mb-3", roundResults[roundResults.length - 1]?.success ? "text-green-600" : "text-rose-600")}>
+              <h2 className={cn("text-2xl md:text-3xl font-black mb-1", roundResults[roundResults.length - 1]?.success ? "text-green-600" : "text-rose-600")}>
                 {roundResults[roundResults.length - 1]?.success ? "그림 천재!" : "아까워요!"}
               </h2>
               
-              <p className="text-lg text-gray-500 font-bold mb-8">
+              <p className="text-xs md:text-sm text-gray-500 font-bold mb-4">
                 {roundResults[roundResults.length - 1]?.success 
-                  ? <span>AI가 <span className="text-indigo-600">"{roundResults[roundResults.length - 1]?.word}"</span>을(를) 완벽히 맞혔어요!</span> 
-                  : <span>정답인 <span className="text-rose-600">"{roundResults[roundResults.length - 1]?.word}"</span>에 조금 더 가까워져 봐요!</span>}
+                  ? <span>AI가 <span className="text-indigo-600 font-black">"{roundResults[roundResults.length - 1]?.word}"</span>을(를) 맞웠어요!</span> 
+                  : <span>정답인 <span className="text-rose-600 font-black font-sans">"{roundResults[roundResults.length - 1]?.word}"</span>에 조금 더 가깝게 그려볼까요?</span>}
               </p>
 
               {roundResults[roundResults.length - 1]?.image && (
-                <div className="relative mb-10 p-2 bg-white rounded-3xl shadow-xl border-4 border-gray-100 overflow-hidden w-64 aspect-[4/3]">
-                  <img src={roundResults[roundResults.length - 1].image} alt="내 그림" className="w-full h-full object-contain rounded-2xl" />
+                <div className="relative mb-5 p-1.5 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden w-44 aspect-[4/3]">
+                  <img src={roundResults[roundResults.length - 1].image} alt="내 그림" className="w-full h-full object-contain rounded-xl" />
                 </div>
               )}
 
               <Button 
                 onClick={nextRound}
-                className="w-full py-5 text-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg font-black text-sm"
               >
                 {round + 1 >= ROUND_COUNT ? "마지막 결과 보기" : "다음 단계로"}
               </Button>
@@ -501,28 +523,28 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.2 }}
-              className="flex flex-col items-center py-8 w-full"
+              className="flex flex-col items-center py-2 w-full"
             >
-              <div className="w-20 h-20 bg-amber-100 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-amber-100">
-                <Brain className="w-10 h-10 text-amber-600" />
+              <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center mb-2 shadow-sm">
+                <Brain className="w-6 h-6 text-amber-600" />
               </div>
-              <h2 className="text-2xl font-black text-gray-900 mb-2 truncate max-w-full">보너스 IB 퀴즈!</h2>
-              <p className="text-gray-500 font-bold mb-8 text-center leading-tight">그림을 그리는 사이 지식도 쑥쑥!<br/>퀴즈를 맞히면 다음 그림으로 넘어가요.</p>
+              <h2 className="text-lg md:text-xl font-black text-gray-900 mb-0.5">보너스 IB 퀴즈!</h2>
+              <p className="text-xs text-gray-500 font-bold mb-4 text-center leading-tight">지식도 쑥쑥! 퀴즈를 맞히면 보너스 점수를 얻어요.</p>
               
-              <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border-4 border-indigo-100 w-full mb-8">
-                <p className="text-lg font-black text-gray-900 mb-8 leading-snug">{ibQuiz.question}</p>
-                <div className="grid gap-3">
+              <div className="bg-white p-5 rounded-2xl shadow-lg border border-indigo-100 w-full mb-4 max-w-md">
+                <p className="text-sm font-black text-gray-900 mb-4 leading-snug">{ibQuiz.question}</p>
+                <div className="grid gap-2">
                   {ibQuiz.options.map((option: string, i: number) => (
                     <button
                       key={i}
                       disabled={quizFeedback !== null}
                       onClick={() => handleQuizAnswer(i === ibQuiz.correct)}
                       className={cn(
-                        "p-5 rounded-2xl border-2 transition-all font-bold text-left text-sm",
+                        "p-3 rounded-xl border transition-all font-bold text-left text-xs",
                         quizFeedback === null 
-                          ? "border-gray-100 hover:border-indigo-400 bg-gray-50"
+                          ? "border-gray-100 hover:border-indigo-400 bg-gray-50 text-gray-700"
                           : i === ibQuiz.correct
-                            ? "bg-green-500 border-green-500 text-white shadow-lg"
+                            ? "bg-green-500 border-green-500 text-white shadow-md"
                             : (quizFeedback === "wrong" && "bg-gray-100 border-gray-100 text-gray-400 opacity-50")
                       )}
                     >
@@ -539,36 +561,36 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               key="final"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full flex flex-col items-center py-8"
+              className="w-full flex flex-col items-center py-2"
             >
-              <div className="text-center mb-10">
-                <div className="inline-flex justify-center items-center w-24 h-24 bg-amber-100 text-amber-600 rounded-[2rem] mb-6 shadow-xl shadow-amber-100">
-                  <Trophy className="w-12 h-12 animate-bounce" />
+              <div className="text-center mb-4">
+                <div className="inline-flex justify-center items-center w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl mb-1 shadow-md">
+                  <Trophy className="w-7 h-7 animate-bounce" />
                 </div>
-                <h2 className="text-5xl font-black text-gray-900 mb-3 tracking-tight">
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-0.5 tracking-tight">
                   {score} / {ROUND_COUNT}
                 </h2>
-                <p className="text-lg text-gray-500 font-bold px-8 leading-tight">
+                <p className="text-xs md:text-sm text-gray-500 font-bold px-4 leading-tight">
                   {score === ROUND_COUNT ? "그림의 전설이 나타났다! 🎨" : 
-                   score >= ROUND_COUNT/2 ? "훌륭한 예술적 감각이에요! 👍" : "조금 더 연습하면 AI도 반할 거예요! 💪"}
+                   score >= ROUND_COUNT/2 ? "훌륭한 예술적 감각이에요! 👍" : "조금 더 연습해봐요! 💪"}
                 </p>
               </div>
 
-              <div className="w-full grid grid-cols-2 gap-4 mb-10">
+              <div className="w-full grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
                 {roundResults.map((r, i) => (
                   <div key={i} className={cn(
-                      "flex flex-col p-3 rounded-2xl border-2 transition-all",
+                      "flex flex-col p-1.5 rounded-xl border transition-all",
                       r.success ? "bg-green-50 border-green-100" : "bg-rose-50 border-rose-100"
                   )}>
                     {r.image ? (
-                      <div className="w-full aspect-video rounded-xl mb-3 overflow-hidden shadow-sm bg-white border border-gray-100">
+                      <div className="w-full aspect-video rounded-lg mb-1 overflow-hidden shadow-sm bg-white border border-gray-100 flex items-center justify-center">
                         <img src={r.image} alt={r.word} className="w-full h-full object-contain" />
                       </div>
                     ) : (
-                      <div className="w-full aspect-video bg-gray-100 rounded-xl mb-3 flex items-center justify-center text-xs text-gray-400 font-black">CANVAS EMPTY</div>
+                      <div className="w-full aspect-video bg-gray-100 rounded-lg mb-1 flex items-center justify-center text-[8px] text-gray-450 font-black">CANVAS EMPTY</div>
                     )}
                     <div className="text-center">
-                      <div className={cn("font-black text-sm", r.success ? "text-green-600" : "text-rose-600")}>
+                      <div className={cn("font-black text-[10px]", r.success ? "text-green-600" : "text-rose-600")}>
                         {r.word}
                       </div>
                     </div>
@@ -578,9 +600,9 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
               <Button 
                 onClick={restartGame}
-                className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-100"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-md text-xs md:text-sm"
               >
-                <RotateCcw className="w-5 h-5 mr-2" />
+                <RotateCcw className="w-4 h-4 mr-2" />
                 처음부터 다시 도전!
               </Button>
             </motion.div>

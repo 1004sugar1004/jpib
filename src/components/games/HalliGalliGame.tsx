@@ -66,6 +66,22 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const cpuActionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const processingBellRef = useRef<boolean>(false);
 
+  // Latest state refs to solve asynchronous stale closure errors
+  const playerDeckRef = useRef<Card[]>([]);
+  const cpuDeckRef = useRef<Card[]>([]);
+  const playerPlayedRef = useRef<Card[]>([]);
+  const cpuPlayedRef = useRef<Card[]>([]);
+  const currentTurnRef = useRef<'player' | 'cpu'>('player');
+  const gameOverRef = useRef<boolean>(false);
+
+  // Synchronize state with latest state refs
+  useEffect(() => { playerDeckRef.current = playerDeck; }, [playerDeck]);
+  useEffect(() => { cpuDeckRef.current = cpuDeck; }, [cpuDeck]);
+  useEffect(() => { playerPlayedRef.current = playerPlayed; }, [playerPlayed]);
+  useEffect(() => { cpuPlayedRef.current = cpuPlayed; }, [cpuPlayed]);
+  useEffect(() => { currentTurnRef.current = currentTurn; }, [currentTurn]);
+  useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
+
   // Play synthetic beeps so there are no network delay or loading issues on schools iPads!
   const playSound = useCallback((type: 'beep' | 'win' | 'fail' | 'flip') => {
     if (isMuted) return;
@@ -124,8 +140,18 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setToastText(null);
 
     const full = makeDeck();
-    setPlayerDeck(full.slice(0, 30));
-    setCpuDeck(full.slice(30, 60));
+    const initPlayer = full.slice(0, 30);
+    const initCpu = full.slice(30, 60);
+
+    playerDeckRef.current = initPlayer;
+    cpuDeckRef.current = initCpu;
+    playerPlayedRef.current = [];
+    cpuPlayedRef.current = [];
+    currentTurnRef.current = 'player';
+    gameOverRef.current = false;
+
+    setPlayerDeck(initPlayer);
+    setCpuDeck(initCpu);
     setPlayerPlayed([]);
     setCpuPlayed([]);
     setCurrentTurn('player');
@@ -136,15 +162,15 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const getTopFruitCounts = useCallback(() => {
     const counts: Record<number, number> = {};
     const tops = [
-      playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null,
-      cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null,
+      playerPlayedRef.current.length > 0 ? playerPlayedRef.current[playerPlayedRef.current.length - 1] : null,
+      cpuPlayedRef.current.length > 0 ? cpuPlayedRef.current[cpuPlayedRef.current.length - 1] : null,
     ].filter(Boolean) as Card[];
 
     tops.forEach(c => {
       counts[c.fruit] = (counts[c.fruit] || 0) + c.count;
     });
     return counts;
-  }, [playerPlayed, cpuPlayed]);
+  }, []);
 
   const hasFiveActive = useCallback(() => {
     return Object.values(getTopFruitCounts()).some(v => v === 5);
@@ -173,6 +199,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     if (pTotal === 0) {
       setWinner('cpu');
       setGameOver(true);
+      gameOverRef.current = true;
       setGameState('END');
       playSound('fail');
       return true;
@@ -180,6 +207,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     if (cTotal === 0) {
       setWinner('player');
       setGameOver(true);
+      gameOverRef.current = true;
       setGameState('END');
       playSound('win');
       triggerConfetti();
@@ -188,11 +216,12 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     return false;
   }, [playSound]);
 
-  // Handle bell ringing
-  const ringBell = useCallback((who: 'player' | 'cpu') => {
-    if (gameOver || processingBellRef.current) return;
-    const anyCards = playerPlayed.length + cpuPlayed.length > 0;
-    if (!anyCards) return;
+  // Declared clean non-closure recursive handlers
+  const ringBell = (who: 'player' | 'cpu') => {
+    if (gameOverRef.current || processingBellRef.current) return;
+    const pPlayed = playerPlayedRef.current;
+    const cPlayed = cpuPlayedRef.current;
+    if (pPlayed.length + cPlayed.length === 0) return;
 
     processingBellRef.current = true;
     if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
@@ -202,15 +231,14 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setTimeout(() => setIsRinging(false), 250);
 
     const correct = hasFiveActive();
-    const allCards = [...playerPlayed, ...cpuPlayed];
+    const allCards = [...pPlayed, ...cPlayed];
 
-    let nextPlayerDeck = [...playerDeck];
-    let nextCpuDeck = [...cpuDeck];
-    let nextPlayerPlayed = [...playerPlayed];
-    let nextCpuPlayed = [...cpuPlayed];
+    let nextPlayerDeck = [...playerDeckRef.current];
+    let nextCpuDeck = [...cpuDeckRef.current];
+    let nextPlayerPlayed: Card[] = [];
+    let nextCpuPlayed: Card[] = [];
 
     if (correct) {
-      // Shuffle won cards back to the winner's deck
       const shuffledWin = shuffle(allCards);
       if (who === 'player') {
         nextPlayerDeck = [...nextPlayerDeck, ...shuffledWin];
@@ -218,20 +246,21 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         showToast('🎉 정답!', `바닥의 카드 ${allCards.length}장을 획득했습니다!`);
         setMessage(`정답! 내가 카드 ${allCards.length}장 획득! 🌟`);
         setCurrentTurn('player');
+        currentTurnRef.current = 'player';
       } else {
         nextCpuDeck = [...nextCpuDeck, ...shuffledWin];
         setCpuDeck(nextCpuDeck);
         showToast('🤖 IB봇 선착!', 'IB봇이 먼저 종을 쳤습니다!');
         setMessage('IB봇 선착! 카드를 뺏겼습니다 😭');
         setCurrentTurn('cpu');
+        currentTurnRef.current = 'cpu';
       }
-      nextPlayerPlayed = [];
-      nextCpuPlayed = [];
       setPlayerPlayed([]);
       setCpuPlayed([]);
+      playerPlayedRef.current = [];
+      cpuPlayedRef.current = [];
       playSound('win');
     } else {
-      // Penalty: give all table cards to the other, and send 1 card from deck as penalty
       playSound('fail');
       if (who === 'player') {
         const shuffledToCpu = shuffle(allCards);
@@ -248,6 +277,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         showToast('❌ 틀렸습니다!', `5개가 아닙니다! IB봇에게 카드 제공${penaltyDesc}`);
         setMessage('실수! 오답 패널티를 냈습니다 😢');
         setCurrentTurn('player');
+        currentTurnRef.current = 'player';
       } else {
         const shuffledToPlayer = shuffle(allCards);
         nextPlayerDeck = [...nextPlayerDeck, ...shuffledToPlayer];
@@ -263,12 +293,17 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         showToast('🤖 IB봇 오답!', `IB봇 실수! 카드를 몽땅 얻었습니다!${penaltyDesc}`);
         setMessage('IB봇 오답! 기회가 찾아왔습니다! 🎉');
         setCurrentTurn('cpu');
+        currentTurnRef.current = 'cpu';
       }
-      nextPlayerPlayed = [];
-      nextCpuPlayed = [];
       setPlayerPlayed([]);
       setCpuPlayed([]);
+      playerPlayedRef.current = [];
+      cpuPlayedRef.current = [];
     }
+
+    // Sync refs instantly before state finishes setting to prevent race conditions
+    playerDeckRef.current = nextPlayerDeck;
+    cpuDeckRef.current = nextCpuDeck;
 
     const isFinished = checkElimination(
       nextPlayerDeck.length,
@@ -281,82 +316,87 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       setTimeout(() => {
         processingBellRef.current = false;
         if (who === 'cpu' || !correct) {
-          // If CPU won or somebody made mistake and it's CPU's turn, trigger CPU
           if (correct) { // CPU won match, then it plays again
             triggerCpuFlip();
           }
         }
       }, 1500);
     }
-  }, [playerDeck, cpuDeck, playerPlayed, cpuPlayed, hasFiveActive, gameOver, playSound, checkElimination]);
+  };
 
-  // CPU Flip reaction trigger
-  const triggerCpuFlip = useCallback(() => {
-    if (gameOver) return;
+  const triggerCpuFlip = () => {
+    if (gameOverRef.current) return;
     if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
 
     cpuActionTimerRef.current = setTimeout(() => {
-      setCpuDeck(prevCpu => {
-        if (prevCpu.length === 0) {
-          setCurrentTurn('player');
-          setMessage('IB봇 카드 바닥남! 내 차례입니다.');
-          return prevCpu;
-        }
-        const next = [...prevCpu];
-        const card = next.shift()!;
-        
-        setCpuPlayed(prevPlayed => {
-          const updated = [...prevPlayed, card];
-          playSound('flip');
-          setCurrentTurn('player');
-          
-          const tops = {
-            player: playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null,
-            cpu: card
-          };
-          const totalCounts: Record<number, number> = {};
-          if (tops.player) totalCounts[tops.player.fruit] = (totalCounts[tops.player.fruit] || 0) + tops.player.count;
-          totalCounts[tops.cpu.fruit] = (totalCounts[tops.cpu.fruit] || 0) + tops.cpu.count;
-          const hasFive = Object.values(totalCounts).some(v => v === 5);
+      const activeCpuDeck = cpuDeckRef.current;
+      if (activeCpuDeck.length === 0) {
+        setCurrentTurn('player');
+        currentTurnRef.current = 'player';
+        setMessage('IB봇 카드 바닥남! 내 차례입니다.');
+        return;
+      }
+      
+      const nextCpuDeck = [...activeCpuDeck];
+      const card = nextCpuDeck.shift()!;
+      setCpuDeck(nextCpuDeck);
+      cpuDeckRef.current = nextCpuDeck;
 
-          if (hasFive) {
-            setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
-            
-            // AI reaction timer
-            const reactTime = 1400 + Math.random() * 1200;
-            if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
-            cpuActionTimerRef.current = setTimeout(() => {
-              ringBell('cpu');
-            }, reactTime);
-          } else {
-            setMessage('내 차례 — 카드를 뒤집으세요! 👇');
-          }
-          return updated;
-        });
+      const nextCpuPlayed = [...cpuPlayedRef.current, card];
+      setCpuPlayed(nextCpuPlayed);
+      cpuPlayedRef.current = nextCpuPlayed;
 
-        return next;
-      });
+      playSound('flip');
+      setCurrentTurn('player');
+      currentTurnRef.current = 'player';
+
+      const tops = {
+        player: playerPlayedRef.current.length > 0 ? playerPlayedRef.current[playerPlayedRef.current.length - 1] : null,
+        cpu: card
+      };
+      
+      const totalCounts: Record<number, number> = {};
+      if (tops.player) totalCounts[tops.player.fruit] = (totalCounts[tops.player.fruit] || 0) + tops.player.count;
+      totalCounts[tops.cpu.fruit] = (totalCounts[tops.cpu.fruit] || 0) + tops.cpu.count;
+      const hasFive = Object.values(totalCounts).some(v => v === 5);
+
+      if (hasFive) {
+        setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
+        // AI reaction timer
+        const reactTime = 1300 + Math.random() * 1100;
+        if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+        cpuActionTimerRef.current = setTimeout(() => {
+          ringBell('cpu');
+        }, reactTime);
+      } else {
+        setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+      }
     }, 1200 + Math.random() * 800);
-  }, [playerPlayed, ringBell, playSound, gameOver]);
+  };
 
   const playerFlip = () => {
-    if (gameOver || processingBellRef.current || currentTurn !== 'player') return;
-    if (playerDeck.length === 0) return;
+    if (gameOverRef.current || processingBellRef.current || currentTurnRef.current !== 'player') return;
+    const activePlayerDeck = playerDeckRef.current;
+    if (activePlayerDeck.length === 0) return;
 
-    const nextDeck = [...playerDeck];
-    const card = nextDeck.shift()!;
-    setPlayerDeck(nextDeck);
+    const nextPlayerDeck = [...activePlayerDeck];
+    const card = nextPlayerDeck.shift()!;
+    setPlayerDeck(nextPlayerDeck);
+    playerDeckRef.current = nextPlayerDeck;
 
-    const nextPlayed = [...playerPlayed, card];
-    setPlayerPlayed(nextPlayed);
+    const nextPlayerPlayed = [...playerPlayedRef.current, card];
+    setPlayerPlayed(nextPlayerPlayed);
+    playerPlayedRef.current = nextPlayerPlayed;
+
     playSound('flip');
     setCurrentTurn('cpu');
+    currentTurnRef.current = 'cpu';
     setMessage('IB봇이 차례를 진행 중입니다... 🤖');
 
     // Assess 5 condition immediately
     const tops = {
       player: card,
-      cpu: cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null
+      cpu: cpuPlayedRef.current.length > 0 ? cpuPlayedRef.current[cpuPlayedRef.current.length - 1] : null
     };
     const totalCounts: Record<number, number> = {};
     totalCounts[tops.player.fruit] = (totalCounts[tops.player.fruit] || 0) + tops.player.count;
@@ -377,16 +417,21 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     }
   };
 
-  // Keyboard integration as fallback and for accessibility
+  // Keyboard accessibility
+  const ringBellStaticRef = useRef(ringBell);
+  const playerFlipStaticRef = useRef(playerFlip);
+  useEffect(() => { ringBellStaticRef.current = ringBell; });
+  useEffect(() => { playerFlipStaticRef.current = playerFlip; });
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        ringBell('player');
+        ringBellStaticRef.current('player');
       }
       if (e.code === 'Enter' || e.code === 'ArrowRight') {
         e.preventDefault();
-        playerFlip();
+        playerFlipStaticRef.current();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -394,7 +439,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       window.removeEventListener('keydown', handleKeyDown);
       if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
     };
-  }, [ringBell, playerFlip]);
+  }, []);
 
   // Counts for visible items
   const activeTally = getTopFruitCounts();
@@ -477,7 +522,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         <div className="flex-1 flex flex-col justify-between p-3 relative z-10 h-full">
 
           {/* 1. CPU (IB봇) AREA */}
-          <div className="flex items-center justify-between. bg-emerald-950/40 border border-green-800/10 p-2.5 rounded-xl gap-2 w-full">
+          <div className="flex items-center justify-between bg-emerald-950/40 border border-green-800/10 p-2.5 rounded-xl gap-2 w-full">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center font-extrabold shadow text-base">🤖</div>
               <div>
