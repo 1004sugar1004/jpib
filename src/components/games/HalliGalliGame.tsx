@@ -46,6 +46,166 @@ function shuffle(arr: Card[]): Card[] {
   return a;
 }
 
+interface RenderCardProps {
+  card: Card | null;
+  label?: string;
+  isCpu?: boolean;
+}
+
+const RenderCard = ({ card, label, isCpu }: RenderCardProps) => {
+  if (!card) {
+    return (
+      <div className="w-18 h-26 sm:w-22 sm:h-30 md:w-24 md:h-34 border-2 border-dashed border-white/20 rounded-xl bg-black/20 flex flex-col items-center justify-center text-zinc-400 text-[10px] font-bold shadow-inner">
+        <span className="opacity-40 text-[9px] uppercase tracking-wider">{label || '배치 대기'}</span>
+      </div>
+    );
+  }
+
+  const fruitChar = FRUITS[card.fruit];
+  const fruitName = FRUIT_NAMES[card.fruit];
+
+  const renderFruitContents = () => {
+    const list = Array.from({ length: card.count });
+    
+    let gridStyle = "grid gap-1 justify-center items-center";
+    if (card.count === 1) gridStyle += " grid-cols-1";
+    else if (card.count === 2) gridStyle += " grid-cols-2";
+    else if (card.count === 3) gridStyle += " grid-cols-3";
+    else if (card.count === 4) gridStyle += " grid-cols-2_gap-1.5";
+    else if (card.count === 5) gridStyle += " grid-cols-3_gap-1";
+
+    const getGridCols = () => {
+      if (card.count === 1) return "flex flex-col items-center justify-center";
+      if (card.count === 2) return "grid grid-cols-2 gap-2";
+      if (card.count === 3) return "grid grid-cols-3 gap-1.5";
+      if (card.count === 4) return "grid grid-cols-2 gap-2";
+      return "grid grid-cols-3 gap-1.5";
+    };
+
+    return (
+      <div className={`${getGridCols()} p-1 max-w-full justify-items-center align-items-center`}>
+        {list.map((_, i) => (
+          <span 
+            key={i} 
+            className={`select-none hover:scale-110 transition-transform duration-200 block text-center leading-none ${
+              card.count === 1 
+                ? 'text-3xl sm:text-4xl' 
+                : card.count >= 4 
+                  ? 'text-base sm:text-xl' 
+                  : 'text-xl sm:text-2xl'
+            }`}
+          >
+            {fruitChar}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className={`w-18 h-26 sm:w-22 sm:h-30 md:w-24 md:h-34 bg-white border border-zinc-100 text-zinc-900 rounded-xl flex flex-col justify-between p-1.5 sm:p-2 shadow-xl relative select-none transform transition-all hover:scale-[1.02] hover:shadow-2xl`}>
+      {/* Mini top badge */}
+      <div className="flex justify-between items-center w-full">
+        <span className="text-[11px] sm:text-sm font-black text-indigo-600 font-mono leading-none">{card.count}</span>
+        <span className="text-[8px] sm:text-[9px] font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
+      </div>
+
+      {/* Center Fruit display */}
+      <div className="flex-1 flex items-center justify-center p-0.5 overflow-hidden">
+        {renderFruitContents()}
+      </div>
+
+      {/* Mini bottom inverted badge */}
+      <div className="flex justify-between items-center w-full rotate-180 select-none">
+        <span className="text-[11px] sm:text-sm font-black text-indigo-600 font-mono leading-none">{card.count}</span>
+        <span className="text-[8px] sm:text-[9px] font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
+      </div>
+    </div>
+  );
+};
+
+interface RenderDeckProps {
+  count: number;
+  label: string;
+  isPlayerTurn?: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDeckProps) => {
+  const hasCards = count > 0;
+  const stackOffsets = count > 20 ? 3 : count > 10 ? 2 : count > 3 ? 1 : 0;
+
+  return (
+    <div className="relative select-none" style={{ paddingBottom: `${stackOffsets * 2}px` }}>
+      {/* 3D Stack Effect Layers */}
+      {hasCards && Array.from({ length: stackOffsets }).map((_, i) => (
+        <div 
+          key={i}
+          className="absolute inset-0 bg-indigo-950 border border-indigo-700/20 rounded-xl pointer-events-none"
+          style={{ 
+            transform: `translate(${ (i + 1) * 1.5 }px, ${ (i + 1) * -1.5 }px)`,
+            zIndex: -1 - i
+          }}
+        />
+      ))}
+
+      <button
+        type="button"
+        disabled={disabled || !hasCards}
+        onClick={onClick}
+        className={`w-18 h-26 sm:w-22 sm:h-30 md:w-24 md:h-34 rounded-xl flex flex-col justify-between p-1.5 sm:p-2 shadow-lg transition-all border outline-none select-none relative ${
+          hasCards 
+            ? isPlayerTurn
+              ? 'bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 border-amber-300 cursor-pointer hover:shadow-amber-500/10 hover:scale-105 active:scale-95'
+              : 'bg-gradient-to-br from-indigo-700 to-indigo-950 border-indigo-500/30'
+            : 'bg-zinc-950/40 border-white/5 border-dashed cursor-not-allowed'
+        }`}
+      >
+        {hasCards ? (
+          <>
+            {/* Cards remaining display */}
+            <div className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-black font-mono leading-none bg-black/25 ${
+              isPlayerTurn ? 'text-amber-950' : 'text-indigo-200'
+            }`}>
+              {count}장
+            </div>
+
+            {/* Middle visual icon */}
+            <div className="flex-1 flex flex-col items-center justify-center my-1 select-none">
+              <span className={`text-[11px] sm:text-[12px] font-black uppercase tracking-wider ${
+                isPlayerTurn ? 'text-amber-950' : 'text-indigo-200'
+              }`}>
+                {isPlayerTurn ? 'TAP' : 'IB봇'}
+              </span>
+              <span className={`text-xl sm:text-2xl leading-none my-0.5 animate-pulse`}>
+                {isPlayerTurn ? '✨' : '📚'}
+              </span>
+              <span className={`text-[8px] font-bold uppercase tracking-widest ${
+                isPlayerTurn ? 'text-amber-900' : 'text-indigo-400'
+              }`}>
+                {label}
+              </span>
+            </div>
+
+            {/* Bottom notification */}
+            <div className={`text-[7px] sm:text-[8px] font-extrabold uppercase py-0.5 px-1.5 rounded bg-black/10 tracking-widest ${
+              isPlayerTurn ? 'text-amber-950' : 'text-indigo-400'
+            }`}>
+              {isPlayerTurn ? '뒤집기' : '대기중'}
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center">
+            <span className="text-lg">🫙</span>
+            <span className="text-[7px] font-bold text-zinc-500 mt-1 uppercase leading-none">카드 소진</span>
+          </div>
+        )}
+      </button>
+    </div>
+  );
+};
+
 export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
   const [playerDeck, setPlayerDeck] = useState<Card[]>([]);
@@ -517,82 +677,124 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           </Button>
         </div>
       )}
-
       {gameState === 'PLAYING' && (
-        <div className="flex-1 flex flex-col justify-between p-3 relative z-10 h-full">
-
-          {/* 1. CPU (IB봇) AREA */}
-          <div className="flex items-center justify-between bg-emerald-950/40 border border-green-800/10 p-2.5 rounded-xl gap-2 w-full">
+        <div className="flex-1 flex flex-col justify-between p-2.5 sm:p-4 relative z-10 h-full overflow-y-auto">
+          
+          {/* 1. CPU (IB봇) MINI BAR */}
+          <div className="flex items-center justify-between bg-black/25 border border-white/5 px-3 py-1.5 rounded-xl gap-2 w-full">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center font-extrabold shadow text-base">🤖</div>
+              <div className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center font-extrabold shadow text-sm">🤖</div>
               <div>
-                <h4 className="text-xs font-black">IB봇 (CPU)</h4>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[9px] bg-amber-500/15 border border-amber-500/20 px-1.5 py-0.5 rounded text-amber-300 font-bold">
-                    실시간 지능형
-                  </span>
-                  <span className="text-[9px] text-emerald-300 font-bold">
-                    카드 {cpuDeck.length + cpuPlayed.length}장
-                  </span>
-                </div>
+                <h4 className="text-2xs sm:text-xs font-black leading-none">IB봇 (CPU)</h4>
+                <p className="text-[9px] text-[#86efac] mt-0.5 font-bold">
+                  총 보유: <span className="text-amber-300 font-extrabold">{cpuDeck.length + cpuPlayed.length}장</span>
+                </p>
               </div>
             </div>
 
-            <div className="ml-auto flex items-center gap-3">
-              {/* Turn indicator badge */}
-              <div className={`px-2 py-0.5 rounded-full text-[9px] text-zinc-300 font-bold transition-all ${
-                currentTurn === 'cpu' ? 'bg-[#ca8a04]/40 text-amber-200 border border-[#ca8a04]/40 animate-pulse' : 'opacity-30'
+            <div className="flex items-center gap-2">
+              <div className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold transition-all ${
+                currentTurn === 'cpu' 
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
+                  : 'text-zinc-500 opacity-50'
               }`}>
-                {currentTurn === 'cpu' ? '▶ 생각하는 중...' : '대기 중'}
-              </div>
-
-              {/* CPU deck pile */}
-              <div className="relative w-11 h-15 bg-gradient-to-br from-indigo-800 to-indigo-950 border border-white/20 rounded-lg flex flex-col items-center justify-center shadow">
-                <div className="absolute top-0.5 right-1.5 text-[8px] font-black text-indigo-200">{cpuDeck.length}</div>
-                <div className="text-xs">📚</div>
-              </div>
-
-              {/* CPU Face up card slot */}
-              <div className="w-12 h-16 bg-white/95 border border-zinc-200 rounded-lg flex items-center justify-center shadow-md relative">
-                {cpuPlayed.length > 0 ? (
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-xl leading-none">{cpuPlayed[cpuPlayed.length - 1].fruit !== undefined ? FRUITS[cpuPlayed[cpuPlayed.length - 1].fruit] : ''}</span>
-                    <span className="text-[10px] font-black font-mono text-zinc-700 bg-zinc-100 rounded px-1 mt-1 leading-none">
-                      {cpuPlayed[cpuPlayed.length - 1].count}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-[8px] text-zinc-400 font-bold">빈 필드</span>
-                )}
-                {cpuPlayed.length > 0 && (
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[7px] text-zinc-300 font-extrabold bg-zinc-950/70 border border-zinc-800 rounded px-1">
-                    {cpuPlayed.length}장
-                  </div>
-                )}
+                {currentTurn === 'cpu' ? '● 생각하는 중...' : '대기 중'}
               </div>
             </div>
           </div>
 
-          {/* 2. LIVE FIELD STATUS CHIPS (Displays current totals and flashes on 5) */}
-          <div className="my-2 p-1.5 bg-black/20 border border-white/5 rounded-xl text-center">
-            <span className="text-[10px] font-bold text-emerald-200 block mb-1">바닥의 과일 누적합계</span>
-            <div className="flex justify-center flex-wrap gap-1.5">
+          {/* 2. REAL TABLE FELT (The Heart of Halli Galli) */}
+          <div className="flex-1 my-3 bg-emerald-950/40 border border-green-800/20 rounded-2xl p-3 flex flex-col justify-between items-center relative overflow-hidden shadow-inner">
+            
+            {/* Top Field: CPU Open/Closed Cards */}
+            <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pt-1">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">상대 카드 덱</span>
+                <RenderDeck count={cpuDeck.length} label="IB 봇" />
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">상대 공개 카드</span>
+                <RenderCard card={cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null} label="빈 필드" />
+              </div>
+            </div>
+
+            {/* Middle: THE GOLDEN BELL & STATUS SHIPS */}
+            <div className="w-full flex flex-col items-center justify-center py-2 relative z-20">
+              
+              {/* Overlaid Gold Bell Dome with dynamic ring effects */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => ringBell('player')}
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full cursor-pointer bg-gradient-to-t from-zinc-300 via-zinc-100 to-white hover:from-white hover:to-zinc-100 shadow-2xl border-4 border-zinc-400 flex items-center justify-center relative select-none"
+                animate={isRinging ? { scale: [1, 1.15, 0.95, 1], rotate: [0, -10, 10, 0] } : {}}
+                transition={{ duration: 0.2 }}
+                id="halligalli-bell-dome"
+              >
+                {/* Brass bell center core */}
+                <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-gradient-to-b from-amber-200 via-amber-400 to-amber-700 border border-amber-300 flex items-center justify-center shadow-inner">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-b from-zinc-700 to-zinc-950 border border-zinc-600 flex items-center justify-center shadow shadow-inner text-[10px] sm:text-xs">🛎️</div>
+                </div>
+
+                {/* Blinking yellow beacon if sum equals 5 */}
+                {hasFiveActive() && (
+                  <div className="absolute -inset-2.5 rounded-full border-4 border-amber-400 animate-ping opacity-75 pointer-events-none" />
+                )}
+              </motion.button>
+              
+              {/* TOUCH INDICATOR */}
+              <span className={`text-[8px] sm:text-[9px] font-black tracking-widest mt-2 px-2.5 py-0.5 bg-black/45 hover:bg-black/60 rounded-full cursor-pointer select-none border border-white/5 transition-all ${
+                hasFiveActive() ? 'text-amber-300 animate-bounce' : 'text-emerald-400'
+              }`} onClick={() => ringBell('player')}>
+                {hasFiveActive() ? '🔔 지금!! 터치하여 종 치기 🔔' : '터치하여 종 치기 🛎️'}
+              </span>
+
+            </div>
+
+            {/* Bottom Field: Player Open/Closed Cards */}
+            <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pb-1">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">내 공개 카드</span>
+                <RenderCard card={playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null} label="빈 필드" />
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">내 카드 덱</span>
+                <RenderDeck 
+                  count={playerDeck.length} 
+                  label="카드 뒤집기" 
+                  isPlayerTurn={currentTurn === 'player'} 
+                  onClick={playerFlip}
+                  disabled={currentTurn !== 'player' || playerDeck.length === 0}
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* 3. LIVE FIELD STATUS CHIPS (Displays current totals in a sleek bar) */}
+          <div className="mb-2 p-2 bg-black/25 border border-white/5 rounded-xl">
+            <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-200 block text-center mb-1.5">과일 종류별 실시간 바닥 누적 합계</span>
+            <div className="grid grid-cols-4 gap-1 sm:gap-1.5 justify-center">
               {FRUITS.map((f, idx) => {
                 const count = activeTally[idx] || 0;
                 const isFive = count === 5;
                 return (
                   <div 
                     key={idx}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black transition-all ${
+                    className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 py-1 px-1 sm:px-2 rounded-lg text-[10px] sm:text-xs font-black transition-all ${
                       isFive 
-                        ? 'bg-amber-400 border border-amber-500 text-slate-950 scale-110 shadow-lg animate-bounce' 
-                        : 'bg-emerald-900/50 border border-emerald-800/40 text-emerald-100'
+                        ? 'bg-amber-400 border border-amber-500 text-slate-950 scale-102 shadow-md animate-pulse' 
+                        : 'bg-emerald-950/60 border border-green-905/20 text-emerald-100'
                     }`}
                   >
-                    <span className="text-sm leading-none">{f}</span>
-                    <span className="text-[9px] font-bold text-zinc-300">{FRUIT_NAMES[idx]}</span>
-                    <span className={isFive ? 'font-black font-mono text-xs' : 'font-semibold text-zinc-200'}>
-                      {count}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs sm:text-sm leading-none">{f}</span>
+                      <span className="hidden md:inline text-[8px] font-bold opacity-75">{FRUIT_NAMES[idx]}</span>
+                    </div>
+                    <span className={`text-[10px] sm:text-xs font-black ${isFive ? 'text-indigo-900' : 'text-amber-200'}`}>
+                      {count}개
                     </span>
                   </div>
                 );
@@ -600,127 +802,52 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             </div>
           </div>
 
-          {/* 3. TABLE FELT & CENTRAL BELL SCREEN */}
-          <div className="flex-1 min-h-[140px] flex items-center justify-center gap-8 relative">
-            <div className="w-52 h-52 rounded-full border-4 border-emerald-800/40 flex items-center justify-center shadow-inner relative bg-zinc-900/10">
-              <div className="absolute inset-2.5 rounded-full border border-emerald-700/20 pointer-events-none" />
-
-              {/* The Gold Bell */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => ringBell('player')}
-                className="w-24 h-24 rounded-full cursor-pointer bg-gradient-to-t from-zinc-300 via-zinc-100 to-white hover:from-white hover:to-zinc-100 shadow-2xl border-4 border-zinc-400 flex items-center justify-center relative select-none z-20"
-                animate={isRinging ? { scale: [1, 1.15, 0.95, 1], rotate: [0, -10, 10, 0] } : {}}
-                transition={{ duration: 0.2 }}
-                id="halligalli-bell-dome"
-              >
-                {/* Bell center brass piece */}
-                <div className="w-18 h-18 rounded-full bg-gradient-to-b from-amber-200 via-amber-400 to-[#b45309] border border-amber-300 flex items-center justify-center shadow-inner">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-b from-zinc-700 to-zinc-950 border border-zinc-600 flex items-center justify-center shadow shadow-inner text-[10px]">🛎️</div>
-                </div>
-
-                {/* Pulsing halo if 5 is reached */}
-                {hasFiveActive() && (
-                  <div className="absolute -inset-2 rounded-full border-4 border-amber-400 animate-ping opacity-60 pointer-events-none" />
-                )}
-              </motion.button>
-
-              <span className="absolute bottom-3 text-[8px] font-extrabold text-emerald-400 tracking-widest uppercase py-0.5 px-2 bg-emerald-950/80 border border-emerald-800/40 rounded-full">
-                TOUCH TO RING 🔔
-              </span>
-            </div>
+          {/* 4. EVENT MESSAGE LOG */}
+          <div className="text-center bg-zinc-950/60 py-1.5 px-4 rounded-xl max-w-sm mx-auto mb-2 border border-white/5 flex items-center justify-center gap-1.5 shadow">
+            <p className="text-[8px] text-emerald-500 font-black animate-pulse">●</p>
+            <p className="text-[10px] text-emerald-100 font-extrabold leading-tight">{message}</p>
           </div>
 
-          {/* EVENT MESSAGE LOG */}
-          <div className="text-center bg-black/35 py-1 px-4 rounded-lg max-w-xs mx-auto mb-2.5 border border-white/5 flex items-center justify-center gap-1 shadow">
-            <p className="text-[10px] text-emerald-500 font-black animate-pulse">●</p>
-            <p className="text-[10px] text-emerald-100 font-extrabold">{message}</p>
-          </div>
-
-          {/* 4. PLAYER AREA */}
-          <div className="flex items-center justify-between bg-[#14532d]/40 border border-green-800/30 p-2.5 rounded-xl gap-2 w-full">
+          {/* 5. PLAYER MINI BAR */}
+          <div className="flex items-center justify-between bg-black/25 border border-white/5 px-3 py-1.5 rounded-xl gap-2 w-full">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-extrabold shadow text-base">👦</div>
+              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-extrabold shadow text-sm">👦</div>
               <div>
-                <h4 className="text-xs font-black">나 (학습자)</h4>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[9px] bg-indigo-500/15 border border-indigo-500/20 px-1.5 py-0.5 rounded text-indigo-300 font-bold">
-                    탐험가 학생
-                  </span>
-                  <span className="text-[9px] text-emerald-300 font-bold">
-                    카드 {playerDeck.length + playerPlayed.length}장
-                  </span>
-                </div>
+                <h4 className="text-2xs sm:text-xs font-black leading-none font-sans text-indigo-300">나 (학습자)</h4>
+                <p className="text-[9px] text-[#86efac] mt-0.5 font-bold">
+                  총 보유: <span className="text-amber-300 font-extrabold">{playerDeck.length + playerPlayed.length}장</span>
+                </p>
               </div>
             </div>
 
-            <div className="ml-auto flex items-center gap-3">
-              {/* Action notice */}
+            <div className="flex items-center gap-2.5">
               <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold transition-all ${
-                currentTurn === 'player' ? 'bg-amber-400/90 text-slate-950 font-black animate-pulse' : 'text-zinc-500 opacity-40'
+                currentTurn === 'player' ? 'bg-amber-400 text-slate-950 font-black animate-pulse' : 'text-zinc-500 opacity-40'
               }`}>
-                {currentTurn === 'player' ? '내 차례! 📚 카드 탭!' : '상대 턴'}
+                {currentTurn === 'player' ? '내 차례! 카드를 클릭하세요' : '상대 턴'}
               </div>
-
-              {/* Player face up card display */}
-              <div className="w-12 h-16 bg-white/95 border border-zinc-200 rounded-lg flex items-center justify-center shadow-md relative">
-                {playerPlayed.length > 0 ? (
-                  <div className="flex flex-col items-center justify-center">
-                    <span className="text-xl leading-none">{playerPlayed[playerPlayed.length - 1].fruit !== undefined ? FRUITS[playerPlayed[playerPlayed.length - 1].fruit] : ''}</span>
-                    <span className="text-[10px] font-black font-mono text-zinc-700 bg-zinc-100 rounded px-1 mt-1 leading-none">
-                      {playerPlayed[playerPlayed.length - 1].count}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-[8px] text-zinc-400 font-bold">빈 필드</span>
-                )}
-                {playerPlayed.length > 0 && (
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[7px] text-zinc-300 font-extrabold bg-zinc-950/70 border border-zinc-800 rounded px-1">
-                    {playerPlayed.length}장
-                  </div>
-                )}
-              </div>
-
-              {/* Player unopened deck with touch-to-flip */}
-              <motion.button
-                whileHover={currentTurn === 'player' ? { scale: 1.05 } : {}}
-                whileTap={currentTurn === 'player' ? { scale: 0.95 } : {}}
-                onClick={playerFlip}
-                disabled={currentTurn !== 'player' || playerDeck.length === 0}
-                className={`relative w-11 h-15 bg-gradient-to-br from-amber-500 to-amber-600 border ${
-                  currentTurn === 'player' ? 'border-amber-300 shadow cursor-pointer' : 'border-zinc-700 opacity-40 cursor-not-allowed'
-                } rounded-lg flex flex-col items-center justify-center`}
-                id="player-halli-deck-stack"
-              >
-                <div className="absolute top-0.5 right-1.5 text-[8px] font-black text-amber-100">{playerDeck.length}</div>
-                <div className="text-xs">📚</div>
-                <span className="text-[6px] font-black bg-white/20 text-white rounded px-0.5 mt-0.5 pointer-events-none">
-                  TAP
-                </span>
-              </motion.button>
             </div>
           </div>
 
-          {/* MOBILE DIRECT CONTROLS */}
-          <div className="flex gap-2 mt-2 font-bold text-[11px]">
+          {/* 6. BOTTOM ACTIONS */}
+          <div className="flex gap-2.5 mt-2.5 font-bold text-[11px]">
             <button
               onClick={initGame}
-              className="flex-1 py-2 bg-emerald-900 hover:bg-emerald-800 border border-emerald-700 rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer"
+              className="px-3 py-2.5 bg-[#0e3b16] hover:bg-[#154d20] text-emerald-100 border border-emerald-700/50 rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer"
               id="halligalli-reset-bottom-btn"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-emerald-300" />
-              <span>새 게임</span>
+              <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+              <span>처음부터 세기</span>
             </button>
             <button
               onClick={playerFlip}
               disabled={currentTurn !== 'player' || playerDeck.length === 0}
-              className={`flex-[2] py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 border-b-2 border-amber-800 rounded-xl flex items-center justify-center gap-1 transition-all font-black select-none ${
-                currentTurn === 'player' ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed text-zinc-500'
+              className={`flex-1 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:from-amber-500 hover:to-amber-600 border-b-2 border-amber-700 rounded-xl flex items-center justify-center gap-1 transition-all font-black select-none ${
+                currentTurn === 'player' ? 'cursor-pointer' : 'opacity-35 cursor-not-allowed text-zinc-500'
               }`}
               id="halligalli-flip-bottom-btn"
             >
-              <span>카드 뒤집기 ▶</span>
+              <span>내 카드 한장 뒤집기 (Enter / 덱 클릭) ▶</span>
             </button>
           </div>
 

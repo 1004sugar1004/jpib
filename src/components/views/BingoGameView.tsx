@@ -75,16 +75,37 @@ const playSynthSound = (type: 'select' | 'bingo' | 'win' | 'lose') => {
 };
 
 // IB standard content definitions for thematic Bingo Mode
-const IB_MISSION_WORDS = [
-  "탐구하는 사람", "지식있는 사람", "생각하는 사람", "소통하는 사람", "원칙있는 사람",
-  "열린 마음", "배려하는 사람", "도전하는 사람", "균형잡힌 사람", "성찰하는 사람",
-  "형태 개념", "기능 개념", "원인 개념", "변화 개념", "연결 개념",
-  "관점 개념", "책임 개념", "사고 기능", "조사 기능", "의사소통 기능",
-  "대인관계 기능", "자기관리 기능", "배우기", "행동하기", "성장하기"
+const BINGO_CATEGORIES = [
+  {
+    title: "🌟 IB 학습자 프로필",
+    color: "bg-blue-500/10 border-blue-500/30 text-blue-300",
+    hoverBg: "hover:bg-blue-500/20 hover:text-white",
+    words: ["탐구하는 사람", "지식있는 사람", "생각하는 사람", "소통하는 사람", "원칙있는 사람", "열린 마음", "배려하는 사람", "도전하는 사람", "균형잡힌 사람", "성찰하는 사람"]
+  },
+  {
+    title: "🔍 IB 핵심 개념",
+    color: "bg-indigo-500/10 border-indigo-500/30 text-indigo-300",
+    hoverBg: "hover:bg-indigo-500/20 hover:text-white",
+    words: ["형태 개념", "기능 개념", "원인 개념", "변화 개념", "연결 개념", "관점 개념", "책임 개념"]
+  },
+  {
+    title: "⚙️ 학습 접근 기능 (ATL)",
+    color: "bg-violet-500/10 border-violet-500/30 text-violet-300",
+    hoverBg: "hover:bg-violet-500/20 hover:text-white",
+    words: ["사고 기능", "조사 기능", "의사소통 기능", "대인관계 기능", "자기관리 기능"]
+  },
+  {
+    title: "🚀 실천과 행동",
+    color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-300",
+    hoverBg: "hover:bg-emerald-500/20 hover:text-white",
+    words: ["배우기", "행동하기", "성장하기", "협력하기", "존중하기", "공감 능력", "창의성", "글로벌 마인드"]
+  }
 ];
 
+const ALL_WORDS = BINGO_CATEGORIES.flatMap(cat => cat.words);
+
 interface Cell {
-  value: string | number;
+  value: string;
   marked: boolean;
 }
 
@@ -95,64 +116,121 @@ interface BingoGameViewProps {
 }
 
 export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameViewProps) => {
-  const [gameState, setGameState] = useState<'intro' | 'playing' | 'ended'>('intro');
-  const [bingoType, setBingoType] = useState<'number' | 'ib'>('ib');
+  const [gameState, setGameState] = useState<'intro' | 'setup' | 'playing' | 'ended'>('intro');
   
   // Game metrics
   const [playerBoard, setPlayerBoard] = useState<Cell[]>([]);
   const [computerBoard, setComputerBoard] = useState<Cell[]>([]);
-  const [markedValues, setMarkedValues] = useState<Set<string | number>>(new Set());
+  const [markedValues, setMarkedValues] = useState<Set<string>>(new Set());
   
   const [playerBingos, setPlayerBingos] = useState<number>(0);
   const [computerBingos, setComputerBingos] = useState<number>(0);
   const [turn, setTurn] = useState<'player' | 'computer'>('player');
-  const [lastSelectedValue, setLastSelectedValue] = useState<string | number | null>(null);
+  const [lastSelectedValue, setLastSelectedValue] = useState<string | null>(null);
   const [winner, setWinner] = useState<'player' | 'computer' | null>(null);
   const [shuffling, setShuffling] = useState(false);
   const [isMusicEnabled, setIsMusicEnabled] = useState(soundEnabled);
-  const [statusMessage, setStatusMessage] = useState('원하는 번호/단어를 선택하세요!');
+  const [statusMessage, setStatusMessage] = useState('원하는 단어를 선택하세요!');
 
   const BINGO_TARGET = 3;
 
-  // Initialize/shuffle boards
-  const initializeBoards = () => {
-    setShuffling(true);
-    let items: (string | number)[] = [];
-    if (bingoType === 'number') {
-      items = Array.from({ length: 25 }, (_, i) => i + 1);
-    } else {
-      items = [...IB_MISSION_WORDS];
+  // Initialize empty setup board
+  const initializeSetupBoard = () => {
+    setPlayerBoard(Array.from({ length: 25 }, () => ({ value: '', marked: false })));
+  };
+
+  // Shuffle array helper
+  const shuffle = (array: string[]) => {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
+    return arr;
+  };
 
-    // Shuffle arrays
-    const shuffle = (array: (string | number)[]) => {
-      const arr = [...array];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    };
+  // Add a word from the pool to the next empty cell of player board
+  const handleSelectWordFromPool = (word: string) => {
+    if (gameState !== 'setup') return;
+    
+    // Check if word is already selected
+    const alreadySelected = playerBoard.some(cell => cell.value === word);
+    if (alreadySelected) return;
 
-    const pItems = shuffle(items);
-    const cItems = shuffle(items);
+    // Find first empty cell
+    const emptyIndex = playerBoard.findIndex(cell => cell.value === '');
+    if (emptyIndex === -1) return; // Full
 
-    setPlayerBoard(pItems.map(val => ({ value: val, marked: false })));
-    setComputerBoard(cItems.map(val => ({ value: val, marked: false })));
+    const newBoard = [...playerBoard];
+    newBoard[emptyIndex] = { value: word, marked: false };
+    setPlayerBoard(newBoard);
+    if (isMusicEnabled) playSynthSound('select');
+  };
+
+  // Remove a word from a specific board cell by clicking it
+  const handleRemoveWordFromBoard = (index: number) => {
+    if (gameState !== 'setup') return;
+    const newBoard = [...playerBoard];
+    newBoard[index] = { value: '', marked: false };
+    setPlayerBoard(newBoard);
+    if (isMusicEnabled) playSynthSound('select');
+  };
+
+  // Auto fill all remaining empty positions with random unique words
+  const handleRandomFill = () => {
+    if (gameState !== 'setup') return;
+    const selectedWords = playerBoard.map(c => c.value).filter(v => v !== '');
+    const remainingWords = ALL_WORDS.filter(w => !selectedWords.includes(w));
+    const shuffledRemaining = shuffle(remainingWords);
+
+    const newBoard = playerBoard.map(cell => {
+      if (cell.value !== '') return cell;
+      const nextWord = shuffledRemaining.shift();
+      return { value: nextWord || '', marked: false };
+    });
+
+    setPlayerBoard(newBoard);
+    if (isMusicEnabled) playSynthSound('select');
+  };
+
+  // Clear setup board
+  const handleClearBoard = () => {
+    if (gameState !== 'setup') return;
+    initializeSetupBoard();
+  };
+
+  // Finalize setup and launch match against AI
+  const handleStartMatch = () => {
+    const selectedWords = playerBoard.map(c => c.value);
+    const isValid = selectedWords.every(w => w !== '');
+    if (!isValid) return;
+
+    setShuffling(true);
+    // Computer gets exact same 25 words shuffled randomly for a perfect, fair matchup!
+    const computerWords = shuffle(selectedWords);
+
+    setComputerBoard(computerWords.map(w => ({ value: w, marked: false })));
     setMarkedValues(new Set());
     setPlayerBingos(0);
     setComputerBingos(0);
     setLastSelectedValue(null);
     setWinner(null);
     setTurn('player');
-    setStatusMessage('나의 첫 번째 번호 또는 단어를 선택해보세요!');
+    setStatusMessage('첫 번째 뒤집을 단어를 내 판에서 골라 터치하세요! 🎯');
+    setGameState('playing');
 
     setTimeout(() => setShuffling(false), 450);
   };
 
+  // Re-start game fully from intro/setup
+  const initializeBoards = () => {
+    initializeSetupBoard();
+    setGameState('setup');
+  };
+
   useEffect(() => {
-    initializeBoards();
-  }, [bingoType, gameState === 'intro']);
+    initializeSetupBoard();
+  }, [gameState === 'setup']);
 
   // Calculate completed bingo lines (returns array of winning line indices: rows 0-4, cols 5-9, diag 10, diag 11)
   const calculateCompletedLines = (board: Cell[]): number[] => {
@@ -398,14 +476,10 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
     return () => clearTimeout(timer);
   }, [gameState, turn, computerBoard, playerBoard, winner]);
 
-  // Is line completed checks to draw crosslines or golden outlines
   const playerWinLines = calculateCompletedLines(playerBoard);
   const computerWinLines = calculateCompletedLines(computerBoard);
 
-  const startPlaying = () => {
-    setGameState('playing');
-    initializeBoards();
-  };
+  const filledCount = playerBoard.filter(c => c.value !== '').length;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center p-3 relative overflow-x-hidden font-sans">
@@ -414,7 +488,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.15),rgba(255,255,255,0))]" />
 
       {/* Header Bar */}
-      <header className="relative w-full max-w-5xl flex items-center justify-between py-2 mb-3 border-b border-white/10 z-10">
+      <header className="relative w-full max-w-5xl flex items-center justify-between py-2 mb-3 border-b border-white/10 z-10 font-sans">
         <button 
           onClick={() => setView('home')}
           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
@@ -452,64 +526,173 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
             </div>
 
             <div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white">
-                IB 지식 빙고 대결!
+              <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">
+                IB 핵심 지식 빙고 대결!
               </h2>
-              <p className="text-gray-400 font-medium text-xs md:text-sm mt-1 leading-snug">
-                컴퓨터 AI와 겨루는 지지않는 빙고 대결!<br/> 먼저 3 빙고를 만드는 주인공은 누가 될까요?
+              <p className="text-gray-400 font-medium text-xs md:text-sm leading-snug">
+                컴퓨터 AI와 겨루는 흥미진진한 탐험 빙고!<br/>
+                기존 숫자 빙고 대신, 내가 학습한 핵심 IB 어휘들로 직접 판을 설계해보세요!
               </p>
             </div>
 
-            {/* Selector Option */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-black text-indigo-400 tracking-wider uppercase text-left">빙고 모드를 선택하세요</p>
-              
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  onClick={() => setBingoType('ib')}
-                  className={cn(
-                    "p-3.5 rounded-xl border text-xs font-black transition-all text-center flex flex-col items-center gap-1.5 justify-center",
-                    bingoType === 'ib'
-                      ? "bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/20"
-                      : "bg-slate-950 border-white/10 hover:border-white/20 text-gray-400"
-                  )}
-                  id="target-pyp-bingo-btn"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  IB 핵심 탐험가 모드
-                </button>
-                <button
-                  onClick={() => setBingoType('number')}
-                  className={cn(
-                    "p-3.5 rounded-xl border text-xs font-black transition-all text-center flex flex-col items-center gap-1.5 justify-center",
-                    bingoType === 'number'
-                      ? "bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/20"
-                      : "bg-slate-950 border-white/10 hover:border-white/20 text-gray-400"
-                  )}
-                  id="target-num-bingo-btn"
-                >
-                  <Bot className="w-4 h-4" />
-                  클래식 숫자 1~25
-                </button>
-              </div>
-            </div>
-
             {/* Instruction Panel */}
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-white/5 text-left text-[11px] leading-relaxed text-gray-400 space-y-1">
-              <p className="font-extrabold text-indigo-300">🎮 어떻게 플레이하나요?</p>
-              <p>• 내 판에서 원하는 번호나 단어를 하나 누르세요.</p>
-              <p>• 나와 컴퓨터의 양쪽 판에 해당 단어가 체크됩니다.</p>
-              <p>• 컴퓨터와 번갈아가며 보드를 채워 <span className="font-bold text-amber-400">3 빙고줄</span>을 먼저 완성하면 50 XP 획득!</p>
+            <div className="bg-slate-950/60 p-4 rounded-xl border border-white/5 text-left text-xs leading-relaxed text-gray-450 space-y-2">
+              <p className="font-extrabold text-indigo-300">🎮 주요 대결 규칙 변경 안내</p>
+              <p className="text-emerald-400">• <span className="font-bold">나만의 설계</span>: 예시 단어를 하나씩 클릭해 배치하거나, 랜덤으로 보드를 채울 수 있습니다.</p>
+              <p className="text-emerald-400">• <span className="font-bold">비공개 매칭</span>: 컴퓨터의 보드 속 단어 위치는 베일에 싸여있어 소리 내어 불렀을 때만 하나씩 공개됩니다!</p>
+              <p className="text-indigo-200">• 먼저 <span className="font-bold text-amber-400">3줄의 빙고</span>를 완성하면 완벽한 승리를 일구며 50 XP를 받습니다!</p>
             </div>
 
             <Button 
-              onClick={startPlaying}
+              onClick={() => {
+                initializeSetupBoard();
+                setGameState('setup');
+              }}
               className="w-full py-3.5 text-sm md:text-base font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg border-none"
               id="start-bingo-quiz-game-btn"
             >
-              대결 대기실 입장하기 <Play className="w-4 h-4 inline ml-1.5" />
+              내 빙고판 만들러 가기 <Sparkles className="w-4 h-4 inline ml-1.5" />
             </Button>
           </motion.div>
+        </div>
+      )}
+
+      {/* SETUP STATE: CUSTOMIZE BOARD */}
+      {gameState === 'setup' && (
+        <div className="flex-1 flex flex-col w-full max-w-5xl justify-between relative z-10">
+          
+          <div className="bg-slate-900 border border-white/10 rounded-2xl p-4 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
+            <div>
+              <h3 className="text-lg font-black text-indigo-300">나만의 IB 탐험 빙고판 만들기</h3>
+              <p className="text-xs text-gray-400 mt-1">예시 단어 리스트에서 하나씩 터치하여 25칸을 채우거나, 랜덤 채우기를 이용해 즉시 시작할 수 있습니다.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRandomFill}
+                className="px-3.5 py-1.5 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/30 rounded-xl text-xs font-black text-indigo-200 transition-all flex items-center gap-1 shadow-md"
+              >
+                🎲 랜덤 채우기
+              </button>
+              <button
+                onClick={handleClearBoard}
+                className="px-3.5 py-1.5 bg-slate-950 hover:bg-slate-900 border border-white/10 rounded-xl text-xs font-black text-gray-400 transition-all flex items-center gap-1 shadow-inner"
+              >
+                🔄 전체 초기화
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start justify-center flex-1">
+            
+            {/* Draft Board Section (Left) */}
+            <div className="lg:col-span-5 flex flex-col gap-3">
+              <Card className="p-4 bg-slate-900/60 border-indigo-500/20">
+                <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-indigo-500/10">
+                  <span className="text-xs font-black text-gray-300">내 설계 보드 (Draft)</span>
+                  <div className="px-3 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black text-indigo-400 flex items-center gap-1.5">
+                    채워진 칸: 
+                    <span className="text-white text-xs font-black">{filledCount} / 25</span>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-slate-950 rounded-full h-2 mb-4 overflow-hidden border border-white/5">
+                  <div 
+                    className="bg-indigo-500 h-full transition-all duration-300"
+                    style={{ width: `${(filledCount / 25) * 100}%` }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-5 gap-1 md:gap-1.5 aspect-square">
+                  {playerBoard.map((cell, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleRemoveWordFromBoard(idx)}
+                      className={cn(
+                        "relative aspect-square w-full rounded-lg md:rounded-xl border flex flex-col items-center justify-center p-1.5 text-center cursor-pointer transition-all uppercase select-none overflow-hidden outline-none break-all",
+                        cell.value !== ''
+                          ? "bg-indigo-950/80 border-indigo-500 text-indigo-200 hover:border-rose-500 hover:text-rose-300 font-extrabold focus:outline-none"
+                          : "bg-slate-950 border-white/5 border-dashed text-gray-500 hover:bg-slate-900/50"
+                      )}
+                      title={cell.value ? "클릭하면 이 위치의 단어를 지웁니다." : "오른쪽 단어 풀에서 단어를 골라 채우세요."}
+                    >
+                      {cell.value ? (
+                        <span className="text-[9px] md:text-[10px] font-black leading-tight tracking-tight whitespace-pre-wrap">
+                          {cell.value}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-gray-700">+</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Start Match Button */}
+              {filledCount === 25 ? (
+                <motion.button
+                  initial={{ scale: 0.98 }}
+                  animate={{ scale: [0.98, 1.02, 0.98] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  onClick={handleStartMatch}
+                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm md:text-base rounded-2xl shadow-xl shadow-emerald-500/15 flex items-center justify-center gap-2 border-none cursor-pointer"
+                >
+                  <Bot className="w-5 h-5" />
+                  AI 컴퓨터와 대결 시작하기! ⚡ 
+                </motion.button>
+              ) : (
+                <button
+                  disabled
+                  className="w-full py-4 bg-slate-900 border border-white/5 text-gray-500 font-black text-sm md:text-base rounded-2xl cursor-not-allowed text-center"
+                >
+                  단어 {25 - filledCount}칸을 더 채우면 활성화됩니다 🧩
+                </button>
+              )}
+            </div>
+
+            {/* Word Pool Section - Categorized (Right) */}
+            <div className="lg:col-span-7 flex flex-col gap-4">
+              <Card className="p-4 bg-slate-900/60 border-indigo-500/20 max-h-[64vh] overflow-y-auto custom-scrollbar space-y-5">
+                <div className="pb-2 border-b border-white/10 flex items-center justify-between">
+                  <span className="text-xs font-black text-indigo-300 tracking-wider">📋 단어 수집기 (카테고리별 예시)</span>
+                  <span className="text-[10px] text-gray-400">터치하여 빈 칸에 쏙 넣으세요!</span>
+                </div>
+
+                <div className="space-y-4">
+                  {BINGO_CATEGORIES.map((cat, catIdx) => (
+                    <div key={catIdx} className="space-y-2">
+                      <h4 className="text-[11px] font-extrabold text-slate-300 border-l-2 border-indigo-500 pl-1.5">
+                        {cat.title}
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cat.words.map((word, wIdx) => {
+                          const isUsed = playerBoard.some(c => c.value === word);
+                          return (
+                            <button
+                              key={wIdx}
+                              onClick={() => handleSelectWordFromPool(word)}
+                              disabled={isUsed || filledCount >= 25}
+                              className={cn(
+                                "text-[10px] md:text-xs px-2.5 py-1.5 rounded-xl border font-bold transition-all flex items-center gap-1 hover:scale-105 active:scale-95 cursor-pointer select-none outline-none",
+                                isUsed
+                                  ? "bg-indigo-900/40 border-indigo-500/20 text-indigo-400/40 opacity-40 cursor-not-allowed"
+                                  : "bg-slate-950 border-white/5 text-slate-300 hover:border-indigo-500/60"
+                              )}
+                            >
+                              {word}
+                              {isUsed && <span className="text-[9px] text-emerald-400 ml-1">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+          </div>
+
         </div>
       )}
 
@@ -517,7 +700,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
         <div className="flex-1 flex flex-col w-full max-w-5xl justify-between relative z-10">
           
           {/* Status Message Panel */}
-          <div className="bg-slate-950 border border-white/10 rounded-2xl p-2.5 mb-3 flex items-center justify-between shadow-lg gap-2 text-center">
+          <div className="bg-slate-950 border border-white/10 rounded-2xl p-2.5 mb-3 flex items-center justify-between shadow-lg gap-2 text-center font-sans">
             <div className="flex items-center gap-2">
               <span className={cn(
                 "w-2 h-2 rounded-full",
@@ -531,22 +714,25 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 text-xs bg-slate-900 border border-white/5 py-1 px-2.5 rounded-lg text-gray-400">
                 <span className="font-extrabold text-[10px] text-indigo-400 uppercase">모드</span>
-                <span className="text-[10px] font-black text-white">{bingoType === 'ib' ? "IB 탐험가" : "1~25 숫자"}</span>
+                <span className="text-[10px] font-black text-white">IB 핵심 지식 매칭</span>
               </div>
               <button 
-                onClick={initializeBoards}
+                onClick={() => {
+                  setGameState('setup');
+                  initializeSetupBoard();
+                }}
                 disabled={shuffling}
-                className="p-1 px-2 text-[10px] font-black hover:bg-slate-800 disabled:opacity-50 text-indigo-400 hover:text-indigo-300 rounded border border-indigo-500/20 flex items-center gap-1 transition-colors"
+                className="p-1 px-2 text-[10px] font-black hover:bg-slate-800 disabled:opacity-50 text-indigo-450 hover:text-indigo-300 rounded border border-indigo-500/20 flex items-center gap-1 transition-colors outline-none"
                 id="bingo-board-reshuffle"
               >
                 <RefreshCw className={cn("w-3 h-3", shuffling && "animate-spin")} />
-                셔플 (재정렬)
+                설계 재설정 (준비화면)
               </button>
             </div>
           </div>
 
           {/* Dual Board Grid System - Optimized for landscape tablets */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch justify-center flex-1 min-h-[45vh]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch justify-center flex-1 min-h-[45vh] font-sans">
             
             {/* Player 5x5 Board */}
             <Card className="p-3 md:p-4 bg-slate-900/60 border-indigo-500/20 flex flex-col justify-between">
@@ -596,12 +782,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
                           {lastSelectedValue === cell.value && cell.marked && (
                             <span className="absolute inset-0 bg-white/25 animate-ping rounded-xl pointer-events-none" />
                           )}
-                          <span className={cn(
-                            "font-black tracking-tight break-all leading-tight text-center whitespace-pre-wrap-custom",
-                            bingoType === 'ib' 
-                              ? "text-[9px] md:text-[10px]" 
-                              : "text-lg md:text-xl"
-                          )}>
+                          <span className="font-black tracking-tight break-all leading-tight text-center text-[9px] md:text-[10px] whitespace-pre-wrap">
                             {cell.value}
                           </span>
                         </button>
@@ -618,13 +799,13 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
               </div>
             </Card>
 
-            {/* Computer Opponent 5x5 Board */}
+            {/* Computer Opponent 5x5 Board with Hiding mechanism strictly implemented */}
             <Card className="p-3 md:p-4 bg-slate-900/60 border-purple-500/20 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-purple-500/10">
                   <div className="flex items-center gap-1.5 text-purple-400">
                     <Bot className="w-4 h-4" />
-                    <span className="text-xs font-black">AI 컴퓨터의 보드 (Computer)</span>
+                    <span className="text-xs font-black">AI 컴퓨터의 보드 (숨김처리 🔒)</span>
                   </div>
                   <div className="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] font-black text-purple-400">
                     완성 빙고: <span className="text-white text-xs ml-1">{computerBingos} / {BINGO_TARGET}</span>
@@ -652,24 +833,25 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
                           key={idx}
                           id={`c-cell-${idx}`}
                           className={cn(
-                            "relative aspect-square w-full rounded-lg md:rounded-xl border flex flex-col items-center justify-center p-1 transition-all select-none overflow-hidden",
+                            "relative aspect-square w-full rounded-lg md:rounded-xl border flex flex-col items-center justify-center p-1 transition-all select-none overflow-hidden text-center",
                             cell.marked 
                               ? isWinningCell
-                                ? "bg-amber-500/30 border-amber-400/50 text-amber-200 font-extrabold"
-                                : "bg-[#581c87]/50 border-purple-500/40 text-purple-200 font-extrabold"
-                              : "bg-slate-950/40 border-white/5 text-gray-650"
+                                ? "bg-amber-500 border-amber-300 text-slate-900 font-extrabold shadow-md scale-95 duration-200"
+                                : "bg-purple-900 border-purple-400 text-white font-extrabold shadow-inner scale-95"
+                              : "bg-slate-950 border-white/5 text-gray-650 bg-gradient-to-tr from-slate-950 to-indigo-950/20"
                           )}
                         >
-                          {/* Blurred out Computer terms to make it a bit secret! Or shown clearly for educational reinforcement */}
-                          <span className={cn(
-                            "font-black tracking-tight leading-tight text-center",
-                            cell.marked ? "opacity-100" : "opacity-35 font-normal",
-                            bingoType === 'ib' 
-                              ? "text-[9px]" 
-                              : "text-base md:text-lg"
-                          )}>
-                            {cell.value}
-                          </span>
+                          {/* If not marked, we HIDE the text value completely and render a mystery icon as per user requests */}
+                          {cell.marked ? (
+                            <span className="font-extrabold text-[9px] md:text-[10px] leading-tight text-white tracking-tight break-all whitespace-pre-wrap">
+                              {cell.value}
+                            </span>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center text-indigo-500/40">
+                              <Bot className="w-4 h-4 animate-pulse" />
+                              <span className="text-[9px] text-indigo-500/40 font-bold tracking-widest mt-1">?</span>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -679,16 +861,16 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
 
               {/* Opponent Status panel */}
               <div className="mt-3 bg-slate-950/40 p-2 rounded-xl border border-white/5 flex justify-between items-center text-[10px] text-gray-400">
-                <span>🤖 가상 브레인 모듈 탑재</span>
-                <span>마지막 부른 단어: <span className="text-indigo-300 font-black">{lastSelectedValue || '-'}</span></span>
+                <span>🤖 가상 지능 강화 모듈 가동 중</span>
+                <span>마지막 터치된 단어: <span className="text-amber-300 font-black">{lastSelectedValue || '-'}</span></span>
               </div>
             </Card>
 
           </div>
 
           {/* Quick Guidance info on the bottom */}
-          <div className="mt-3 text-center text-[10px] text-gray-500">
-            * 태블릿 화면에 맞춰 가로 배치로 가독성이 넓게 표시됩니다. 내 판의 번호를 눌러 바로 빙고에 도전해봐요!
+          <div className="mt-3 text-center text-[10px] text-gray-500 font-sans">
+            * 상대 컴퓨터의 빙고판은 베일에 가려져있어, 소리 내어 불린 단어만 하나씩 활성화됩니다.
           </div>
 
         </div>
@@ -696,7 +878,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
 
       {/* Game Ended Popup overlay */}
       {gameState === 'ended' && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 font-sans">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -713,10 +895,10 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
               )}>
                 {winner === 'player' ? "빙고 대승리! 🎉" : "컴퓨터의 빙고 달성! 🤖"}
               </h3>
-              <p className="text-gray-405 font-bold text-xs mt-1.5 leading-relaxed">
+              <p className="text-gray-400 font-bold text-xs mt-1.5 leading-relaxed">
                 {winner === 'player' 
                   ? "훌륭한 지식 전략가로 임무를 완료했습니다! 축하금 50 XP가 탐험 기록에 추가되었어요."
-                  : "컴퓨터가 먼저 3 빙고라인을 완성했어요. 다시 번을 맞춰가며 전략을 짜볼까요?"}
+                  : "컴퓨터가 먼저 3 빙고라인을 완성했어요. 다시 단어를 조합하여 도전장 보낼까요?"}
               </p>
             </div>
 
@@ -743,7 +925,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
                 className="w-1/2 py-3 bg-slate-950 border border-white/10 hover:bg-slate-900 text-gray-300 font-extrabold rounded-xl text-xs"
                 id="retry-bingo-quiz-game-btn"
               >
-                한 판 더 하기
+                다시 설계하기
               </Button>
               <Button 
                 onClick={() => setView('home')}

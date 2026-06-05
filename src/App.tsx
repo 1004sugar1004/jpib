@@ -340,7 +340,6 @@ export default function App() {
     if (!isAuthReady || (!user && !isGuest)) return;
     try {
       const q = query(collection(db, 'publicProfiles'), orderBy('score', 'desc'), limit(100)); // Limit to top 100
-      const snapshot = await getDoc(doc(db, 'publicProfiles', 'non-existent-to-trigger-cache')).catch(() => null); // Dummy for potential cache
       
       const { getDocs } = await import('firebase/firestore');
       const querySnapshot = await getDocs(q);
@@ -360,6 +359,7 @@ export default function App() {
       console.log(`Fetched ${data.length} users for ranking.`);
     } catch (error) {
       console.error("Error fetching rankings:", error);
+      handleFirestoreError(error, OperationType.GET, 'publicProfiles');
     }
   }, [isAuthReady, user, isGuest]);
 
