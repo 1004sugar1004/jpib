@@ -56,8 +56,8 @@ interface RenderCardProps {
 const RenderCard = ({ card, label, isCpu, playedCount = 0 }: RenderCardProps) => {
   if (!card) {
     return (
-      <div className="w-28 h-40 sm:w-32 sm:h-44 md:w-36 md:h-50 border-2 border-dashed border-white/20 rounded-xl bg-black/20 flex flex-col items-center justify-center text-zinc-400 text-xs font-bold shadow-inner">
-        <span className="opacity-40 text-[10px] uppercase tracking-wider">{label || '배치 대기'}</span>
+      <div className="w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40 border-2 border-dashed border-white/20 rounded-xl bg-black/20 flex flex-col items-center justify-center text-zinc-400 text-[10px] sm:text-xs font-bold shadow-inner animate-pulse">
+        <span className="opacity-40 text-[9px] uppercase tracking-wider">{label || '배치 대기'}</span>
       </div>
     );
   }
@@ -69,24 +69,26 @@ const RenderCard = ({ card, label, isCpu, playedCount = 0 }: RenderCardProps) =>
     const list = Array.from({ length: card.count });
     
     const getGridCols = () => {
-      if (card.count === 1) return "flex flex-col items-center justify-center";
-      if (card.count === 2) return "grid grid-cols-2 gap-4";
-      if (card.count === 3) return "grid grid-cols-3 gap-3";
-      if (card.count === 4) return "grid grid-cols-2 gap-4";
-      return "grid grid-cols-3 gap-3";
+      if (card.count === 1) return "flex items-center justify-center";
+      if (card.count === 2) return "grid grid-cols-2 gap-2 sm:gap-3";
+      if (card.count === 3) return "grid grid-cols-3 gap-1 sm:gap-1.5";
+      if (card.count === 4) return "grid grid-cols-2 gap-2 sm:gap-2.5";
+      return "grid grid-cols-3 gap-1 sm:gap-1.5";
     };
 
     return (
-      <div className={`${getGridCols()} p-1 max-w-full justify-items-center align-items-center`}>
+      <div className={`${getGridCols()} w-full max-w-full justify-items-center items-center`}>
         {list.map((_, i) => (
           <span 
             key={i} 
             className={`select-none hover:scale-110 transition-transform duration-200 block text-center leading-none ${
               card.count === 1 
-                ? 'text-5xl sm:text-6xl' 
-                : card.count >= 4 
+                ? 'text-4xl sm:text-5xl md:text-6xl' 
+                : card.count === 2
                   ? 'text-3xl sm:text-4xl' 
-                  : 'text-4xl sm:text-5xl'
+                  : card.count === 3
+                    ? 'text-2xl sm:text-3xl'
+                    : 'text-xl sm:text-2xl'
             }`}
           >
             {fruitChar}
@@ -99,57 +101,57 @@ const RenderCard = ({ card, label, isCpu, playedCount = 0 }: RenderCardProps) =>
   // Number of background stacked card visuals
   const numVisualCards = Math.min(playedCount - 1, 8);
 
-  // Deterministic physical offsets and rotations for realistic stacking
+  // Exact vertical stacking offset for an organized clean look (no chaotic rotation)
   const stackPositions = [
-    { x: -6, y: 4, r: -10 },
-    { x: 6, y: -4, r: 9 },
-    { x: -4, y: -6, r: -14 },
-    { x: 7, y: 6, r: 13 },
-    { x: -8, y: 6, r: -7 },
-    { x: 5, y: 8, r: 11 },
-    { x: -5, y: -8, r: -5 },
-    { x: 7, y: 4, r: 10 }
+    { x: 1, y: 1.5, r: 0 },
+    { x: 2, y: 3, r: 0 },
+    { x: 3, y: 4.5, r: 0 },
+    { x: 4, y: 6, r: 0 },
+    { x: 5, y: 7.5, r: 0 },
+    { x: 6, y: 9, r: 0 },
+    { x: 7, y: 10.5, r: 0 },
+    { x: 8, y: 12, r: 0 }
   ];
 
   return (
     <div className="relative">
-      {/* 바닥에 은은하게 누적되어 보이는 카드 스택들 */}
+      {/* 바닥에 흐트러짐 없이 정론하게 정렬되어 깊이감을 주는 카드 레이어들 */}
       {numVisualCards > 0 && Array.from({ length: numVisualCards }).map((_, i) => {
         const pos = stackPositions[i % stackPositions.length];
         return (
           <div 
             key={i}
-            className="absolute inset-0 bg-white border border-zinc-300/90 rounded-xl shadow-md pointer-events-none"
+            className="absolute inset-0 bg-zinc-50 border border-zinc-200 rounded-xl shadow-[2px_4px_10px_rgba(0,0,0,0.12)] pointer-events-none"
             style={{ 
               transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.r}deg)`,
               zIndex: -1 - i,
-              opacity: Math.max(0.4, 0.95 - (i * 0.08))
+              opacity: Math.max(0.6, 0.95 - (i * 0.06))
             }}
           />
         );
       })}
 
-      <div className={`w-28 h-40 sm:w-32 sm:h-44 md:w-36 md:h-50 bg-white border border-zinc-100 text-zinc-900 rounded-xl flex flex-col justify-between p-3 shadow-xl relative select-none transform transition-all hover:scale-[1.02] hover:shadow-2xl`}>
+      <div className={`w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40 bg-white border border-zinc-200 text-zinc-900 rounded-xl flex flex-col justify-between p-2 sm:p-3 shadow-xl relative select-none transform transition-all hover:scale-[1.02] hover:shadow-2xl`}>
         {/* Mini top badge */}
         <div className="flex justify-between items-center w-full">
-          <span className="text-sm sm:text-lg font-black text-indigo-600 font-mono leading-none">{card.count}</span>
-          <span className="text-[10px] sm:text-xs font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
+          <span className="text-xs sm:text-base font-black text-indigo-600 font-mono leading-none">{card.count}</span>
+          <span className="text-[8px] sm:text-[10px] font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
         </div>
 
         {/* Center Fruit display */}
-        <div className="flex-1 flex items-center justify-center p-1 overflow-hidden">
+        <div className="flex-1 flex items-center justify-center p-0.5 overflow-hidden">
           {renderFruitContents()}
         </div>
 
         {/* Mini bottom inverted badge */}
         <div className="flex justify-between items-center w-full rotate-180 select-none">
-          <span className="text-sm sm:text-lg font-black text-indigo-600 font-mono leading-none">{card.count}</span>
-          <span className="text-[10px] sm:text-xs font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
+          <span className="text-xs sm:text-base font-black text-indigo-600 font-mono leading-none">{card.count}</span>
+          <span className="text-[8px] sm:text-[10px] font-extrabold text-zinc-400 font-sans tracking-tight uppercase">{fruitName}</span>
         </div>
 
         {/* 바닥에 깔린 총 개수 서브 알림배지 */}
         {playedCount > 0 && (
-          <div className="absolute -bottom-2 -right-2 bg-rose-600 border border-white text-[9px] font-black text-white px-2 py-0.5 rounded-full shadow-md z-30 transform hover:scale-110 transition-transform">
+          <div className="absolute -bottom-2 -right-2 bg-rose-600 border border-white text-[8px] sm:text-[9px] font-black text-white px-2 py-0.5 rounded-full shadow-md z-35 transform hover:scale-110 transition-transform">
             {playedCount}장 쌓임
           </div>
         )}
@@ -164,9 +166,10 @@ interface RenderDeckProps {
   isPlayerTurn?: boolean;
   onClick?: () => void;
   disabled?: boolean;
+  isPlayer?: boolean;
 }
 
-const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDeckProps) => {
+const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled, isPlayer }: RenderDeckProps) => {
   const hasCards = count > 0;
   const stackOffsets = count > 20 ? 5 : count > 10 ? 3 : count > 3 ? 2 : count > 0 ? 1 : 0;
 
@@ -176,7 +179,9 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
       {hasCards && Array.from({ length: stackOffsets }).map((_, i) => (
         <div 
           key={i}
-          className="absolute inset-0 bg-indigo-950 border border-indigo-700/20 rounded-xl pointer-events-none"
+          className={`absolute inset-0 border rounded-xl pointer-events-none ${
+            isPlayer ? 'bg-amber-800/80 border-amber-600/30' : 'bg-indigo-950 border-indigo-700/20'
+          }`}
           style={{ 
             transform: `translate(${ (i + 1) * 2 }px, ${ (i + 1) * -2 }px)`,
             zIndex: -1 - i
@@ -188,10 +193,10 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
         type="button"
         disabled={disabled || !hasCards}
         onClick={onClick}
-        className={`w-28 h-40 sm:w-32 sm:h-44 md:w-36 md:h-50 rounded-xl flex flex-col justify-between p-3 shadow-lg transition-all border outline-none select-none relative ${
+        className={`w-20 h-28 sm:w-24 sm:h-34 md:w-28 md:h-40 rounded-xl flex flex-col justify-between p-2 sm:p-3 shadow-lg transition-all border outline-none select-none relative ${
           hasCards 
-            ? isPlayerTurn
-              ? 'bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 border-amber-300 cursor-pointer hover:shadow-amber-500/15 hover:scale-105 active:scale-95'
+            ? isPlayer
+              ? `bg-gradient-to-br from-amber-400 to-amber-500 border-amber-300 ${isPlayerTurn ? 'cursor-pointer ring-4 ring-amber-300/40 scale-102 shadow-amber-500/10' : 'opacity-85'}`
               : 'bg-gradient-to-br from-indigo-700 to-indigo-950 border-indigo-500/30'
             : 'bg-zinc-950/40 border-white/5 border-dashed cursor-not-allowed'
         }`}
@@ -199,40 +204,40 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
         {hasCards ? (
           <>
             {/* Cards remaining display */}
-            <div className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-black font-mono leading-none bg-black/25 ${
-              isPlayerTurn ? 'text-amber-950' : 'text-indigo-200'
+            <div className={`text-[8px] sm:text-[10px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-black font-mono leading-none bg-black/25 ${
+              isPlayer ? 'text-amber-950 font-black' : 'text-indigo-200'
             }`}>
               {count}장
             </div>
 
             {/* Middle visual icon */}
-            <div className="flex-1 flex flex-col items-center justify-center my-2 select-none">
-              <span className={`text-xs sm:text-sm font-black uppercase tracking-wider ${
-                isPlayerTurn ? 'text-amber-950' : 'text-indigo-200'
+            <div className="flex-1 flex flex-col items-center justify-center my-1 select-none">
+              <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${
+                isPlayer ? 'text-amber-950 font-black' : 'text-indigo-200'
               }`}>
-                {isPlayerTurn ? 'TAP' : 'IB봇'}
+                {isPlayer ? (isPlayerTurn ? 'TAP!' : '대기중') : 'IB봇'}
               </span>
-              <span className={`text-3xl sm:text-4xl leading-none my-1.5 animate-pulse`}>
-                {isPlayerTurn ? '✨' : '📚'}
+              <span className={`text-2xl sm:text-3xl leading-none my-1 ${isPlayerTurn ? 'animate-bounce' : 'animate-pulse'}`}>
+                {isPlayer ? '✨' : '📚'}
               </span>
-              <span className={`text-[9px] font-black uppercase tracking-widest ${
-                isPlayerTurn ? 'text-amber-900' : 'text-indigo-400'
+              <span className={`text-[8px] font-black uppercase tracking-widest ${
+                isPlayer ? 'text-amber-900 font-extrabold' : 'text-indigo-400'
               }`}>
                 {label}
               </span>
             </div>
 
             {/* Bottom notification */}
-            <div className={`text-[8px] sm:text-[9px] font-black uppercase py-1 px-2.5 rounded bg-black/10 tracking-widest ${
-              isPlayerTurn ? 'text-amber-950' : 'text-indigo-400'
+            <div className={`text-[7px] sm:text-[8px] font-black uppercase py-0.5 sm:py-1 px-1.5 sm:px-2.5 rounded bg-black/10 tracking-widest ${
+              isPlayer ? 'text-amber-950 font-black' : 'text-indigo-400'
             }`}>
-              {isPlayerTurn ? '뒤집기' : '대기중'}
+              {isPlayer ? (isPlayerTurn ? '뒤집기' : '내 차례 대기') : '대기중'}
             </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center">
-            <span className="text-3xl">🫙</span>
-            <span className="text-[10px] font-bold text-zinc-500 mt-2 uppercase leading-none">카드 소진</span>
+            <span className="text-2xl">🫙</span>
+            <span className="text-[8px] font-bold text-zinc-500 mt-1 uppercase leading-none">카드 소진</span>
           </div>
         )}
       </button>
@@ -243,12 +248,14 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled }: RenderDec
 export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
   const [playerDeck, setPlayerDeck] = useState<Card[]>([]);
-  const [cpuDeck, setCpuDeck] = useState<Card[]>([]);
+  const [bot1Deck, setBot1Deck] = useState<Card[]>([]);
+  const [bot2Deck, setBot2Deck] = useState<Card[]>([]);
   const [playerPlayed, setPlayerPlayed] = useState<Card[]>([]);
-  const [cpuPlayed, setCpuPlayed] = useState<Card[]>([]);
-  const [currentTurn, setCurrentTurn] = useState<'player' | 'cpu'>('player');
+  const [bot1Played, setBot1Played] = useState<Card[]>([]);
+  const [bot2Played, setBot2Played] = useState<Card[]>([]);
+  const [currentTurn, setCurrentTurn] = useState<'player' | 'bot1' | 'bot2'>('player');
   const [gameOver, setGameOver] = useState<boolean>(false);
-  const [winner, setWinner] = useState<'player' | 'cpu' | null>(null);
+  const [winner, setWinner] = useState<'player' | 'bot1' | 'bot2' | null>(null);
 
   const [message, setMessage] = useState<string>('카드를 뒤집어 시작하세요! 👇');
   const [toastText, setToastText] = useState<{ main: string; sub: string } | null>(null);
@@ -257,22 +264,29 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [isMuted, setIsMuted] = useState<boolean>(!soundEnabled);
   const [showHelp, setShowHelp] = useState<boolean>(false);
 
-  const cpuActionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const bot1ActionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const bot2ActionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const processingBellRef = useRef<boolean>(false);
 
   // Latest state refs to solve asynchronous stale closure errors
   const playerDeckRef = useRef<Card[]>([]);
-  const cpuDeckRef = useRef<Card[]>([]);
+  const bot1DeckRef = useRef<Card[]>([]);
+  const bot2DeckRef = useRef<Card[]>([]);
   const playerPlayedRef = useRef<Card[]>([]);
-  const cpuPlayedRef = useRef<Card[]>([]);
-  const currentTurnRef = useRef<'player' | 'cpu'>('player');
+  const bot1PlayedRef = useRef<Card[]>([]);
+  const bot2PlayedRef = useRef<Card[]>([]);
+  const currentTurnRef = useRef<'player' | 'bot1' | 'bot2'>('player');
   const gameOverRef = useRef<boolean>(false);
+  const lastFlipTimeRef = useRef<number>(0);
+  const lastFlipByRef = useRef<'player' | 'bot1' | 'bot2' | null>(null);
 
   // Synchronize state with latest state refs
   useEffect(() => { playerDeckRef.current = playerDeck; }, [playerDeck]);
-  useEffect(() => { cpuDeckRef.current = cpuDeck; }, [cpuDeck]);
+  useEffect(() => { bot1DeckRef.current = bot1Deck; }, [bot1Deck]);
+  useEffect(() => { bot2DeckRef.current = bot2Deck; }, [bot2Deck]);
   useEffect(() => { playerPlayedRef.current = playerPlayed; }, [playerPlayed]);
-  useEffect(() => { cpuPlayedRef.current = cpuPlayed; }, [cpuPlayed]);
+  useEffect(() => { bot1PlayedRef.current = bot1Played; }, [bot1Played]);
+  useEffect(() => { bot2PlayedRef.current = bot2Played; }, [bot2Played]);
   useEffect(() => { currentTurnRef.current = currentTurn; }, [currentTurn]);
   useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
 
@@ -283,20 +297,48 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
       const ctx = new AudioContextClass();
-      
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
 
       if (type === 'beep') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        osc.stop(ctx.currentTime + 0.15);
+        // High-pitch crisp primary chime (metallic impact)
+        const pOsc = ctx.createOscillator();
+        const pGain = ctx.createGain();
+        pOsc.type = 'triangle';
+        pOsc.frequency.setValueAtTime(1480, ctx.currentTime);
+        pGain.gain.setValueAtTime(0.25, ctx.currentTime);
+        pOsc.connect(pGain);
+        pGain.connect(ctx.destination);
+        pOsc.start();
+        pGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.85);
+        pOsc.stop(ctx.currentTime + 0.85);
+
+        // Shine/shimmer wave (higher overtone)
+        const sOsc = ctx.createOscillator();
+        const sGain = ctx.createGain();
+        sOsc.type = 'sine';
+        sOsc.frequency.setValueAtTime(2150, ctx.currentTime);
+        sGain.gain.setValueAtTime(0.12, ctx.currentTime);
+        sOsc.connect(sGain);
+        sGain.connect(ctx.destination);
+        sOsc.start();
+        sGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+        sOsc.stop(ctx.currentTime + 0.45);
+        
+        // Low warm resonance body (solid brass ring)
+        const bOsc = ctx.createOscillator();
+        const bGain = ctx.createGain();
+        bOsc.type = 'sine';
+        bOsc.frequency.setValueAtTime(440, ctx.currentTime);
+        bGain.gain.setValueAtTime(0.08, ctx.currentTime);
+        bOsc.connect(bGain);
+        bGain.connect(ctx.destination);
+        bOsc.start();
+        bGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+        bOsc.stop(ctx.currentTime + 0.55);
       } else if (type === 'win') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(600, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.3);
@@ -305,6 +347,10 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
         osc.stop(ctx.currentTime + 0.35);
       } else if (type === 'fail') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(250, ctx.currentTime);
         osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.35);
@@ -313,6 +359,10 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
         osc.stop(ctx.currentTime + 0.35);
       } else if (type === 'flip') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
         osc.type = 'sine';
         osc.frequency.setValueAtTime(350, ctx.currentTime);
         osc.frequency.linearRampToValueAtTime(450, ctx.currentTime + 0.08);
@@ -326,44 +376,75 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     }
   }, [isMuted]);
 
+  // Clean helper to check turn rotation skip
+  const getNextTurn = (
+    current: 'player' | 'bot1' | 'bot2', 
+    decks: { player: Card[], bot1: Card[], bot2: Card[] }
+  ): 'player' | 'bot1' | 'bot2' => {
+    const order: ('player' | 'bot1' | 'bot2')[] = ['player', 'bot1', 'bot2'];
+    let idx = order.indexOf(current);
+    for (let i = 1; i <= 3; i++) {
+      const next = order[(idx + i) % 3];
+      const hasFacedown = decks[next]?.length > 0;
+      if (hasFacedown) {
+        return next;
+      }
+    }
+    return current;
+  };
+
   const initGame = useCallback(() => {
-    if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+    if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
+    if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
     processingBellRef.current = false;
+    lastFlipTimeRef.current = 0;
+    lastFlipByRef.current = null;
     setGameOver(false);
     setWinner(null);
     setToastText(null);
 
     const full = makeDeck();
-    const initPlayer = full.slice(0, 30);
-    const initCpu = full.slice(30, 60);
+    // 10 cards each as explicitly requested!
+    const initPlayer = full.slice(0, 10);
+    const initBot1 = full.slice(10, 20);
+    const initBot2 = full.slice(20, 30);
 
     playerDeckRef.current = initPlayer;
-    cpuDeckRef.current = initCpu;
+    bot1DeckRef.current = initBot1;
+    bot2DeckRef.current = initBot2;
     playerPlayedRef.current = [];
-    cpuPlayedRef.current = [];
+    bot1PlayedRef.current = [];
+    bot2PlayedRef.current = [];
     currentTurnRef.current = 'player';
     gameOverRef.current = false;
 
     setPlayerDeck(initPlayer);
-    setCpuDeck(initCpu);
+    setBot1Deck(initBot1);
+    setBot2Deck(initBot2);
     setPlayerPlayed([]);
-    setCpuPlayed([]);
+    setBot1Played([]);
+    setBot2Played([]);
     setCurrentTurn('player');
     setGameState('PLAYING');
     setMessage('내 차례 — 카드를 뒤집으세요! 👇');
   }, []);
 
-  const getTopFruitCounts = useCallback(() => {
+  const getTopFruitCountsInternal = (pPlayed: Card[], b1Played: Card[], b2Played: Card[]) => {
     const counts: Record<number, number> = {};
     const tops = [
-      playerPlayedRef.current.length > 0 ? playerPlayedRef.current[playerPlayedRef.current.length - 1] : null,
-      cpuPlayedRef.current.length > 0 ? cpuPlayedRef.current[cpuPlayedRef.current.length - 1] : null,
+      pPlayed.length > 0 ? pPlayed[pPlayed.length - 1] : null,
+      b1Played.length > 0 ? b1Played[b1Played.length - 1] : null,
+      b2Played.length > 0 ? b2Played[b2Played.length - 1] : null,
     ].filter(Boolean) as Card[];
 
     tops.forEach(c => {
       counts[c.fruit] = (counts[c.fruit] || 0) + c.count;
     });
     return counts;
+  };
+
+  const getTopFruitCounts = useCallback(() => {
+    return getTopFruitCountsInternal(playerPlayedRef.current, bot1PlayedRef.current, bot2PlayedRef.current);
   }, []);
 
   const hasFiveActive = useCallback(() => {
@@ -386,19 +467,28 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     }, dur);
   };
 
-  const checkElimination = useCallback((pDeckLen: number, cDeckLen: number, pPlayedLen: number, cPlayedLen: number) => {
-    const pTotal = pDeckLen + pPlayedLen;
-    const cTotal = cDeckLen + cPlayedLen;
+  const checkWinnerAndEliminations = (
+    pDeck: Card[], pPlayed: Card[],
+    b1Deck: Card[], b1Played: Card[],
+    b2Deck: Card[], b2Played: Card[]
+  ) => {
+    const pTotal = pDeck.length + pPlayed.length;
+    const b1Total = b1Deck.length + b1Played.length;
+    const b2Total = b2Deck.length + b2Played.length;
 
+    // 내가 카드를 전부 소진한 경우: 즉시 게임 종료 및 나의 패배!
     if (pTotal === 0) {
-      setWinner('cpu');
+      const highestBot = b1Total >= b2Total ? 'bot1' : 'bot2';
+      setWinner(highestBot);
       setGameOver(true);
       gameOverRef.current = true;
       setGameState('END');
       playSound('fail');
       return true;
     }
-    if (cTotal === 0) {
+
+    // 어떤 플레이어든지 30장 카드를 모두 모으면 승리!
+    if (pTotal === 30) {
       setWinner('player');
       setGameOver(true);
       gameOverRef.current = true;
@@ -407,211 +497,380 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       triggerConfetti();
       return true;
     }
-    return false;
-  }, [playSound]);
+    if (b1Total === 30) {
+      setWinner('bot1');
+      setGameOver(true);
+      gameOverRef.current = true;
+      setGameState('END');
+      playSound('fail');
+      return true;
+    }
+    if (b2Total === 30) {
+      setWinner('bot2');
+      setGameOver(true);
+      gameOverRef.current = true;
+      setGameState('END');
+      playSound('fail');
+      return true;
+    }
 
-  // Declared clean non-closure recursive handlers
-  const ringBell = (who: 'player' | 'cpu') => {
+    // 카드가 온전히 남아있는 활성 플레이어 리스트
+    const activePlayers = [
+      { id: 'player' as const, total: pTotal },
+      { id: 'bot1' as const, total: b1Total },
+      { id: 'bot2' as const, total: b2Total }
+    ].filter(p => p.total > 0);
+
+    // 나를 제외한 다른 봇들이 모두 탈락해 최후의 1인이 남은 경우 승리!
+    if (activePlayers.length === 1) {
+      const winnerId = activePlayers[0].id;
+      setWinner(winnerId);
+      setGameOver(true);
+      gameOverRef.current = true;
+      setGameState('END');
+      if (winnerId === 'player') {
+        playSound('win');
+        triggerConfetti();
+      } else {
+        playSound('fail');
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // Trigger bot bell rings under 5 condition
+  const triggerBotsBellReaction = () => {
     if (gameOverRef.current || processingBellRef.current) return;
+
+    if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
+    if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
+
+    const b1Total = bot1DeckRef.current.length + bot1PlayedRef.current.length;
+    const b2Total = bot2DeckRef.current.length + bot2PlayedRef.current.length;
+
+    // Dynamic reaction speeds (between 1.1s and 2.3s)
+    const b1ReactTime = 1100 + Math.random() * 1000;
+    const b2ReactTime = 1200 + Math.random() * 1100;
+
+    if (b1Total > 0) {
+      bot1ActionTimerRef.current = setTimeout(() => {
+        ringBell('bot1');
+      }, b1ReactTime);
+    }
+
+    if (b2Total > 0) {
+      bot2ActionTimerRef.current = setTimeout(() => {
+        ringBell('bot2');
+      }, b2ReactTime);
+    }
+  };
+
+  const ringBell = (who: 'player' | 'bot1' | 'bot2') => {
+    if (gameOverRef.current || processingBellRef.current) return;
+
     const pPlayed = playerPlayedRef.current;
-    const cPlayed = cpuPlayedRef.current;
-    if (pPlayed.length + cPlayed.length === 0) return;
+    const b1Played = bot1PlayedRef.current;
+    const b2Played = bot2PlayedRef.current;
+    const allPlayed = [...pPlayed, ...b1Played, ...b2Played];
+
+    const pTotal = playerDeckRef.current.length + pPlayed.length;
+    const b1Total = bot1DeckRef.current.length + b1Played.length;
+    const b2Total = bot2DeckRef.current.length + b2Played.length;
+
+    // 이미 탈락한(카드가 0장인) 플레이어는 종을 칠 수 없음
+    if (who === 'player' && pTotal === 0) return;
+    if (who === 'bot1' && b1Total === 0) return;
+    if (who === 'bot2' && b2Total === 0) return;
+
+    if (allPlayed.length === 0) return;
 
     processingBellRef.current = true;
-    if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+
+    // Clear react timers
+    if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
+    if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
 
     setIsRinging(true);
     playSound('beep');
     setTimeout(() => setIsRinging(false), 250);
 
     const correct = hasFiveActive();
-    const allCards = [...pPlayed, ...cPlayed];
 
     let nextPlayerDeck = [...playerDeckRef.current];
-    let nextCpuDeck = [...cpuDeckRef.current];
+    let nextBot1Deck = [...bot1DeckRef.current];
+    let nextBot2Deck = [...bot2DeckRef.current];
+
+    // Reset played piles from the field
     let nextPlayerPlayed: Card[] = [];
-    let nextCpuPlayed: Card[] = [];
+    let nextBot1Played: Card[] = [];
+    let nextBot2Played: Card[] = [];
 
     if (correct) {
-      const shuffledWin = shuffle(allCards);
+      playSound('win');
+      const shuffledWin = shuffle(allPlayed);
+
       if (who === 'player') {
         nextPlayerDeck = [...nextPlayerDeck, ...shuffledWin];
         setPlayerDeck(nextPlayerDeck);
-        showToast('🎉 정답!', `바닥의 카드 ${allCards.length}장을 획득했습니다!`);
-        setMessage(`정답! 내가 카드 ${allCards.length}장 획득! 🌟`);
+        showToast('🎉 정답!', `바닥의 카드 ${allPlayed.length}장을 획득했습니다!`);
+        setMessage(`정답! 내가 카드 ${allPlayed.length}장 획득! 🌟`);
         setCurrentTurn('player');
         currentTurnRef.current = 'player';
+      } else if (who === 'bot1') {
+        nextBot1Deck = [...nextBot1Deck, ...shuffledWin];
+        setBot1Deck(nextBot1Deck);
+        showToast('🤖 IB봇 1 선착!', `아이비봇 1이 먼저 종을 쳐서 카드 ${allPlayed.length}장을 가져갔습니다!`);
+        setMessage(`아이비봇 1 선착! 카드를 뺏겼습니다 😭`);
+        setCurrentTurn('bot1');
+        currentTurnRef.current = 'bot1';
       } else {
-        nextCpuDeck = [...nextCpuDeck, ...shuffledWin];
-        setCpuDeck(nextCpuDeck);
-        showToast('🤖 IB봇 선착!', 'IB봇이 먼저 종을 쳤습니다!');
-        setMessage('IB봇 선착! 카드를 뺏겼습니다 😭');
-        setCurrentTurn('cpu');
-        currentTurnRef.current = 'cpu';
+        nextBot2Deck = [...nextBot2Deck, ...shuffledWin];
+        setBot2Deck(nextBot2Deck);
+        showToast('🤖 IB봇 2 선착!', `아이비봇 2가 먼저 종을 쳐서 카드 ${allPlayed.length}장을 가져갔습니다!`);
+        setMessage(`아이비봇 2 선착! 카드를 뺏겼습니다 😭`);
+        setCurrentTurn('bot2');
+        currentTurnRef.current = 'bot2';
       }
+
       setPlayerPlayed([]);
-      setCpuPlayed([]);
+      setBot1Played([]);
+      setBot2Played([]);
       playerPlayedRef.current = [];
-      cpuPlayedRef.current = [];
-      playSound('win');
+      bot1PlayedRef.current = [];
+      bot2PlayedRef.current = [];
     } else {
       playSound('fail');
+      nextPlayerPlayed = [...playerPlayedRef.current];
+      nextBot1Played = [...bot1PlayedRef.current];
+      nextBot2Played = [...bot2PlayedRef.current];
+      // Penalty: Wrong ringer gives 1 card from their facedown deck to each of other players!
       if (who === 'player') {
-        const shuffledToCpu = shuffle(allCards);
-        nextCpuDeck = [...nextCpuDeck, ...shuffledToCpu];
-        
         let penaltyDesc = '';
         if (nextPlayerDeck.length > 0) {
-          const penaltyCard = nextPlayerDeck.shift()!;
-          nextCpuDeck.push(penaltyCard);
-          penaltyDesc = ' (추가 1장 제공)';
+          const c1 = nextPlayerDeck.shift()!;
+          nextBot1Deck.push(c1);
+          penaltyDesc += ' (봇1에 1장)';
+        }
+        if (nextPlayerDeck.length > 0) {
+          const c2 = nextPlayerDeck.shift()!;
+          nextBot2Deck.push(c2);
+          penaltyDesc += ' (봇2에 1장)';
         }
         setPlayerDeck(nextPlayerDeck);
-        setCpuDeck(nextCpuDeck);
-        showToast('❌ 틀렸습니다!', `5개가 아닙니다! IB봇에게 카드 제공${penaltyDesc}`);
-        setMessage('실수! 오답 패널티를 냈습니다 😢');
-        setCurrentTurn('player');
-        currentTurnRef.current = 'player';
+        setBot1Deck(nextBot1Deck);
+        setBot2Deck(nextBot2Deck);
+        showToast('❌ 틀렸습니다!', `5개가 아닙니다! 두 봇에게 각각 1장씩 선물했습니다.${penaltyDesc}`);
+        setMessage('실수! 오답 패널티로 카드를 나누어 주었습니다 😢');
+      } else if (who === 'bot1') {
+        if (nextBot1Deck.length > 0) {
+          const c1 = nextBot1Deck.shift()!;
+          nextPlayerDeck.push(c1);
+        }
+        if (nextBot1Deck.length > 0) {
+          const c2 = nextBot1Deck.shift()!;
+          nextBot2Deck.push(c2);
+        }
+        setPlayerDeck(nextPlayerDeck);
+        setBot1Deck(nextBot1Deck);
+        setBot2Deck(nextBot2Deck);
+        showToast('🤖 IB봇 1 오답!', `아이비봇 1이 실수했습니다! 다른 플레이어들이 카드를 받았습니다.`);
+        setMessage('IB 봇 1 오답! 행운의 보너스티 카드를 1장 얻었습니다! 🎉');
       } else {
-        const shuffledToPlayer = shuffle(allCards);
-        nextPlayerDeck = [...nextPlayerDeck, ...shuffledToPlayer];
-
-        let penaltyDesc = '';
-        if (nextCpuDeck.length > 0) {
-          const penaltyCard = nextCpuDeck.shift()!;
-          nextPlayerDeck.push(penaltyCard);
-          penaltyDesc = ' (추가 1장 획득)';
+        if (nextBot2Deck.length > 0) {
+          const c1 = nextBot2Deck.shift()!;
+          nextPlayerDeck.push(c1);
+        }
+        if (nextBot2Deck.length > 0) {
+          const c2 = nextBot2Deck.shift()!;
+          nextBot1Deck.push(c2);
         }
         setPlayerDeck(nextPlayerDeck);
-        setCpuDeck(nextCpuDeck);
-        showToast('🤖 IB봇 오답!', `IB봇 실수! 카드를 몽땅 얻었습니다!${penaltyDesc}`);
-        setMessage('IB봇 오답! 기회가 찾아왔습니다! 🎉');
-        setCurrentTurn('cpu');
-        currentTurnRef.current = 'cpu';
+        setBot1Deck(nextBot1Deck);
+        setBot2Deck(nextBot2Deck);
+        showToast('🤖 IB봇 2 오답!', `아이비봇 2가 실수했습니다! 다른 플레이어들이 카드를 받았습니다.`);
+        setMessage('IB 봇 2 오답! 행운의 보너스티 카드를 1장 얻었습니다! 🎉');
       }
-      setPlayerPlayed([]);
-      setCpuPlayed([]);
-      playerPlayedRef.current = [];
-      cpuPlayedRef.current = [];
     }
 
-    // Sync refs instantly before state finishes setting to prevent race conditions
     playerDeckRef.current = nextPlayerDeck;
-    cpuDeckRef.current = nextCpuDeck;
+    bot1DeckRef.current = nextBot1Deck;
+    bot2DeckRef.current = nextBot2Deck;
 
-    const isFinished = checkElimination(
-      nextPlayerDeck.length,
-      nextCpuDeck.length,
-      nextPlayerPlayed.length,
-      nextCpuPlayed.length
+    const isFinished = checkWinnerAndEliminations(
+      nextPlayerDeck, nextPlayerPlayed,
+      nextBot1Deck, nextBot1Played,
+      nextBot2Deck, nextBot2Played
     );
 
     if (!isFinished) {
       setTimeout(() => {
         processingBellRef.current = false;
-        if (who === 'cpu' || !correct) {
-          if (correct) { // CPU won match, then it plays again
-            triggerCpuFlip();
-          }
+        const nextTurnId = currentTurnRef.current;
+        if (nextTurnId === 'player') {
+          setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+        } else {
+          setMessage(`아이비봇 ${nextTurnId === 'bot1' ? '1' : '2'}의 차례입니다... 🤖`);
+          triggerBotFlip(nextTurnId);
         }
       }, 1500);
     }
   };
 
-  const triggerCpuFlip = () => {
+  const triggerBotFlip = (botId: 'bot1' | 'bot2') => {
     if (gameOverRef.current) return;
-    if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
 
-    cpuActionTimerRef.current = setTimeout(() => {
-      const activeCpuDeck = cpuDeckRef.current;
-      if (activeCpuDeck.length === 0) {
-        setCurrentTurn('player');
-        currentTurnRef.current = 'player';
-        setMessage('IB봇 카드 바닥남! 내 차례입니다.');
+    if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
+    if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
+
+    // Natural bot flip interval
+    const delay = 1000 + Math.random() * 800;
+
+    const timer = setTimeout(() => {
+      if (currentTurnRef.current !== botId) return;
+
+      let botDeck = botId === 'bot1' ? bot1DeckRef.current : bot2DeckRef.current;
+      const botPlayed = botId === 'bot1' ? bot1PlayedRef.current : bot2PlayedRef.current;
+
+      if (botDeck.length === 0) {
+        // Skip since deck is empty, but they can still participate in bell ringing
+        const nextTurnId = getNextTurn(botId, {
+          player: playerDeckRef.current,
+          bot1: bot1DeckRef.current,
+          bot2: bot2DeckRef.current
+        });
+        setCurrentTurn(nextTurnId);
+        currentTurnRef.current = nextTurnId;
+
+        if (nextTurnId === 'player') {
+          setMessage(`아이비봇 ${botId === 'bot1' ? '1' : '2'} 카드 소진(덱 0장)! 내 차례입니다. 👇`);
+        } else {
+          setMessage(`아이비봇 ${nextTurnId === 'bot1' ? '1' : '2'}의 차례입니다... 🤖`);
+          triggerBotFlip(nextTurnId);
+        }
         return;
       }
-      
-      const nextCpuDeck = [...activeCpuDeck];
-      const card = nextCpuDeck.shift()!;
-      setCpuDeck(nextCpuDeck);
-      cpuDeckRef.current = nextCpuDeck;
 
-      const nextCpuPlayed = [...cpuPlayedRef.current, card];
-      setCpuPlayed(nextCpuPlayed);
-      cpuPlayedRef.current = nextCpuPlayed;
+      const nextBotDeck = [...botDeck];
+      const card = nextBotDeck.shift()!;
+
+      let nextBotPlayed: Card[];
+      if (botId === 'bot1') {
+        setBot1Deck(nextBotDeck);
+        bot1DeckRef.current = nextBotDeck;
+        nextBotPlayed = [...bot1PlayedRef.current, card];
+        setBot1Played(nextBotPlayed);
+        bot1PlayedRef.current = nextBotPlayed;
+      } else {
+        setBot2Deck(nextBotDeck);
+        bot2DeckRef.current = nextBotDeck;
+        nextBotPlayed = [...bot2PlayedRef.current, card];
+        setBot2Played(nextBotPlayed);
+        bot2PlayedRef.current = nextBotPlayed;
+      }
 
       playSound('flip');
-      setCurrentTurn('player');
-      currentTurnRef.current = 'player';
+      lastFlipTimeRef.current = Date.now();
+      lastFlipByRef.current = botId;
 
-      const tops = {
-        player: playerPlayedRef.current.length > 0 ? playerPlayedRef.current[playerPlayedRef.current.length - 1] : null,
-        cpu: card
-      };
-      
-      const totalCounts: Record<number, number> = {};
-      if (tops.player) totalCounts[tops.player.fruit] = (totalCounts[tops.player.fruit] || 0) + tops.player.count;
-      totalCounts[tops.cpu.fruit] = (totalCounts[tops.cpu.fruit] || 0) + tops.cpu.count;
-      const hasFive = Object.values(totalCounts).some(v => v === 5);
+      // Pivot turn rotation
+      const nextTurnId = getNextTurn(botId, {
+        player: playerDeckRef.current,
+        bot1: bot1DeckRef.current,
+        bot2: bot2DeckRef.current
+      });
+      setCurrentTurn(nextTurnId);
+      currentTurnRef.current = nextTurnId;
+
+      if (nextTurnId === 'player') {
+        setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+      } else {
+        setMessage(`아이비봇 ${nextTurnId === 'bot1' ? '1' : '2'}의 차례입니다... 🤖`);
+      }
+
+      // Assess 5 conditions
+      const counts = getTopFruitCountsInternal(
+        playerPlayedRef.current,
+        bot1PlayedRef.current,
+        bot2PlayedRef.current
+      );
+      const hasFive = Object.values(counts).some(v => v === 5);
 
       if (hasFive) {
         setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
-        // AI reaction timer
-        const reactTime = 1300 + Math.random() * 1100;
-        if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
-        cpuActionTimerRef.current = setTimeout(() => {
-          ringBell('cpu');
-        }, reactTime);
+        triggerBotsBellReaction();
       } else {
-        setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+        if (nextTurnId !== 'player') {
+          triggerBotFlip(nextTurnId);
+        }
       }
-    }, 1200 + Math.random() * 800);
+
+    }, delay);
+
+    if (botId === 'bot1') {
+      bot1ActionTimerRef.current = timer;
+    } else {
+      bot2ActionTimerRef.current = timer;
+    }
   };
 
   const playerFlip = () => {
     if (gameOverRef.current || processingBellRef.current || currentTurnRef.current !== 'player') return;
-    const activePlayerDeck = playerDeckRef.current;
-    if (activePlayerDeck.length === 0) return;
+    
+    let activePlayerDeck = [...playerDeckRef.current];
+    let nextPlayerPlayed = [...playerPlayedRef.current];
+    
+    if (activePlayerDeck.length === 0) {
+      return; // No cards to flip
+    }
 
     const nextPlayerDeck = [...activePlayerDeck];
     const card = nextPlayerDeck.shift()!;
     setPlayerDeck(nextPlayerDeck);
     playerDeckRef.current = nextPlayerDeck;
 
-    const nextPlayerPlayed = [...playerPlayedRef.current, card];
-    setPlayerPlayed(nextPlayerPlayed);
-    playerPlayedRef.current = nextPlayerPlayed;
+    const nextPlayerPlayedFinal = [...nextPlayerPlayed, card];
+    setPlayerPlayed(nextPlayerPlayedFinal);
+    playerPlayedRef.current = nextPlayerPlayedFinal;
 
     playSound('flip');
-    setCurrentTurn('cpu');
-    currentTurnRef.current = 'cpu';
-    setMessage('IB봇이 차례를 진행 중입니다... 🤖');
+    lastFlipTimeRef.current = Date.now();
+    lastFlipByRef.current = 'player';
 
-    // Assess 5 condition immediately
-    const tops = {
-      player: card,
-      cpu: cpuPlayedRef.current.length > 0 ? cpuPlayedRef.current[cpuPlayedRef.current.length - 1] : null
-    };
-    const totalCounts: Record<number, number> = {};
-    totalCounts[tops.player.fruit] = (totalCounts[tops.player.fruit] || 0) + tops.player.count;
-    if (tops.cpu) totalCounts[tops.cpu.fruit] = (totalCounts[tops.cpu.fruit] || 0) + tops.cpu.count;
-    const hasFive = Object.values(totalCounts).some(v => v === 5);
+    // Pivot turn to bots
+    const nextTurnId = getNextTurn('player', {
+      player: nextPlayerDeck,
+      bot1: bot1DeckRef.current,
+      bot2: bot2DeckRef.current
+    });
+    setCurrentTurn(nextTurnId);
+    currentTurnRef.current = nextTurnId;
+
+    if (nextTurnId === 'player') {
+      setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+    } else {
+      setMessage(`아이비봇 ${nextTurnId === 'bot1' ? '1' : '2'}의 차례입니다... 🤖`);
+    }
+
+    // Is there a 5 on the board now?
+    const counts = getTopFruitCountsInternal(
+      nextPlayerPlayed,
+      bot1PlayedRef.current,
+      bot2PlayedRef.current
+    );
+    const hasFive = Object.values(counts).some(v => v === 5);
 
     if (hasFive) {
       setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
-      
-      // AI Reaction
-      const reactTime = 1300 + Math.random() * 1100;
-      if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
-      cpuActionTimerRef.current = setTimeout(() => {
-        ringBell('cpu');
-      }, reactTime);
+      triggerBotsBellReaction();
     } else {
-      triggerCpuFlip();
+      if (nextTurnId !== 'player') {
+        triggerBotFlip(nextTurnId);
+      }
     }
   };
 
-  // Keyboard accessibility
+  // Keyboard hooks
   const ringBellStaticRef = useRef(ringBell);
   const playerFlipStaticRef = useRef(playerFlip);
   useEffect(() => { ringBellStaticRef.current = ringBell; });
@@ -631,11 +890,11 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      if (cpuActionTimerRef.current) clearTimeout(cpuActionTimerRef.current);
+      if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
+      if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
     };
   }, []);
 
-  // Counts for visible items
   const activeTally = getTopFruitCounts();
 
   return (
@@ -654,7 +913,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             className="w-8 h-8 object-contain bg-white/10 p-1 rounded-lg"
           />
           <div>
-            <h1 className="text-xs md:text-sm font-black tracking-tight leading-none text-amber-300">신나는 한글 할리갈리</h1>
+            <h1 className="text-xs md:text-sm font-black tracking-tight leading-none text-amber-300">신나는 한글 할리갈리 (3인 버전)</h1>
             <p className="text-[9px] text-[#86efac] font-bold mt-0.5 sm:mt-1">바닥 과일 합계가 무조건 5개면 종을 칩니다!</p>
           </div>
         </div>
@@ -687,13 +946,14 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               className="w-12 h-12 object-contain"
             />
           </div>
-          <h2 className="text-lg font-black text-amber-200 mb-2 leading-snug">💡 진짜 할리갈리 규칙 안내</h2>
+          <h2 className="text-lg font-black text-amber-200 mb-2 leading-snug">💡 3인 대결 할리갈리 규칙 안내</h2>
           <div className="w-full bg-emerald-950/65 p-3.5 rounded-xl border border-emerald-500/20 text-left text-[11px] text-emerald-100 mb-4 space-y-2 leading-relaxed">
-            <p>1. <b>카드 뒤집기</b>: 내 턴일 때 덱을 탭하여 바닥(공개 카드 영역)에 카드를 1장 오픈합니다.</p>
-            <p>2. <b>새 카드 덮기</b>: 새로운 카드를 뒤집으면, 이전에 내가 냈던 카드는 그 아래로 <b>차곡차곡 바닥에 깔립니다(누적됨).</b></p>
-            <p>3. <b>종 치기(🛎️)</b>: 바닥에 <b>가장 위에 펼쳐진 두 장의 카드</b> 속 과일들을 보았을 때, <b>단 한 종류라도 과일 개수의 합이 정확히 5개</b>가 되면 재빨리 종을 칩니다!</p>
-            <p>4. <b>가져가기</b>: 먼저 올바르게 종을 친 탐험가는 <b>바닥 아래에 누적되어 깔린 모든 카드</b>를 싹 쓸어 자신의 덱으로 가져갑니다.</p>
-            <p>5. <b>주의</b>: 5개가 아닐 때 실수로 종을 치면, 라이벌(CPU)에게 패널티 카드를 넘겨주어야 합니다!</p>
+            <p>1. <b>대결 인원</b>: 나(학습자), 그리고 두 명의 뛰어난 인공지능 <b>아이비봇 1, 아이비봇 2</b>와 함께 총 3명이서 진행합니다.</p>
+            <p>2. <b>시작 카드</b>: 각각 <b>10장씩</b> 사이좋게 카드를 나누어 받고 대결을 개시합니다.</p>
+            <p>3. <b>카드 뒤집기</b>: 내 순서에 내 덱을 터치하면 바닥에 카드가 뒤집혀 노출됩니다.</p>
+            <p>4. <b>종 치기(🛎️)</b>: 세 명의 플레이어가 깔아놓은 활성 공개 카드 속 과일들을 더했을 때, <b>어떤 종류든 합계가 정확히 5개</b>가 되는 즉시 가운데 벨을 칩니다!</p>
+            <p>5. <b>카드 쓸어가기</b>: 종을 가장 빨리 터치한 사람이 <b>바닥에 쌓인 모든 카드들을 획득</b>하여 본인의 덱 뒤로 쏙 집어넣습니다.</p>
+            <p>6. <b>패널티</b>: 5개가 아닐 때 실수로 빈 벨을 울리면, <b>다른 두 명의 플레이어에게 카드를 1장씩 선물로 넘겨주는</b> 엄격한 패널티가 가용됩니다!</p>
           </div>
 
           <Button 
@@ -702,109 +962,155 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             className="py-3 px-8 text-xs font-black bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 rounded-xl w-full border-b-4 border-amber-800 shadow-lg active:scale-95 transition-all"
             id="start-halligalli-btn"
           >
-            대결 시작하기
+            3인 대결 시작하기 (각 10장)
           </Button>
         </div>
       )}
+
       {gameState === 'PLAYING' && (
-        <div className="flex-1 flex flex-col justify-between p-2.5 sm:p-4 relative z-10 h-full overflow-y-auto">
+        <div className="flex-1 flex flex-col justify-between p-2 sm:p-3 relative z-10 h-full overflow-y-auto">
           
-          {/* 1. CPU (IB봇) MINI BAR */}
-          <div className="flex items-center justify-between bg-black/25 border border-white/5 px-3 py-1.5 rounded-xl gap-2 w-full">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-600 flex items-center justify-center font-extrabold shadow text-sm">🤖</div>
-              <div>
-                <h4 className="text-2xs sm:text-xs font-black leading-none">IB봇 (CPU)</h4>
-                <p className="text-[9px] text-[#86efac] mt-0.5 font-bold">
-                  총 보유: <span className="text-amber-300 font-extrabold">{cpuDeck.length + cpuPlayed.length}장</span>
-                </p>
-              </div>
+          {/* TOP 3-WAY STATUS PANEL */}
+          <div className="grid grid-cols-3 gap-1.5 bg-black/35 border border-white/5 p-2 rounded-xl text-center">
+            <div className={`p-1 rounded-lg border transition-all ${
+              currentTurn === 'player' ? 'bg-amber-400/20 border-amber-400' : 'bg-slate-900/40 border-transparent text-zinc-400'
+            }`}>
+              <span className="text-[10px] font-black block">👦 나 (학습자)</span>
+              <span className="text-[9px] font-bold text-amber-300">{playerDeck.length + playerPlayed.length}장 </span>
+              {currentTurn === 'player' && <span className="text-[8px] bg-amber-500 text-slate-950 px-1 rounded font-black inline-block ml-1 animate-pulse">TURN</span>}
             </div>
-
-            <div className="flex items-center gap-2">
-              <div className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold transition-all ${
-                currentTurn === 'cpu' 
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
-                  : 'text-zinc-500 opacity-50'
-              }`}>
-                {currentTurn === 'cpu' ? '● 생각하는 중...' : '대기 중'}
-              </div>
+            <div className={`p-1 rounded-lg border transition-all ${
+              currentTurn === 'bot1' ? 'bg-orange-500/20 border-orange-400' : 'bg-slate-900/40 border-transparent text-zinc-400'
+            }`}>
+              <span className="text-[10px] font-black block">🤖 아이비봇 1</span>
+              <span className="text-[9px] font-bold text-orange-300">{bot1Deck.length + bot1Played.length}장</span>
+              {currentTurn === 'bot1' && <span className="text-[8px] bg-orange-500 text-slate-950 px-1 rounded font-black inline-block ml-1 animate-pulse">TURN</span>}
+            </div>
+            <div className={`p-1 rounded-lg border transition-all ${
+              currentTurn === 'bot2' ? 'bg-pink-500/20 border-pink-400' : 'bg-slate-900/40 border-transparent text-zinc-400'
+            }`}>
+              <span className="text-[10px] font-black block">🤖 아이비봇 2</span>
+              <span className="text-[9px] font-bold text-pink-300">{bot2Deck.length + bot2Played.length}장</span>
+              {currentTurn === 'bot2' && <span className="text-[8px] bg-pink-500 text-slate-950 px-1 rounded font-black inline-block ml-1 animate-pulse">TURN</span>}
             </div>
           </div>
 
-          {/* 2. REAL TABLE FELT (The Heart of Halli Galli) */}
-          <div className="flex-1 my-3 bg-emerald-950/40 border border-green-800/20 rounded-2xl p-3 flex flex-col justify-between items-center relative overflow-hidden shadow-inner">
+          {/* REAL COLLABORATIVE FELT TABLE (Triangle circular layout modeled like the image) */}
+          <div className="flex-1 my-2 bg-emerald-950/40 border border-green-800/20 rounded-2xl p-3 flex flex-col justify-between items-center relative overflow-hidden shadow-inner min-h-[360px] sm:min-h-[400px]">
             
-            {/* Top Field: CPU Open/Closed Cards */}
-            <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pt-1">
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">상대 카드 덱</span>
-                <RenderDeck count={cpuDeck.length} label="IB 봇" />
-              </div>
-
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">상대 공개 카드</span>
-                <RenderCard card={cpuPlayed.length > 0 ? cpuPlayed[cpuPlayed.length - 1] : null} label="빈 필드" playedCount={cpuPlayed.length} />
-              </div>
-            </div>
-
-            {/* Middle: THE GOLDEN BELL & STATUS SHIPS */}
-            <div className="w-full flex flex-col items-center justify-center py-2 relative z-20">
+            {/* Top Row: The two artificial intelligence bots facing downward */}
+            <div className="flex justify-between items-start w-full px-2">
               
-              {/* Overlaid Gold Bell Dome with dynamic ring effects */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => ringBell('player')}
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full cursor-pointer bg-gradient-to-t from-zinc-300 via-zinc-100 to-white hover:from-white hover:to-zinc-100 shadow-2xl border-4 border-zinc-400 flex items-center justify-center relative select-none"
-                animate={isRinging ? { scale: [1, 1.15, 0.95, 1], rotate: [0, -10, 10, 0] } : {}}
-                transition={{ duration: 0.2 }}
-                id="halligalli-bell-dome"
-              >
-                {/* Brass bell center core */}
-                <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-gradient-to-b from-amber-200 via-amber-400 to-amber-700 border border-amber-300 flex items-center justify-center shadow-inner">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-b from-zinc-700 to-zinc-950 border border-zinc-600 flex items-center justify-center shadow shadow-inner text-[10px] sm:text-xs">🛎️</div>
+              {/* Bot 1 (Left) */}
+              <div className="flex flex-col items-center gap-1.5 max-w-[45%]">
+                <div className="text-[9px] text-orange-200 font-extrabold flex items-center gap-1">
+                  <span>🤖 봇1</span>
+                  <span className="text-[8px] font-mono text-orange-400">({bot1Deck.length}장 대기)</span>
                 </div>
+                <div className="flex items-center gap-1.5 scale-90 sm:scale-100 origin-top-left">
+                  <RenderDeck count={bot1Deck.length} label="봇1" />
+                  <RenderCard card={bot1Played.length > 0 ? bot1Played[bot1Played.length - 1] : null} label="공공 필드" playedCount={bot1Played.length} />
+                </div>
+              </div>
 
-                {/* Blinking yellow beacon if sum equals 5 */}
-                {hasFiveActive() && (
-                  <div className="absolute -inset-2.5 rounded-full border-4 border-amber-400 animate-ping opacity-75 pointer-events-none" />
-                )}
-              </motion.button>
-              
-              {/* TOUCH INDICATOR */}
-              <span className={`text-[8px] sm:text-[9px] font-black tracking-widest mt-2 px-2.5 py-0.5 bg-black/45 hover:bg-black/60 rounded-full cursor-pointer select-none border border-white/5 transition-all ${
-                hasFiveActive() ? 'text-amber-300 animate-bounce' : 'text-emerald-400'
-              }`} onClick={() => ringBell('player')}>
-                {hasFiveActive() ? '🔔 지금!! 터치하여 종 치기 🔔' : '터치하여 종 치기 🛎️'}
-              </span>
+              {/* Bot 2 (Right) */}
+              <div className="flex flex-col items-center gap-1.5 max-w-[45%]">
+                <div className="text-[9px] text-pink-200 font-extrabold flex items-center gap-1">
+                  <span>🤖 봇2</span>
+                  <span className="text-[8px] font-mono text-pink-400">({bot2Deck.length}장 대기)</span>
+                </div>
+                <div className="flex items-center gap-1.5 scale-90 sm:scale-100 origin-top-right">
+                  <RenderCard card={bot2Played.length > 0 ? bot2Played[bot2Played.length - 1] : null} label="공공 필드" playedCount={bot2Played.length} />
+                  <RenderDeck count={bot2Deck.length} label="봇2" />
+                </div>
+              </div>
 
             </div>
 
-            {/* Bottom Field: Player Open/Closed Cards */}
-            <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pb-1">
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">내 공개 카드</span>
-                <RenderCard card={playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null} label="빈 필드" playedCount={playerPlayed.length} />
-              </div>
+            {/* Center Row: Mechanical Bell */}
+            <div className="w-full flex flex-col items-center justify-center py-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+              <div className="relative flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28">
+                {/* Visual ripple when ringing */}
+                {isRinging && (
+                  <>
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0.8 }}
+                      animate={{ scale: 2.2, opacity: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="absolute inset-0 rounded-full bg-amber-400/25 border-2 border-amber-400 pointer-events-none z-0"
+                    />
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 1 }}
+                      animate={{ scale: 1.7, opacity: 0 }}
+                      transition={{ duration: 0.3, delay: 0.08 }}
+                      className="absolute inset-0 rounded-full bg-amber-300/20 border border-amber-200 pointer-events-none z-0"
+                    />
+                  </>
+                )}
 
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">내 카드 덱</span>
-                <RenderDeck 
-                  count={playerDeck.length} 
-                  label="카드 뒤집기" 
-                  isPlayerTurn={currentTurn === 'player'} 
-                  onClick={playerFlip}
-                  disabled={currentTurn !== 'player' || playerDeck.length === 0}
-                />
+                {/* Sparkling glow is five trigger active */}
+                {hasFiveActive() && (
+                  <div className="absolute -inset-3 rounded-full border-4 border-dashed border-amber-400 animate-spin opacity-85 pointer-events-none duration-1000 z-0" />
+                )}
+
+                {/* 3D Mechanical Golden Desk Bell Button */}
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => ringBell('player')}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full cursor-pointer bg-gradient-to-b from-zinc-800 via-zinc-900 to-black p-1 shadow-[0_8px_20px_rgba(0,0,0,0.5)] border-4 border-zinc-700 flex items-center justify-center relative select-none z-10"
+                  animate={isRinging ? { scale: [1, 1.15, 0.95, 1.05, 1], rotate: [0, -12, 12, -6, 0] } : {}}
+                  transition={{ duration: 0.25 }}
+                  id="halligalli-bell-dome"
+                >
+                  <div className="w-full h-full rounded-full bg-gradient-to-tr from-amber-700 via-amber-300 to-amber-500 border-2 border-amber-200 flex items-center justify-center shadow-[inset_0_4px_12px_rgba(255,255,255,0.4)] relative">
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-amber-800 via-amber-600 to-amber-950 border border-amber-400 shadow-md flex items-center justify-center">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-t from-zinc-700 via-zinc-200 to-zinc-400 border-2 border-zinc-100 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.6)]">
+                        <span className="text-xs sm:text-sm">🛎️</span>
+                      </div>
+                    </div>
+                    {hasFiveActive() && (
+                      <div className="absolute top-1.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white animate-ping" />
+                    )}
+                  </div>
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Bottom Row: Player (👦 나) Area */}
+            <div className="w-full flex justify-center items-end mt-auto pt-10">
+              <div className="flex flex-col items-center gap-1 max-w-[85%]">
+                <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
+                  
+                  {/* Player played card */}
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[8px] text-zinc-400 font-bold">내 공개 카드</span>
+                    <RenderCard card={playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null} label="빈 필드" playedCount={playerPlayed.length} />
+                  </div>
+
+                  {/* Player deck to flip */}
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[8px] text-zinc-400 font-bold">내 카드 덱</span>
+                    <RenderDeck 
+                      count={playerDeck.length} 
+                      label="내 카드" 
+                      isPlayerTurn={currentTurn === 'player'} 
+                      onClick={playerFlip}
+                      disabled={currentTurn !== 'player' || playerDeck.length === 0}
+                      isPlayer={true}
+                    />
+                  </div>
+
+                </div>
+                <div className="text-[9px] text-[#86efac] font-bold mt-1">👦 나 (학습자) · 총 {playerDeck.length + playerPlayed.length}장 보유</div>
               </div>
             </div>
 
           </div>
 
-          {/* 3. LIVE FIELD STATUS CHIPS (Displays current totals in a sleek bar) */}
+          {/* LIVE ACCUMULATED TALLY ON FIELD */}
           <div className="mb-2 p-2 bg-black/25 border border-white/5 rounded-xl">
-            <span className="text-[9px] sm:text-[10px] font-extrabold text-emerald-200 block text-center mb-1.5">과일 종류별 실시간 바닥 누적 합계</span>
+            <span className="text-[9px] sm:text-[10px] font-extrabold text-[#86efac] block text-center mb-1">바닥에 오픈된 삼총사 과일 합계</span>
             <div className="grid grid-cols-4 gap-1 sm:gap-1.5 justify-center">
               {FRUITS.map((f, idx) => {
                 const count = activeTally[idx] || 0;
@@ -814,15 +1120,14 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                     key={idx}
                     className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 py-1 px-1 sm:px-2 rounded-lg text-[10px] sm:text-xs font-black transition-all ${
                       isFive 
-                        ? 'bg-amber-400 border border-amber-500 text-slate-950 scale-102 shadow-md animate-pulse' 
-                        : 'bg-emerald-950/60 border border-green-905/20 text-emerald-100'
+                        ? 'bg-amber-400 border border-amber-500 text-slate-950 scale-102 shadow-md animate-pulse animate-infinite' 
+                        : 'bg-emerald-950/60 border border-green-950/20 text-emerald-100'
                     }`}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5">
                       <span className="text-xs sm:text-sm leading-none">{f}</span>
-                      <span className="hidden md:inline text-[8px] font-bold opacity-75">{FRUIT_NAMES[idx]}</span>
                     </div>
-                    <span className={`text-[10px] sm:text-xs font-black ${isFive ? 'text-indigo-900' : 'text-amber-200'}`}>
+                    <span className={`text-[9px] sm:text-[10px] font-black ${isFive ? 'text-indigo-950' : 'text-amber-200'}`}>
                       {count}개
                     </span>
                   </div>
@@ -831,52 +1136,38 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             </div>
           </div>
 
-          {/* 4. EVENT MESSAGE LOG */}
-          <div className="text-center bg-zinc-950/60 py-1.5 px-4 rounded-xl max-w-sm mx-auto mb-2 border border-white/5 flex items-center justify-center gap-1.5 shadow">
+          {/* NOTIFICATION LOG */}
+          <div className="text-center bg-zinc-950/60 py-1.5 px-3 rounded-xl max-w-sm mx-auto mb-2 border border-white/5 flex items-center justify-center gap-1.5 shadow">
             <p className="text-[8px] text-emerald-500 font-black animate-pulse">●</p>
             <p className="text-[10px] text-emerald-100 font-extrabold leading-tight">{message}</p>
           </div>
 
-          {/* 5. PLAYER MINI BAR */}
-          <div className="flex items-center justify-between bg-black/25 border border-white/5 px-3 py-1.5 rounded-xl gap-2 w-full">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-extrabold shadow text-sm">👦</div>
-              <div>
-                <h4 className="text-2xs sm:text-xs font-black leading-none font-sans text-indigo-300">나 (학습자)</h4>
-                <p className="text-[9px] text-[#86efac] mt-0.5 font-bold">
-                  총 보유: <span className="text-amber-300 font-extrabold">{playerDeck.length + playerPlayed.length}장</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold transition-all ${
-                currentTurn === 'player' ? 'bg-amber-400 text-slate-950 font-black animate-pulse' : 'text-zinc-500 opacity-40'
-              }`}>
-                {currentTurn === 'player' ? '내 차례! 카드를 클릭하세요' : '상대 턴'}
-              </div>
-            </div>
-          </div>
-
-          {/* 6. BOTTOM ACTIONS */}
-          <div className="flex gap-2.5 mt-2.5 font-bold text-[11px]">
+          {/* BOTTOM CONTROLS */}
+          <div className="flex gap-2 font-bold text-[10px] sm:text-[11px] w-full">
             <button
               onClick={initGame}
-              className="px-3 py-2.5 bg-[#0e3b16] hover:bg-[#154d20] text-emerald-100 border border-emerald-700/50 rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer"
+              className="px-3 py-2 bg-[#0e3b16] hover:bg-[#154d20] text-emerald-100 border border-emerald-700/50 rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer"
               id="halligalli-reset-bottom-btn"
             >
               <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
-              <span>처음부터 세기</span>
+              <span>새 대결 시작</span>
             </button>
             <button
               onClick={playerFlip}
               disabled={currentTurn !== 'player' || playerDeck.length === 0}
-              className={`flex-1 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:from-amber-500 hover:to-amber-600 border-b-2 border-amber-700 rounded-xl flex items-center justify-center gap-1 transition-all font-black select-none ${
+              className={`flex-1 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:from-amber-500 hover:to-amber-600 border-b-2 border-amber-700 rounded-xl flex items-center justify-center gap-1 transition-all font-black select-none ${
                 currentTurn === 'player' ? 'cursor-pointer' : 'opacity-35 cursor-not-allowed text-zinc-500'
               }`}
               id="halligalli-flip-bottom-btn"
             >
-              <span>내 카드 한장 뒤집기 (Enter / 덱 클릭) ▶</span>
+              <span>내 카드 뒤집기 (Enter / 덱 탭) ▶</span>
+            </button>
+            <button
+              onClick={() => ringBell('player')}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl border-b-2 border-rose-800 flex items-center justify-center gap-1 shadow font-black animate-pulse transition-all cursor-pointer"
+              id="halligalli-bell-manual-btn"
+            >
+              <span>🛎️ 종치기 (Space)</span>
             </button>
           </div>
 
@@ -886,15 +1177,15 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       {gameState === 'END' && (
         <div className="flex-1 flex flex-col items-center justify-center p-5 text-center max-w-sm mx-auto z-10 overflow-y-auto w-full">
           <div className="w-16 h-16 rounded-2xl bg-zinc-950/40 border border-white/10 flex items-center justify-center shadow-lg mb-4 text-3xl">
-            {winner === 'player' ? '🏆' : '👾'}
+            {winner === 'player' ? '🏆' : '🤖'}
           </div>
-          <h2 className="text-xl font-black mb-1.5 text-amber-200">
-            {winner === 'player' ? '축하합니다! 대승리!' : '아쉬운 대결 패배!'}
+          <h2 className="text-lg font-black mb-1.5 text-amber-200">
+            {winner === 'player' ? '🎉 내가 승리했습니다!!' : `🤖 아이비봇 ${winner === 'bot1' ? '1' : '2'} 승리!`}
           </h2>
           <p className="text-[11px] text-zinc-300 font-semibold mb-6 max-w-[280px] leading-relaxed">
             {winner === 'player' 
-              ? 'IB봇의 카드를 완벽하게 모두 빼앗았습니다! 엄청난 연산과 터치 속도입니다!' 
-              : 'IB봇이 모든 카드를 휩쓸어갔습니다. 집중력을 발휘해 5개를 찾아보세요!'}
+              ? '아이비봇 두 명의 카드를 완전히 싹 쓸어왔습니다! 당신은 할리갈리의 왕이군요!' 
+              : `아이비봇 ${winner === 'bot1' ? '1' : '2'}이 영광의 승리를 쟁취했습니다. 다시 시작하여 굴복시키세요!`}
           </p>
 
           <Button 
@@ -903,7 +1194,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs font-black py-3 rounded-xl shadow-lg border-b-4 border-amber-700 active:scale-95 cursor-pointer"
             id="halligalli-restart-end-btn"
           >
-            다시 도전하기
+            대결 다시 시작하기
           </Button>
         </div>
       )}
@@ -915,7 +1206,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             initial={{ opacity: 0, scale: 0.8, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: -20 }}
-            className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-950/95 border-2 border-amber-500/60 p-4 rounded-2xl text-center shadow-2xl z-50 max-w-[250px] w-full"
+            className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-950/95 border-2 border-amber-500/60 p-4 rounded-2xl text-center shadow-2xl z-50 max-w-[260px] w-full"
           >
             <h3 className="text-sm font-black text-amber-300 flex items-center justify-center gap-1">
               <Sparkles className="w-4 h-4 fill-current shrink-0 text-amber-400" />
@@ -973,7 +1264,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                   </h4>
                   <p className="leading-normal pl-0.5">
                     • <b>[SPACE]</b> 스페이스바 키를 눌러 초스피드로 벨을 칠 수 있습니다.<br/>
-                    • <b>[ENTER]</b> 또는 <b>[→ 오른쪽 방향키]</b>로 우회 카드를 뒤집을 수 있습니다!
+                    • <b>[ENTER]</b> 또는 <b>[→ 오른쪽 방향키]</b>로 카드를 뒤집을 수 있습니다!
                   </p>
                 </div>
 

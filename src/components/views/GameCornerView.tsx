@@ -14,7 +14,8 @@ import {
   Lock,
   Pencil,
   Bell,
-  Layers
+  Layers,
+  Sword
 } from 'lucide-react';
 import { AnipangGame } from '../games/AnipangGame';
 import { GalagaGame } from '../games/GalagaGame';
@@ -25,6 +26,7 @@ import { RhythmTrainingGame } from '../games/RhythmTrainingGame';
 import { DrawingGame } from '../games/DrawingGame';
 import { HalliGalliGame } from '../games/HalliGalliGame';
 import { JengaGame } from '../games/JengaGame';
+import { NinjaGame } from '../games/NinjaGame';
 
 import { UserProfile } from '../../types';
 
@@ -54,6 +56,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
     { id: 'drawing', name: '10초 드로잉', icon: Pencil, color: 'bg-indigo-600', unlockXp: 0, description: 'AI가 당신의 그림을 맞힐 수 있을까요?', bgImage: 'https://i.imgur.com/lyCqTY1.png' },
     { id: 'halligalli', name: 'IB 할리갈리', icon: Bell, color: 'bg-emerald-600', unlockXp: 0, description: '과일 개수의 합이 정확히 5개가 될 때 벨을 울리세요!', bgImage: 'https://i.imgur.com/xe54lqW.png' },
     { id: 'jenga', name: 'IB 젠가', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않도록 블록을 조심히 빼내 쌓으세요!', bgImage: 'https://i.imgur.com/0wF00pI.png' },
+    { id: 'ninja', name: 'IB 손날 닌자', icon: Sword, color: 'bg-cyan-500', unlockXp: 0, description: '화면으로 솟구치는 네온 과일을 검지 손날 광선검으로 쪼개 자르세요!', bgImage: 'https://i.imgur.com/DrD9Hmx.png' },
   ];
 
   if (selectedGame) {
@@ -81,7 +84,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
             isDrawingGame 
               ? "bg-transparent border-transparent shadow-none" 
               : "bg-gray-900 border-gray-800 rounded-[1.5rem] md:rounded-[2.5rem]",
-            selectedGame === 'rhythm' || selectedGame === 'jenga' || selectedGame === 'halligalli' ? "aspect-[3/4] md:aspect-square" : "aspect-[3/4] md:aspect-video"
+            selectedGame === 'rhythm' || selectedGame === 'jenga' || selectedGame === 'halligalli' || selectedGame === 'ninja' ? "aspect-[3/4] md:aspect-square" : "aspect-[3/4] md:aspect-video"
           )}>
             {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} />}
             {selectedGame === 'galaga' && <GalagaGame soundEnabled={soundEnabled} />}
@@ -92,6 +95,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
             {selectedGame === 'drawing' && <DrawingGame soundEnabled={soundEnabled} />}
             {selectedGame === 'halligalli' && <HalliGalliGame soundEnabled={soundEnabled} />}
             {selectedGame === 'jenga' && <JengaGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'ninja' && <NinjaGame soundEnabled={soundEnabled} />}
           </div>
         </div>
       </div>
