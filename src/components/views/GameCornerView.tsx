@@ -15,7 +15,10 @@ import {
   Pencil,
   Bell,
   Layers,
-  Sword
+  Sword,
+  Sparkles,
+  MessageSquare,
+  CheckCircle2
 } from 'lucide-react';
 import { AnipangGame } from '../games/AnipangGame';
 import { GalagaGame } from '../games/GalagaGame';
@@ -29,6 +32,8 @@ import { JengaGame } from '../games/JengaGame';
 import { NinjaGame } from '../games/NinjaGame';
 
 import { UserProfile } from '../../types';
+import { db } from '../../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 interface GameCornerViewProps {
   profile: UserProfile | null;
@@ -45,6 +50,11 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
   );
   const score = profile?.score || 0;
   const tickets = profile?.gameTickets || 0;
+
+  const [showTestVersionModal, setShowTestVersionModal] = useState<boolean>(true);
+  const [feedbackText, setFeedbackText] = useState<string>('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState<boolean>(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
 
   const games = [
     { id: 'anipang', name: 'IB 애니팡', icon: Grid3X3, color: 'bg-pink-500', unlockXp: 0, description: '3개를 맞춰보세요!', bgImage: 'https://i.imgur.com/UMcVNRB.png' },
@@ -133,18 +143,20 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {games.map((game) => {
           const isLocked = false; // All games unlocked as requested
+          const isFreeTestGame = game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja';
+          
           return (
             <motion.div
               key={game.id}
-              whileHover={!isLocked && (tickets > 0 || isTeacher) ? { scale: 1.02 } : {}}
-              whileTap={!isLocked && (tickets > 0 || isTeacher) ? { scale: 0.98 } : {}}
+              whileHover={!isLocked && (isFreeTestGame || tickets > 0 || isTeacher) ? { scale: 1.02 } : {}}
+              whileTap={!isLocked && (isFreeTestGame || tickets > 0 || isTeacher) ? { scale: 0.98 } : {}}
               onClick={() => {
                 if (isLocked) return;
-                if (tickets <= 0 && !isTeacher) {
+                if (!isFreeTestGame && tickets <= 0 && !isTeacher) {
                   console.log('게임 티켓이 부족합니다! 퀴즈를 풀어 티켓을 획득하세요.');
                   return;
                 }
-                if (!isTeacher) onUseTicket();
+                if (!isTeacher && !isFreeTestGame) onUseTicket();
                 setSelectedGame(game.id);
               }}
               className={cn(
@@ -163,6 +175,13 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
                   backgroundPosition: 'center'
                 } : {}}
               >
+                {isFreeTestGame && (
+                  <div className="absolute top-4 right-4 bg-emerald-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-md animate-pulse tracking-wider flex items-center gap-1 z-10">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>테스트 (티켓 무료)</span>
+                  </div>
+                )}
+                
                 <div className={cn(
                   "w-20 h-20 rounded-3xl flex items-center justify-center mb-6 text-white shadow-lg relative",
                   isLocked ? "bg-gray-400" : game.color
@@ -210,6 +229,121 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
                 className="w-full py-4 text-gray-400 hover:text-gray-600"
               >
                 그냥 둘러볼래요
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Test Version Info & Feedback Modal */}
+      {showTestVersionModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[2.5rem] p-6 md:p-10 max-w-2xl w-full text-center shadow-2xl border-4 border-indigo-400 relative my-8"
+          >
+            <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+              <Sparkles className="w-48 h-48 text-indigo-600" />
+            </div>
+
+            <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border-2 border-emerald-100">
+              <Sparkles className="w-10 h-10 text-emerald-600" />
+            </div>
+
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">🎉 할리갈리 · 젠가 · 손날닌자 무료 오픈!</h2>
+            <p className="text-indigo-600 font-bold mb-6 text-sm bg-indigo-50 px-4 py-1.5 rounded-full inline-block">
+              신규 게임 3종 테스트 버전 출시 🌟
+            </p>
+
+            <div className="bg-gray-50 rounded-2xl p-4 md:p-6 mb-6 border border-gray-100 text-left space-y-3">
+              <div className="flex items-start gap-2.5">
+                <span className="bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">✓</span>
+                <p className="text-gray-700 font-medium text-sm leading-relaxed">
+                  새로 출시된 <strong className="text-gray-900">IB 할리갈리 🍉, IB 젠가 🧱, IB 손날 닌자 ⚔️</strong> 게임은 <strong className="text-emerald-600">티켓 없이 무료</strong>로 플레이하실 수 있습니다!
+                </p>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">✓</span>
+                <p className="text-gray-700 font-medium text-sm leading-relaxed">
+                  직접 체험해 보시고 재미있었던 점, 버그, 개선할 점 등 여러분의 <strong className="text-indigo-600">소중한 의견</strong>을 편하게 들려주세요.
+                </p>
+              </div>
+            </div>
+
+            {/* Opinion/Feedback Form */}
+            <div className="border-t border-gray-100 pt-6 text-left">
+              <h3 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-1.5">
+                <MessageSquare className="w-5 h-5 text-indigo-600" />
+                <span>테스트 의견 보내기 (과자 당첨 추첨 대상!)</span>
+              </h3>
+
+              {feedbackSubmitted ? (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center"
+                >
+                  <p className="text-emerald-700 font-black text-base flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-5 h-5" /> 의견이 잘 제출되었습니다!
+                  </p>
+                  <p className="text-emerald-600/80 font-semibold text-xs mt-1">소중한 피드백 감사드립니다. 더 멋진 게임으로 보답할게요!</p>
+                </motion.div>
+              ) : (
+                <div className="space-y-3">
+                  <textarea
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    placeholder="예: 손날 닌자 검지 손날 추적이 너무 재미있어요! / 할리갈리 벨 울리는 게 중독성 있네요. / 젠가 블록 뺄 때 조금 더 묵직하면 좋겠어요!"
+                    className="w-full h-24 p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-300 outline-none transition-all text-sm font-medium resize-none"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!feedbackText.trim()) return;
+                      setFeedbackSubmitting(true);
+                      try {
+                        await addDoc(collection(db, 'feedback'), {
+                          uid: profile?.uid || 'guest',
+                          userName: profile?.name || 'GUEST',
+                          grade: profile?.grade || 0,
+                          class: profile?.class || 0,
+                          content: `[신규게임 무료체험 피드백] ${feedbackText.trim()}`,
+                          timestamp: Date.now()
+                        });
+                        setFeedbackSubmitted(true);
+                        setFeedbackText('');
+                      } catch (error) {
+                        console.error('Feedback submit failed: ', error);
+                      } finally {
+                        setFeedbackSubmitting(false);
+                      }
+                    }}
+                    disabled={feedbackSubmitting || !feedbackText.trim()}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {feedbackSubmitting ? (
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      '의견 보내기'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3 border-t border-gray-100 pt-6">
+              <Button 
+                variant="ghost"
+                onClick={() => setShowTestVersionModal(false)}
+                className="px-6 py-3 text-gray-500 hover:text-gray-700"
+              >
+                닫기
+              </Button>
+              <Button 
+                onClick={() => setShowTestVersionModal(false)} 
+                className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md"
+              >
+                무료 게임 플레이하기
               </Button>
             </div>
           </motion.div>
