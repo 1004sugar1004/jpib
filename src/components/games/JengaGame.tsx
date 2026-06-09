@@ -56,6 +56,8 @@ function shuffled<T>(array: T[]): T[] {
 
 export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'CRASHED'>('START');
+  const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
+  const difficultyRef = useRef<'easy' | 'normal' | 'hard'>('normal');
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [highScore, setHighScore] = useState(() => {
@@ -123,6 +125,10 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
+
+  useEffect(() => {
+    difficultyRef.current = difficulty;
+  }, [difficulty]);
 
   // Handle external actions
   const startPullBlock = (dir: number) => {
@@ -673,7 +679,15 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         totalOffset += offset * (1 + (i * 0.12));
       }
 
-      const calculatedLean = Math.max(-100, Math.min(100, totalOffset * 9.5));
+      const diff = difficultyRef.current;
+      let multiplier = 8.0; // default normal
+      if (diff === 'easy') {
+        multiplier = 3.2; // low sensitivity
+      } else if (diff === 'hard') {
+        multiplier = 14.5; // high sensitivity
+      }
+
+      const calculatedLean = Math.max(-100, Math.min(100, totalOffset * multiplier));
       setLeanIndex(calculatedLean);
 
       if (Math.abs(calculatedLean) > 95) {
@@ -895,7 +909,7 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             <div className="flex items-center justify-between text-[10px] font-black text-zinc-400 mb-1">
               <span className="text-cyan-400 flex items-center gap-1">◀ 좌측 기욺</span>
               <span className="bg-amber-950/40 border border-amber-900/30 px-2 py-0.5 rounded text-amber-300 font-black">
-                난이도: {level}단계
+                {difficulty === 'easy' ? '하 (초보)' : difficulty === 'normal' ? '중 (보통)' : '상 (프로)'} | {level}단계
               </span>
               <span className="text-rose-400 flex items-center gap-1">우측 기욺 ▶</span>
             </div>
@@ -966,6 +980,46 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                   <li>• <b>블록 선택</b>: 마우스 왼쪽 클릭</li>
                   <li>• <b>블록 빼기</b>: 하단 좌/우 빼기 버튼</li>
                 </ul>
+              </div>
+            </div>
+
+            {/* 난이도 선택 */}
+            <div className="w-full max-w-sm mb-4 shrink-0">
+              <span className="text-[10px] font-black text-amber-300 block mb-1.5 text-center">🧱 젠가 흔들림 난이도 선택 (하/중/상)</span>
+              <div className="grid grid-cols-3 gap-1.5 bg-zinc-950/80 p-1.5 rounded-xl border border-amber-900/30">
+                <button
+                  type="button"
+                  onClick={() => setDifficulty('easy')}
+                  className={`py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                    difficulty === 'easy'
+                      ? 'bg-emerald-500 text-white shadow-md'
+                      : 'text-emerald-400 hover:bg-emerald-950/40'
+                  }`}
+                >
+                  하 (초보)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficulty('normal')}
+                  className={`py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                    difficulty === 'normal'
+                      ? 'bg-amber-400 text-slate-950 shadow-md'
+                      : 'text-amber-300 hover:bg-amber-950/40'
+                  }`}
+                >
+                  중 (보통)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficulty('hard')}
+                  className={`py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                    difficulty === 'hard'
+                      ? 'bg-rose-600 text-white shadow-md'
+                      : 'text-rose-400 hover:bg-rose-950/40'
+                  }`}
+                >
+                  상 (프로)
+                </button>
               </div>
             </div>
 

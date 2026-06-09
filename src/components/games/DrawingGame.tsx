@@ -46,6 +46,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const matchedRef = useRef(false);
   const roundRef = useRef(0);
   const hasNewStrokeRef = useRef(false);
+  const apiCheckingRef = useRef(false);
 
   useEffect(() => { roundRef.current = round; }, [round]);
   useEffect(() => { matchedRef.current = matched; }, [matched]);
@@ -99,7 +100,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     }
     ctx.lineTo(pos.x, pos.y);
     ctx.strokeStyle = "#4f46e5";
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 10; // Bolder lines (10px) to make drawings more visible to Gemini Vision
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
@@ -110,11 +111,16 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const stopDrawing = () => {
     drawingRef.current = false;
     setIsDrawing(false);
+    // Instantly evaluate when the user lifts their finger/mouse, making it feel highly responsive!
+    if (hasNewStrokeRef.current && !apiCheckingRef.current && !matchedRef.current) {
+      checkDrawingWithAI();
+    }
   };
 
   const checkDrawingWithAI = useCallback(async () => {
     if (matchedRef.current) return;
     if (!hasNewStrokeRef.current) return;
+    if (apiCheckingRef.current) return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -144,15 +150,60 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const currentWord = words[roundRef.current];
 
     hasNewStrokeRef.current = false;
+    apiCheckingRef.current = true;
     setAiThinking(true);
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.5-flash",
         contents: [
             { text: `The user is trying to draw: "${currentWord}" in an interactive 10-second sketching game.
             Evaluate this indigo ink drawing sketched on a solid white background.
             Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint of a "${currentWord}"?
             Since this is a quick 10-second game for elementary/middle school students, be extremely flexible, lenient, and generous.
+            If the drawing has even a slight resemblance, a symbolic simplified icon representation, or captures the basic essence of "${currentWord}", consider it a match (set matched: true).
+            
+            Here are keyword-specific leniency guidelines to help you:
+            - 사과 (Apple): circle with a small stem or leaf on top.
+            - 고양이 (Cat): head with pointy ears, whiskers, facial outline, or feline shape.
+            - 강아지 (Dog): oval head with floppy/pointy ears, nose, tail, dog face ('개' is equivalent).
+            - 집 (House): rectangle/square with a triangular roof.
+            - 나무 (Tree): a trunk line with a cloud-like outline top or branching lines.
+            - 자동차 (Car): dome or brick shape with two circular wheels ('차' is equivalent).
+            - 꽃 (Flower): center circle with petals around it, or stem with leaf hooks.
+            - 물고기 (Fish): leaf shape body, triangular tail fin, or gill curve.
+            - 새 (Bird): wing shapes, peak beak, soaring V lines, or avian stance.
+            - 달 (Moon): crescent curve or circular coin.
+            - 해 (Sun): circle with outstanding ray spokes around it.
+            - 별 (Star): standard five-point star or crossed twinkling lines.
+            - 책 (Book): flat butterfly-like open page double-loop, or rect contour.
+            - 안경 (Glasses): two circles/lenses linked by a nose bridge line.
+            - 모자 (Hat): cap structure, top hat cylindrical shape, or generic hemisphere with brim.
+            - 피자 (Pizza): triangular food wedge with round pepperoni dots, or full circle split in lines.
+            - 케이크 (Cake): cylindrical drum with thin lit candle line stalks, or a plate slice.
+            - 아이스크림 (Ice Cream): triangular cone with circles, cup with spoon, or a popsicle stick.
+            - 로켓 (Rocket): tall vertical pointed cylinder with triangular side booster fins.
+            - 비행기 (Airplane): cross shape with wings on sides and a tail fin.
+            - 배 (Ship/Boat/Pear): pear-like fruit shape, OR flat/curved hull boat with a sail triangle or stack. Accept both meanings!
+            - 자전거 (Bicycle): two wheels connected by bar frame meshes.
+            - 컵 (Cup): curved cup contour (U-shape), mug loop.
+            - 전화기 (Phone): rectangle slate screen (smartphone), or telephone handset bone.
+            - 하트 (Heart): classic curved romantic heart contour.
+            - 손 (Hand): outline of wrist with finger stalks, glove line.
+            - 눈 (Eye/Snowman): eyeball almond shape with pupil center, OR snowman stacked circles. Accept both meanings!
+            - 발 (Foot): kidney shape sole outline with small bubble toe tips.
+            - 코 (Nose): L-shape profile crease, or triangle.
+            - 귀 (Ear): C-shape outer outline with inner creases.
+            - 공 (Ball): raw circle, soccer stitch meshes, baseball seams, or basketball stripes.
+            - 우산 (Umbrella): canopy arch dome with a hook wire rod underneath.
+            - 시계 (Clock): round watch circle with hands/dial or wrist band.
+            - 신발 (Shoe): boot, foot socket, or sneaker pattern.
+            - 가방 (Bag): rectangle backpack with shoulder curves, or a purse with hand strap.
+            - 나비 (Butterfly): centerline body with twin ornate flutter wings.
+            - 개구리 (Frog): head with big bug eyes or flat wide webbed feet.
+            - 토끼 (Rabbit): vertical long ears protruding from head.
+            - 곰 (Bear): bear mask outline with small round ears.
+            - 코끼리 (Elephant): big ear contours and a long dangling nose tube trunk.
+
             If the drawing has even a slight resemblance, a symbolic simplified icon representation, or captures the basic essence of "${currentWord}", consider it a match (set matched: true).
             
             Here is the list of all possible vocabulary words in this game for context: ${WORDS.join(", ")}.` },
@@ -201,6 +252,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     } catch (err) {
       console.error("AI check failed:", err);
     } finally {
+      apiCheckingRef.current = false;
       setAiThinking(false);
     }
   }, [words, soundEnabled]);
@@ -226,6 +278,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setMatched(false);
     matchedRef.current = false;
     hasNewStrokeRef.current = false;
+    apiCheckingRef.current = false;
     setAiThinking(false);
     setCountdown(3);
     setPhase("countdown");

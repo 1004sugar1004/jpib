@@ -247,6 +247,8 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled, isPlayer }:
 
 export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
+  const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
+  const difficultyRef = useRef<'easy' | 'normal' | 'hard'>('normal');
   const [playerDeck, setPlayerDeck] = useState<Card[]>([]);
   const [bot1Deck, setBot1Deck] = useState<Card[]>([]);
   const [bot2Deck, setBot2Deck] = useState<Card[]>([]);
@@ -289,6 +291,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   useEffect(() => { bot2PlayedRef.current = bot2Played; }, [bot2Played]);
   useEffect(() => { currentTurnRef.current = currentTurn; }, [currentTurn]);
   useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
+  useEffect(() => { difficultyRef.current = difficulty; }, [difficulty]);
 
   // Play synthetic beeps so there are no network delay or loading issues on schools iPads!
   const playSound = useCallback((type: 'beep' | 'win' | 'fail' | 'flip') => {
@@ -549,9 +552,18 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const b1Total = bot1DeckRef.current.length + bot1PlayedRef.current.length;
     const b2Total = bot2DeckRef.current.length + bot2PlayedRef.current.length;
 
-    // Dynamic reaction speeds (between 1.1s and 2.3s)
-    const b1ReactTime = 1100 + Math.random() * 1000;
-    const b2ReactTime = 1200 + Math.random() * 1100;
+    // Dynamic reaction speeds based on selected difficulty
+    let b1ReactTime = 1100 + Math.random() * 1000;
+    let b2ReactTime = 1200 + Math.random() * 1100;
+
+    const diff = difficultyRef.current;
+    if (diff === 'easy') {
+      b1ReactTime = 1800 + Math.random() * 1000;
+      b2ReactTime = 2000 + Math.random() * 1000;
+    } else if (diff === 'hard') {
+      b1ReactTime = 400 + Math.random() * 400; // super fast: 400ms to 800ms
+      b2ReactTime = 450 + Math.random() * 450; // super fast: 450ms to 900ms
+    }
 
     if (b1Total > 0) {
       bot1ActionTimerRef.current = setTimeout(() => {
@@ -723,8 +735,14 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
     if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
 
-    // Natural bot flip interval
-    const delay = 1000 + Math.random() * 800;
+    // Natural bot flip interval based on difficulty
+    let delay = 1000 + Math.random() * 800;
+    const diff = difficultyRef.current;
+    if (diff === 'easy') {
+      delay = 1600 + Math.random() * 1000;
+    } else if (diff === 'hard') {
+      delay = 600 + Math.random() * 600;
+    }
 
     const timer = setTimeout(() => {
       if (currentTurnRef.current !== botId) return;
@@ -956,6 +974,46 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             <p>6. <b>패널티</b>: 5개가 아닐 때 실수로 빈 벨을 울리면, <b>다른 두 명의 플레이어에게 카드를 1장씩 선물로 넘겨주는</b> 엄격한 패널티가 가용됩니다!</p>
           </div>
 
+          {/* 난이도 선택 */}
+          <div className="w-full mb-5">
+            <span className="text-xs font-black text-amber-300 block mb-2">🔥 봇 난이도 선택</span>
+            <div className="grid grid-cols-3 gap-2 bg-emerald-950/80 p-1.5 rounded-2xl border border-emerald-500/30">
+              <button
+                type="button"
+                onClick={() => setDifficulty('easy')}
+                className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  difficulty === 'easy'
+                    ? 'bg-emerald-500 text-white shadow-md border border-emerald-300/30'
+                    : 'text-emerald-300 hover:bg-emerald-900/40'
+                }`}
+              >
+                하 (초보자)
+              </button>
+              <button
+                type="button"
+                onClick={() => setDifficulty('normal')}
+                className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  difficulty === 'normal'
+                    ? 'bg-amber-400 text-slate-950 shadow-md border border-amber-300/30'
+                    : 'text-emerald-300 hover:bg-emerald-900/40'
+                }`}
+              >
+                중 (일반)
+              </button>
+              <button
+                type="button"
+                onClick={() => setDifficulty('hard')}
+                className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  difficulty === 'hard'
+                    ? 'bg-rose-600 text-white shadow-md border border-rose-300/30'
+                    : 'text-emerald-300 hover:bg-emerald-900/40'
+                }`}
+              >
+                상 (프로)
+              </button>
+            </div>
+          </div>
+
           <Button 
             onClick={initGame}
             icon={Play}
@@ -970,6 +1028,18 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       {gameState === 'PLAYING' && (
         <div className="flex-1 flex flex-col justify-between p-2 sm:p-3 relative z-10 h-full overflow-y-auto">
           
+          {/* TOP DIFFICULTY BAR */}
+          <div className="flex justify-between items-center px-2.5 py-1.5 mb-1.5 bg-black/20 rounded-xl border border-white/5">
+            <span className="text-[10px] font-black text-emerald-200">🤖 대결 봇 난이도</span>
+            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider ${
+              difficulty === 'easy' ? 'bg-emerald-500 text-white' :
+              difficulty === 'normal' ? 'bg-amber-400 text-slate-950' : 'bg-rose-600 text-white'
+            }`}>
+              {difficulty === 'easy' ? '하 (초보자)' :
+               difficulty === 'normal' ? '중 (일반)' : '상 (프로)'}
+            </span>
+          </div>
+
           {/* TOP 3-WAY STATUS PANEL */}
           <div className="grid grid-cols-3 gap-1.5 bg-black/35 border border-white/5 p-2 rounded-xl text-center">
             <div className={`p-1 rounded-lg border transition-all ${

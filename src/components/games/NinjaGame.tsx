@@ -1125,6 +1125,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
 
   // 터치 이벤트 지원 (모바일 고려)
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     if (gameStateRef.current !== 'PLAYING' || e.touches.length === 0) return;
     
     if (soundFXRef.current) soundFXRef.current.playSlice();
@@ -1142,6 +1143,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     if (!isMouseDownRef.current || gameStateRef.current !== 'PLAYING' || e.touches.length === 0) return;
 
     const canvas = canvasRef.current;
@@ -1452,8 +1454,8 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
       </header>
 
       {/* 플레이 빌드 극적 무대 영역 (통합 캔버스) */}
-      <main className="w-full flex-1 max-w-5xl px-3 flex items-center justify-center relative my-2 overflow-hidden">
-        <div className="w-full h-full relative aspect-video bg-[#000002] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center">
+      <main className="w-full flex-1 max-w-5xl px-3 flex items-center justify-center relative my-2 overflow-hidden touch-none select-none">
+        <div className="w-full h-full relative aspect-video bg-[#000002] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl flex items-center justify-center touch-none select-none">
           {/* 안보이는 비디오 프레임 추출기 (브라우저 정책 우회를 위해 오프스크린 배치) */}
           <video 
             ref={videoRef} 
@@ -1474,7 +1476,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleMouseUp}
-            className="w-full h-full object-cover block cursor-crosshair z-10"
+            className="w-full h-full object-cover block cursor-crosshair z-10 touch-none select-none"
           />
 
           {/* 카메라 준비중 오버레이 */}
