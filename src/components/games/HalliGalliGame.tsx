@@ -257,7 +257,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [bot2Played, setBot2Played] = useState<Card[]>([]);
   const [currentTurn, setCurrentTurn] = useState<'player' | 'bot1' | 'bot2'>('player');
   const [gameOver, setGameOver] = useState<boolean>(false);
-  const [winner, setWinner] = useState<'player' | 'bot1' | 'bot2' | null>(null);
+  const [winner, setWinner] = useState<'player' | 'bot1' | 'bot2' | 'draw' | null>(null);
 
   const [message, setMessage] = useState<string>('카드를 뒤집어 시작하세요! 👇');
   const [toastText, setToastText] = useState<{ main: string; sub: string } | null>(null);
@@ -479,10 +479,9 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const b1Total = b1Deck.length + b1Played.length;
     const b2Total = b2Deck.length + b2Played.length;
 
-    // 내가 카드를 전부 소진한 경우: 즉시 게임 종료 및 나의 패배!
-    if (pTotal === 0) {
-      const highestBot = b1Total >= b2Total ? 'bot1' : 'bot2';
-      setWinner(highestBot);
+    // 1. 모든 카드가 소진되어 더 이상 경기를 지속할 수 없거나 무승부인 경우
+    if (pTotal === 0 && b1Total === 0 && b2Total === 0) {
+      setWinner('draw');
       setGameOver(true);
       gameOverRef.current = true;
       setGameState('END');
@@ -490,7 +489,35 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       return true;
     }
 
-    // 어떤 플레이어든지 30장 카드를 모두 모으면 승리!
+    // 2. 내가 카드를 전부 소진한 경우 (즉시 게임 종료)
+    if (pTotal === 0) {
+      // 나뿐만 아니라 다른 봇들도 카드가 떨어진 무승부 상황인 경우
+      if (b1Total === 0 && b2Total === 0) {
+        setWinner('draw');
+        setGameOver(true);
+        gameOverRef.current = true;
+        setGameState('END');
+        playSound('fail');
+        return true;
+      }
+      
+      const highestBot = b1Total >= b2Total ? 'bot1' : 'bot2';
+      // 만약 우승 대기 상태인 봇 역시 0장이라면 무승부 처리!
+      if (highestBot === 'bot1' && b1Total === 0) {
+        setWinner('draw');
+      } else if (highestBot === 'bot2' && b2Total === 0) {
+        setWinner('draw');
+      } else {
+        setWinner(highestBot);
+      }
+      setGameOver(true);
+      gameOverRef.current = true;
+      setGameState('END');
+      playSound('fail');
+      return true;
+    }
+
+    // 3. 어떤 플레이어든지 30장 카드를 모두 모으면 승리! (10+10+10 총 30장)
     if (pTotal === 30) {
       setWinner('player');
       setGameOver(true);
@@ -515,6 +542,43 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       setGameState('END');
       playSound('fail');
       return true;
+    }
+
+    // 4. 모든 플레이어의 뒤집기 더미(facedown deck)가 0장이 된 경우
+    // 더 이상 필드에 카드를 추가할 수 없으므로, 즉시 소지 카드가 가장 많은 사람을 승리자로 지정하고 동점이면 무승부 처리!
+    const pDeckEmpty = pDeck.length === 0;
+    const b1DeckEmpty = b1Deck.length === 0;
+    const b2DeckEmpty = b2Deck.length === 0;
+
+    if (pDeckEmpty && b1DeckEmpty && b2DeckEmpty) {
+      const maxTotal = Math.max(pTotal, b1Total, b2Total);
+      const candidates: ('player' | 'bot1' | 'bot2')[] = [];
+      if (pTotal === maxTotal) candidates.push('player');
+      if (b1Total === maxTotal) candidates.push('bot1');
+      if (b2Total === maxTotal) candidates.push('bot2');
+
+      if (candidates.length > 1) {
+        // 공동 1위이므로 무승부!
+        setWinner('draw');
+        setGameOver(true);
+        gameOverRef.current = true;
+        setGameState('END');
+        playSound('fail');
+        return true;
+      } else {
+        const singleWinner = candidates[0];
+        setWinner(singleWinner);
+        setGameOver(true);
+        gameOverRef.current = true;
+        setGameState('END');
+        if (singleWinner === 'player') {
+          playSound('win');
+          triggerConfetti();
+        } else {
+          playSound('fail');
+        }
+        return true;
+      }
     }
 
     // 카드가 온전히 남아있는 활성 플레이어 리스트
@@ -1247,15 +1311,21 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       {gameState === 'END' && (
         <div className="flex-1 flex flex-col items-center justify-center p-5 text-center max-w-sm mx-auto z-10 overflow-y-auto w-full">
           <div className="w-16 h-16 rounded-2xl bg-zinc-950/40 border border-white/10 flex items-center justify-center shadow-lg mb-4 text-3xl">
-            {winner === 'player' ? '🏆' : '🤖'}
+            {winner === 'player' ? '🏆' : winner === 'draw' ? '🤝' : '🤖'}
           </div>
           <h2 className="text-lg font-black mb-1.5 text-amber-200">
-            {winner === 'player' ? '🎉 내가 승리했습니다!!' : `🤖 아이비봇 ${winner === 'bot1' ? '1' : '2'} 승리!`}
+            {winner === 'player' 
+              ? '🎉 내가 승리했습니다!!' 
+              : winner === 'draw' 
+                ? '🤝 무승부로 끝났습니다!' 
+                : `🤖 아이비봇 ${winner === 'bot1' ? '1' : '2'} 승리!`}
           </h2>
           <p className="text-[11px] text-zinc-300 font-semibold mb-6 max-w-[280px] leading-relaxed">
             {winner === 'player' 
               ? '아이비봇 두 명의 카드를 완전히 싹 쓸어왔습니다! 당신은 할리갈리의 왕이군요!' 
-              : `아이비봇 ${winner === 'bot1' ? '1' : '2'}이 영광의 승리를 쟁취했습니다. 다시 시작하여 굴복시키세요!`}
+              : winner === 'draw' 
+                ? '모든 플레이어의 카드가 완전히 분배되거나 소진되어 승부를 가릴 수 없습니다. 치열한 대결이었습니다!' 
+                : `아이비봇 ${winner === 'bot1' ? '1' : '2'}이 영광의 승리를 쟁취했습니다. 다시 시작하여 굴복시키세요!`}
           </p>
 
           <Button 

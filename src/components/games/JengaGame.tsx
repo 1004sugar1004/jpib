@@ -75,6 +75,41 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [hoveredBlockInfo, setHoveredBlockInfo] = useState<JengaTerm | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
+  // New States and Refs for interactive top placement mechanics
+  const [pendingPlaceBlock, setPendingPlaceBlock] = useState<THREE.Mesh | null>(null);
+  const pendingPlaceBlockRef = useRef<THREE.Mesh | null>(null);
+  const confirmPlaceTopRef = useRef<((col: number) => void) | null>(null);
+
+  // Helper function to find empty column slots at the top tier of the tower
+  const getPlaceableOptions = useCallback(() => {
+    let topRow = 15; // default to starting max row index (16 rows total => 15)
+    blocksRef.current.forEach(b => {
+      if (!b.userData.removed && b.userData.row > topRow) {
+        topRow = b.userData.row;
+      }
+    });
+
+    const blocksInTop = blocksRef.current.filter(
+      b => b.userData.row === topRow && !b.userData.removed
+    );
+
+    // If the top layer is not yet full (less than 3 blocks)
+    if (blocksInTop.length < 3) {
+      const occupiedCols = blocksInTop.map(b => b.userData.col);
+      const freeCols = [0, 1, 2].filter(c => !occupiedCols.includes(c));
+      return {
+        row: topRow,
+        freeCols
+      };
+    } else {
+      // If the top layer is fully completed, start a new higher layer
+      return {
+        row: topRow + 1,
+        freeCols: [0, 1, 2]
+      };
+    }
+  }, []);
+
   // Refs for WebGL coordination
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -171,6 +206,8 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
     setSelectedBlockInfo(null);
     setHoveredBlockInfo(null);
+    pendingPlaceBlockRef.current = null;
+    setPendingPlaceBlock(null);
     setScore(0);
     setLevel(1);
     scoreRef.current = 0;
@@ -405,6 +442,9 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       if (e.target !== canvas) {
         return;
       }
+      if (pendingPlaceBlockRef.current) {
+        return;
+      }
       if (!drag) {
         const rect = canvas.getBoundingClientRect();
         const cx = e.clientX - rect.left;
@@ -516,6 +556,9 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       if (e.target !== canvas) {
         return;
       }
+      if (pendingPlaceBlockRef.current) {
+        return;
+      }
       if (!touchMoved && maxTouchNum === 1 && e.changedTouches.length === 1) {
         const t = e.changedTouches[0];
         const rect = canvas.getBoundingClientRect();
@@ -563,6 +606,7 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
     // Keyboard support
     const handleKeyDownGlobal = (ev: KeyboardEvent) => {
+      if (pendingPlaceBlockRef.current) return;
       if (ev.key === 'ArrowLeft') startPullBlock(-1);
       if (ev.key === 'ArrowRight') startPullBlock(1);
       if (ev.key === 'Escape') deselectCurrent();
@@ -593,19 +637,15 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       resizeObserver.observe(canvas.parentElement);
     }
 
-    // Place extracted block back at the top layer
-    const placeTop = (rb: THREE.Mesh) => {
-      const nr = getTopRowLocal() + 1;
+    // Assign interactive coordinate place function to ref bridge
+    confirmPlaceTopRef.current = (col: number) => {
+      const rb = pendingPlaceBlockRef.current;
+      if (!rb) return;
+
+      const opt = getPlaceableOptions();
+      const nr = opt.row;
       const y = 0.3 + nr * (BH + 0.02);
       const rot = (nr % 2 === 1);
-
-      // Find an empty spot on the topmost level
-      const existingInTop = blocksRef.current
-        .filter(b => b.userData.row === nr && !b.userData.removed)
-        .map(b => b.userData.col);
-
-      let col = [0, 1, 2].find(c => !existingInTop.includes(c));
-      if (col === undefined) col = 1;
 
       const bx = rot ? (col - 1) * SP : 0;
       const bz = rot ? 0 : (col - 1) * SP;
@@ -642,6 +682,11 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       blocksRef.current.push(rb);
 
       evalStabilityLocal();
+
+      // Reset selection state
+      pendingPlaceBlockRef.current = null;
+      setPendingPlaceBlock(null);
+      setMessage(`🪜 블록을 꼭대기 층의 ${col === 0 ? '왼쪽' : col === 1 ? '가운데' : '오른쪽'}에 완벽히 세웠습니다!`);
 
       if (nr >= ROWS + 12) {
         overRef.current = true;
@@ -775,8 +820,10 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             localStorage.setItem('jenga_highscore', currentNewScore.toString());
           }
 
-          // Trigger drop from sky to top level
-          placeTop(b);
+          // Trigger interactive choice selection to place at the top level
+          pendingPlaceBlockRef.current = b;
+          setPendingPlaceBlock(b);
+          setMessage("🎉 블록 빼기에 성공했습니다! 꼭대기에 쌓을 위치(왼쪽, 가운데, 오른쪽)를 아래 버튼에서 선택해 주세요.");
         }
       }
 
@@ -1074,31 +1121,64 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               </AnimatePresence>
             </div>
 
-            {/* Subtraction Control Buttons - PERSISTENT CLIENT VISIBILITY */}
-            <div className="flex gap-2 text-center items-center justify-between w-full">
-              <button 
-                onClick={() => startPullBlock(-1)}
-                disabled={!selectedBlockInfo}
-                className={`flex-grow flex-1 py-1.5 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
-                  selectedBlockInfo 
-                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-700 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
-                    : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-40'
-                }`}
-              >
-                ← 왼쪽으로 빼기
-              </button>
-              <button 
-                onClick={() => startPullBlock(1)}
-                disabled={!selectedBlockInfo}
-                className={`flex-grow flex-1 py-1.5 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
-                  selectedBlockInfo 
-                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-700 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
-                    : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-40'
-                }`}
-              >
-                오른쪽으로 빼기 →
-              </button>
-            </div>
+            {/* Interactive Control Buttons - Toggle between Pulling and Placing */}
+            {pendingPlaceBlock ? (
+              <div className="flex flex-col gap-1.5 w-full animate-fade-in">
+                <span className="text-[10px] text-amber-300 font-extrabold text-center block bg-amber-950/40 py-1 rounded border border-amber-900/30">
+                  🧱 어디에 완벽히 쌓을지 균형 게이지를 보며 선택하세요!
+                </span>
+                <div className="flex gap-1.5 w-full">
+                  {[0, 1, 2].map((colIndex) => {
+                    const options = getPlaceableOptions();
+                    const isAvailable = options.freeCols.includes(colIndex);
+                    return (
+                      <button
+                        key={colIndex}
+                        onClick={() => confirmPlaceTopRef.current?.(colIndex)}
+                        disabled={!isAvailable}
+                        className={`flex-grow flex-1 py-1.5 block text-xs font-black rounded-lg border-b-4 transition-all flex flex-col items-center justify-center select-none ${
+                          isAvailable
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white border-emerald-800 active:translate-y-0.5 active:border-b-2 cursor-pointer'
+                            : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-30'
+                        }`}
+                      >
+                        <span className="font-extrabold text-[11px]">
+                          {colIndex === 0 ? '◀ 왼쪽' : colIndex === 1 ? '■ 가운데' : '오른쪽 ▶'}
+                        </span>
+                        <span className="text-[8px] opacity-75 mt-0.5">
+                          {isAvailable ? '비어있음' : '꽉 참'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2 text-center items-center justify-between w-full">
+                <button 
+                  onClick={() => startPullBlock(-1)}
+                  disabled={!selectedBlockInfo}
+                  className={`flex-grow flex-1 py-1.5 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
+                    selectedBlockInfo 
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-700 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
+                      : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-40'
+                  }`}
+                >
+                  ← 왼쪽으로 빼기
+                </button>
+                <button 
+                  onClick={() => startPullBlock(1)}
+                  disabled={!selectedBlockInfo}
+                  className={`flex-grow flex-1 py-1.5 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
+                    selectedBlockInfo 
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-700 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
+                      : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-40'
+                  }`}
+                >
+                  오른쪽으로 빼기 →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
