@@ -71,7 +71,7 @@ const matchSynonym = (targetWord: string, guesses: string[]) => {
 
 const ROUND_COUNT = 6;
 const DRAW_TIME = 10;
-const API_INTERVAL = 3000;
+const API_INTERVAL = 2000;
 
 function pickWords() {
   const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
@@ -102,6 +102,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const roundRef = useRef(0);
   const hasNewStrokeRef = useRef(false);
   const apiCheckingRef = useRef(false);
+  const pendingCheckRef = useRef(false);
 
   useEffect(() => { roundRef.current = round; }, [round]);
   useEffect(() => { matchedRef.current = matched; }, [matched]);
@@ -155,7 +156,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     }
     ctx.lineTo(pos.x, pos.y);
     ctx.strokeStyle = "#18181b"; // High contrast charcoal black for maximum Gemini Vision recognition accuracy
-    ctx.lineWidth = 10; // Bolder lines (10px) to make drawings more visible to Gemini Vision
+    ctx.lineWidth = 12; // Extra bold lines (12px) to make drawings highly visible to Gemini Vision
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
@@ -167,7 +168,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     drawingRef.current = false;
     setIsDrawing(false);
     // Instantly evaluate when the user lifts their finger/mouse, making it feel highly responsive!
-    if (hasNewStrokeRef.current && !apiCheckingRef.current && !matchedRef.current) {
+    if (hasNewStrokeRef.current && !matchedRef.current) {
       checkDrawingWithAI();
     }
   };
@@ -175,7 +176,11 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const checkDrawingWithAI = useCallback(async () => {
     if (matchedRef.current) return;
     if (!hasNewStrokeRef.current) return;
-    if (apiCheckingRef.current) return;
+    
+    if (apiCheckingRef.current) {
+      pendingCheckRef.current = true;
+      return;
+    }
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -213,6 +218,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const currentWord = words[roundRef.current];
 
     hasNewStrokeRef.current = false;
+    pendingCheckRef.current = false;
     apiCheckingRef.current = true;
     setAiThinking(true);
     try {
@@ -267,14 +273,15 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             - 토끼 (Rabbit): vertical long ears protruding from head.
             - 곰 (Bear): bear mask outline with small round ears.
             - 코끼리 (Elephant): big ear contours and a long dangling nose tube trunk.
-
+ 
             If the drawing has even a slight resemblance, a symbolic simplified icon representation, or captures the basic essence of "${currentWord}", consider it a match (set matched: true).
+            Furthermore, you must be extremely generous. If it looks even 10% like "${currentWord}", set "matched": true, and make sure that you include "${currentWord}" in the "guesses" list!
             
             Here is the list of all possible vocabulary words in this game for context: ${WORDS.join(", ")}.` },
             { inlineData: { mimeType: "image/png", data: imageData } }
         ],
         config: {
-          systemInstruction: "You are an extremely generous, hyper-lenient, and encouraging professional Quick-Draw recognition engine for young students. You specialize in identifying objects from minimal, rough, hand-drawn sketches. Even very abstract, simplified icon-style, or incomplete shapes should be matched (matched: true) if they suggest the target word. Provide guesses in Korean, selecting from or matching the essence of the game's vocabulary.",
+          systemInstruction: "You are an extremely generous, hyper-lenient, and encouraging professional Quick-Draw recognition engine for young students. You specialize in identifying objects from minimal, rough, hand-drawn sketches. Even very abstract, simplified icon-style, or incomplete shapes should be matched (matched: true) if they suggest the target word. Provide guesses in Korean, selecting from or matching the essence of the game's vocabulary. If there's any drawing at all that resembles the shape (even if poorly drawn), you MUST set matched to true.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -282,7 +289,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               guesses: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
-                description: "Top 3 things this drawing looks like, in Korean."
+                description: "Top 3 things this drawing looks like, in Korean. If matched is true, make sure the target word is one of the guesses."
               },
               matched: {
                 type: Type.BOOLEAN,
@@ -323,6 +330,13 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     } finally {
       apiCheckingRef.current = false;
       setAiThinking(false);
+      // Process any pending evaluation that arrived while the current API call was in-flight
+      if (pendingCheckRef.current && !matchedRef.current) {
+        pendingCheckRef.current = false;
+        setTimeout(() => {
+          checkDrawingWithAI();
+        }, 80);
+      }
     }
   }, [words, soundEnabled]);
 
@@ -348,6 +362,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     matchedRef.current = false;
     hasNewStrokeRef.current = false;
     apiCheckingRef.current = false;
+    pendingCheckRef.current = false;
     setAiThinking(false);
     setCountdown(3);
     setPhase("countdown");
@@ -372,10 +387,10 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           }
         }, 1000);
 
-        // First check after 3 seconds of drawing to save cost and give user time
+        // First check after 1.5 seconds of drawing to be responsive
         setTimeout(() => {
           if (!matchedRef.current && t > 0) checkDrawingWithAI();
-        }, 3000);
+        }, 1500);
         
         apiTimerRef.current = setInterval(() => {
           if (!matchedRef.current && t > 0) checkDrawingWithAI();

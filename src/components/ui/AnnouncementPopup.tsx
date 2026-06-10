@@ -98,7 +98,7 @@ export const AnnouncementPopup = () => {
                     </p>
                     <p className="flex gap-1.5">
                       <span className="text-emerald-500">⚡</span>
-                      <span><span className="font-black text-emerald-600">일일 획득제한:</span> 최대 경험치는 1,000 XP로 계속 적용되어 탐험을 지원합니다.</span>
+                      <span><span className="font-black text-emerald-600">일일 획득제한:</span> 최대 경험치는 1,500 XP로 상향 적용되어 더 풍부한 탐험을 지원합니다.</span>
                     </p>
                     <p className="flex gap-1.5">
                       <span className="text-pink-500">🔥</span>
