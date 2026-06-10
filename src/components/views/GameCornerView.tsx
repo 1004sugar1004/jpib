@@ -30,6 +30,7 @@ import { DrawingGame } from '../games/DrawingGame';
 import { HalliGalliGame } from '../games/HalliGalliGame';
 import { JengaGame } from '../games/JengaGame';
 import { NinjaGame } from '../games/NinjaGame';
+import { UnoGame } from '../games/UnoGame';
 
 import { UserProfile } from '../../types';
 import { db } from '../../firebase';
@@ -67,6 +68,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
     { id: 'halligalli', name: 'IB 할리갈리', icon: Bell, color: 'bg-emerald-600', unlockXp: 0, description: '과일 개수의 합이 정확히 5개가 될 때 벨을 울리세요!', bgImage: 'https://i.imgur.com/xe54lqW.png' },
     { id: 'jenga', name: 'IB 젠가', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않도록 블록을 조심히 빼내 쌓으세요!', bgImage: 'https://i.imgur.com/0wF00pI.png' },
     { id: 'ninja', name: 'IB 손날 닌자', icon: Sword, color: 'bg-cyan-500', unlockXp: 0, description: '화면으로 솟구치는 네온 과일을 검지 손날 광선검으로 쪼개 자르세요!', bgImage: 'https://i.imgur.com/DrD9Hmx.png' },
+    { id: 'uno', name: 'IB 우노', icon: Layers, color: 'bg-rose-500', unlockXp: 0, description: '선생님이 전달해 주실 우노 게임 코드 대기 및 테스트 버전입니다!', bgImage: 'https://i.imgur.com/UMcVNRB.png' },
   ];
 
   if (selectedGame) {
@@ -106,6 +108,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
             {selectedGame === 'halligalli' && <HalliGalliGame soundEnabled={soundEnabled} />}
             {selectedGame === 'jenga' && <JengaGame soundEnabled={soundEnabled} />}
             {selectedGame === 'ninja' && <NinjaGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'uno' && <UnoGame soundEnabled={soundEnabled} />}
           </div>
         </div>
       </div>
@@ -143,7 +146,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {games.map((game) => {
           const isLocked = false; // All games unlocked as requested
-          const isFreeTestGame = game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja';
+          const isFreeTestGame = game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja' || game.id === 'uno';
           
           return (
             <motion.div
@@ -251,16 +254,16 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
               <Sparkles className="w-10 h-10 text-emerald-600" />
             </div>
 
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">🎉 할리갈리 · 젠가 · 손날닌자 무료 오픈!</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">🎉 할리갈리 · 젠가 · 손날닌자 · 우노 무료 오픈!</h2>
             <p className="text-indigo-600 font-bold mb-6 text-sm bg-indigo-50 px-4 py-1.5 rounded-full inline-block">
-              신규 게임 3종 테스트 버전 출시 🌟
+              신규 게임 4종 테스트 버전 출시 🌟
             </p>
 
             <div className="bg-gray-50 rounded-2xl p-4 md:p-6 mb-6 border border-gray-100 text-left space-y-3">
               <div className="flex items-start gap-2.5">
                 <span className="bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">✓</span>
                 <p className="text-gray-700 font-medium text-sm leading-relaxed">
-                  새로 출시된 <strong className="text-gray-900">IB 할리갈리 🍉, IB 젠가 🧱, IB 손날 닌자 ⚔️</strong> 게임은 <strong className="text-emerald-600">티켓 없이 무료</strong>로 플레이하실 수 있습니다!
+                  새로 출시된 <strong className="text-gray-900">IB 할리갈리 🍉, IB 젠가 🧱, IB 손날 닌자 ⚔️, IB 우노 🃏</strong> 게임은 <strong className="text-emerald-600">티켓 없이 무료</strong>로 플레이하실 수 있습니다!
                 </p>
               </div>
               <div className="flex items-start gap-2.5">
