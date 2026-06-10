@@ -181,6 +181,13 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
   const [shuffling, setShuffling] = useState(false);
   const [isMusicEnabled, setIsMusicEnabled] = useState(soundEnabled);
   const [statusMessage, setStatusMessage] = useState('원하는 단어를 선택하세요!');
+  
+  const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
+  const difficultyRef = useRef<'easy' | 'normal' | 'hard'>('normal');
+
+  useEffect(() => {
+    difficultyRef.current = difficulty;
+  }, [difficulty]);
 
   const BINGO_TARGET = 3;
 
@@ -368,6 +375,14 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
   useEffect(() => {
     if (gameState !== 'playing' || turn !== 'computer' || winner) return;
 
+    let delay = 1200;
+    const currentDiff = difficultyRef.current;
+    if (currentDiff === 'easy') {
+      delay = 1800;
+    } else if (currentDiff === 'hard') {
+      delay = 800;
+    }
+
     const timer = setTimeout(() => {
       // Find unselected values on board
       const unselectedCells = computerBoard.filter(c => !c.marked);
@@ -378,83 +393,101 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
       // 2. Choose optimal item to block student or win
       let choice: string | number | null = null;
 
-      // Calculate priority scores for unselected cells
-      let bestScore = -1;
-      let bestCell: Cell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
+      if (currentDiff === 'easy') {
+        // Easy mode: mostly random (90% random selection, 10% smart)
+        const isRandom = Math.random() < 0.90;
+        if (isRandom) {
+          const randCell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
+          choice = randCell.value;
+        }
+      }
 
-      unselectedCells.forEach(cell => {
-        let cellScore = 0;
+      if (!choice) {
+        // Calculate priority scores for unselected cells
+        let bestScore = -1;
+        let bestCell: Cell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
 
-        // Check columns, rows, diagonals containing this cell on AI board
-        const cIndex = computerBoard.findIndex(c => c.value === cell.value);
-        if (cIndex !== -1) {
-          const r = Math.floor(cIndex / 5);
-          const c = cIndex % 5;
+        unselectedCells.forEach(cell => {
+          let cellScore = 0;
 
-          // Row score (how many already marked in this row)
-          const rowCells = computerBoard.slice(r * 5, r * 5 + 5);
-          const rowMarkedCount = rowCells.filter(cell => cell.marked).length;
-          cellScore += rowMarkedCount * 1.5;
+          // Check columns, rows, diagonals containing this cell on AI board
+          const cIndex = computerBoard.findIndex(c => c.value === cell.value);
+          if (cIndex !== -1) {
+            const r = Math.floor(cIndex / 5);
+            const c = cIndex % 5;
 
-          // Column score
-          let colMarkedCount = 0;
-          for (let i = 0; i < 5; i++) {
-            if (computerBoard[i * 5 + c].marked) colMarkedCount++;
-          }
-          cellScore += colMarkedCount * 1.5;
+            // Row score (how many already marked in this row)
+            const rowCells = computerBoard.slice(r * 5, r * 5 + 5);
+            const rowMarkedCount = rowCells.filter(cell => cell.marked).length;
+            const ownRowWeight = currentDiff === 'hard' ? 2.5 : 1.5;
+            cellScore += rowMarkedCount * ownRowWeight;
 
-          // Diagonal 1 (top-left to bottom-right)
-          if (r === c) {
-            let d1Marked = 0;
+            // Column score
+            let colMarkedCount = 0;
             for (let i = 0; i < 5; i++) {
-              if (computerBoard[i * 5 + i].marked) d1Marked++;
+              if (computerBoard[i * 5 + c].marked) colMarkedCount++;
             }
-            cellScore += d1Marked * 1.2;
+            const ownColWeight = currentDiff === 'hard' ? 2.5 : 1.5;
+            cellScore += colMarkedCount * ownColWeight;
+
+            // Diagonal 1 (top-left to bottom-right)
+            if (r === c) {
+              let d1Marked = 0;
+              for (let i = 0; i < 5; i++) {
+                if (computerBoard[i * 5 + i].marked) d1Marked++;
+              }
+              const ownDiagWeight = currentDiff === 'hard' ? 2.0 : 1.2;
+              cellScore += d1Marked * ownDiagWeight;
+            }
+
+            // Diagonal 2 (top-right to bottom-left)
+            if (r + c === 4) {
+              let d2Marked = 0;
+              for (let i = 0; i < 5; i++) {
+                if (computerBoard[i * 5 + (4 - i)].marked) d2Marked++;
+              }
+              const ownDiagWeight = currentDiff === 'hard' ? 2.0 : 1.2;
+              cellScore += d2Marked * ownDiagWeight;
+            }
           }
 
-          // Diagonal 2 (top-right to bottom-left)
-          if (r + c === 4) {
-            let d2Marked = 0;
+          // Add defense scoring (check player board for items about to complete)
+          const pIndex = playerBoard.findIndex(p => p.value === cell.value);
+          if (pIndex !== -1) {
+            const pr = Math.floor(pIndex / 5);
+            const pc = pIndex % 5;
+
+            // Row blocker score
+            const pRowCells = playerBoard.slice(pr * 5, pr * 5 + 5);
+            const pRowMarked = pRowCells.filter(cell => cell.marked).length;
+            if (pRowMarked >= 3) {
+              const defWeight = currentDiff === 'hard' ? 4.0 : 2.0;
+              cellScore += pRowMarked * defWeight; // high defensive weight to block player Completing Bingo
+            }
+
+            // Column blocker score
+            let pColMarked = 0;
             for (let i = 0; i < 5; i++) {
-              if (computerBoard[i * 5 + (4 - i)].marked) d2Marked++;
+              if (playerBoard[i * 5 + pc].marked) pColMarked++;
             }
-            cellScore += d2Marked * 1.2;
-          }
-        }
-
-        // Add defense scoring (check player board for items about to complete)
-        const pIndex = playerBoard.findIndex(p => p.value === cell.value);
-        if (pIndex !== -1) {
-          const pr = Math.floor(pIndex / 5);
-          const pc = pIndex % 5;
-
-          // Row blocker score
-          const pRowCells = playerBoard.slice(pr * 5, pr * 5 + 5);
-          const pRowMarked = pRowCells.filter(cell => cell.marked).length;
-          if (pRowMarked >= 3) {
-            cellScore += pRowMarked * 2; // high defensive weight to block player Completing Bingo
+            if (pColMarked >= 3) {
+              const defWeight = currentDiff === 'hard' ? 4.0 : 2.0;
+              cellScore += pColMarked * defWeight;
+            }
           }
 
-          // Column blocker score
-          let pColMarked = 0;
-          for (let i = 0; i < 5; i++) {
-            if (playerBoard[i * 5 + pc].marked) pColMarked++;
+          // Add slight random noise to prevent predictability
+          const noiseLevel = currentDiff === 'hard' ? 0.05 : 0.6;
+          cellScore += Math.random() * noiseLevel;
+
+          if (cellScore > bestScore) {
+            bestScore = cellScore;
+            bestCell = cell;
           }
-          if (pColMarked >= 3) {
-            cellScore += pColMarked * 2;
-          }
-        }
+        });
 
-        // Add slight random noise to prevent predictability
-        cellScore += Math.random() * 0.5;
-
-        if (cellScore > bestScore) {
-          bestScore = cellScore;
-          bestCell = cell;
-        }
-      });
-
-      choice = bestCell.value;
+        choice = bestCell.value;
+      }
 
       // Mark selected value
       handleMark(choice);
@@ -462,7 +495,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
       // Update turn
       setTurn('player');
       setStatusMessage(`🤖 컴퓨터가 "${choice}"을(를) 불렀습니다! 내 차례입니다.`);
-    }, 1200);
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [gameState, turn, computerBoard, playerBoard, winner]);
@@ -618,6 +651,49 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
                   ))}
                 </div>
               </Card>
+
+              {/* 난이도 선택 */}
+              <div className="w-full bg-slate-900/50 p-2.5 rounded-2xl border border-indigo-500/10 text-center">
+                <span className="text-[10px] font-black text-amber-300 block mb-1.5">🔥 AI 컴퓨터 지능 난이도 선택</span>
+                <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-1.5 rounded-xl border border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setDifficulty('easy')}
+                    className={cn(
+                      "py-2 rounded-lg text-[10px] font-black transition-all cursor-pointer",
+                      difficulty === 'easy'
+                        ? "bg-emerald-500 text-white shadow-md font-extrabold"
+                        : "text-emerald-400 hover:bg-slate-900/50"
+                    )}
+                  >
+                    하 (초보)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDifficulty('normal')}
+                    className={cn(
+                      "py-2 rounded-lg text-[10px] font-black transition-all cursor-pointer",
+                      difficulty === 'normal'
+                        ? "bg-indigo-600 text-white shadow-md font-extrabold"
+                        : "text-indigo-400 hover:bg-slate-900/50"
+                    )}
+                  >
+                    중 (보통)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDifficulty('hard')}
+                    className={cn(
+                      "py-2 rounded-lg text-[10px] font-black transition-all cursor-pointer",
+                      difficulty === 'hard'
+                        ? "bg-rose-600 text-white shadow-md font-extrabold"
+                        : "text-rose-400 hover:bg-slate-900/50"
+                    )}
+                  >
+                    상 (프로)
+                  </button>
+                </div>
+              </div>
 
               {/* Start Match Button */}
               {filledCount === 25 ? (
@@ -796,7 +872,17 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
                 <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-purple-500/10">
                   <div className="flex items-center gap-1.5 text-purple-400">
                     <Bot className="w-4 h-4" />
-                    <span className="text-xs font-black">AI 컴퓨터의 보드 (숨김처리 🔒)</span>
+                    <span className="text-xs font-black flex items-center gap-1">
+                      AI 컴퓨터의 보드
+                      <span className={cn(
+                        "text-[9px] px-1.5 py-0.5 rounded font-black border uppercase ml-1",
+                        difficulty === 'easy' && "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+                        difficulty === 'normal' && "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+                        difficulty === 'hard' && "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                      )}>
+                        {difficulty === 'easy' ? '하' : difficulty === 'normal' ? '중' : '상'}
+                      </span>
+                    </span>
                   </div>
                   <div className="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] font-black text-purple-400">
                     완성 빙고: <span className="text-white text-xs ml-1">{computerBingos} / {BINGO_TARGET}</span>
