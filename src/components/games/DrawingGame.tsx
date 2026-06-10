@@ -14,6 +14,61 @@ const WORDS = [
   "공","우산","시계","신발","가방","나비","개구리","토끼","곰","코끼리"
 ];
 
+const SYNONYMS: Record<string, string[]> = {
+  "사과": ["사과", "apple", "red apple", "green apple", "fruit", "사과그림"],
+  "고양이": ["고양이", "야옹이", "cat", "kitty", "neko", "고양이머리"],
+  "강아지": ["강아지", "개", "댕댕이", "dog", "puppy", "개얼굴"],
+  "집": ["집", "가옥", "건물", "house", "home", "building", "루프"],
+  "나무": ["나무", "식물", "tree", "plant", "wood"],
+  "자동차": ["자동차", "차", "승용차", "car", "auto", "vehicle"],
+  "꽃": ["꽃", "화초", "flower", "rose", "tulip", "blossom"],
+  "물고기": ["물고기", "생선", "물고기그림", "fish", "shark"],
+  "새": ["새", "참새", "독수리", "bird", "wing", "flying bird"],
+  "달": ["달", "초승달", "보름달", "moon", "crescent"],
+  "해": ["해", "태양", "햇님", "sun", "sunshine"],
+  "별": ["별", "반짝이", "star", "twinkle"],
+  "책": ["책", "도서", "교과서", "book", "notebook", "open book"],
+  "안경": ["안경", "썬글라스", "glasses", "spectacles", "eyeglasses"],
+  "모자": ["모자", "캡", "hat", "cap", "beanie"],
+  "피자": ["피자", "피자한조각", "pizza"],
+  "케이크": ["케이크", "케익", "촛불케이크", "cake", "cupcake"],
+  "아이스크림": ["아이스크림", "콘", "ice cream", "icecream", "popsicle"],
+  "로켓": ["로켓", "우주선", "rocket", "spaceship"],
+  "비행기": ["비행기", "전투기", "airplane", "plane", "jet"],
+  "배": ["배", "보트", "배낚시", "과일배", "boat", "ship", "pear", "vessel"],
+  "자전거": ["자전거", "bicycle", "bike", "cycle"],
+  "컵": ["컵", "잔", "머그컵", "cup", "mug", "glass", "tumbler"],
+  "전화기": ["전화기", "스마트폰", "휴대폰", "phone", "telephone", "smartphone", "cellphone"],
+  "하트": ["하트", "심장", "사랑", "heart", "love"],
+  "손": ["손", "손가락", "손바닥", "hand", "palm", "finger", "fist"],
+  "눈": ["눈", "눈사람", "눈동자", "eye", "eyes", "snowman", "snow", "snowflake"],
+  "발": ["발", "발바닥", "foot", "feet", "toe"],
+  "코": ["코", "콧구멍", "nose", "snout"],
+  "귀": ["귀", "귓바퀴", "ear", "ears"],
+  "공": ["공", "축구공", "야구공", "농구공", "ball", "sphere", "soccer", "basketball"],
+  "우산": ["우산", "양산", "umbrella"],
+  "시계": ["시계", "손목시계", "탁상시계", "clock", "watch", "timer"],
+  "신발": ["신발", "구두", "운동화", "shoe", "shoes", "boot", "sneaker", "slipper"],
+  "가방": ["가방", "배낭", "backpack", "bag", "handbag", "purse"],
+  "나비": ["나비", "호랑나비", "butterfly", "moth"],
+  "개구리": ["개구리", "올챙이", "frog", "toad"],
+  "토끼": ["토끼", "rabbit", "bunny", "hare"],
+  "곰": ["곰", "아기곰", "bear", "teddy bear"],
+  "코끼리": ["코끼리", "elephant", "trunk"]
+};
+
+const matchSynonym = (targetWord: string, guesses: string[]) => {
+  const synonyms = SYNONYMS[targetWord] || [targetWord];
+  const cleanGuesses = guesses.map(g => g.toLowerCase().trim().replace(/[\s_\-]/g, ""));
+  
+  return synonyms.some(syn => {
+    const cleanSyn = syn.toLowerCase().trim().replace(/[\s_\-]/g, "");
+    return cleanGuesses.some(guess => {
+      return guess === cleanSyn || guess.includes(cleanSyn) || cleanSyn.includes(guess);
+    });
+  });
+};
+
 const ROUND_COUNT = 6;
 const DRAW_TIME = 10;
 const API_INTERVAL = 3000;
@@ -99,7 +154,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         ctx.moveTo(lastPos.current.x, lastPos.current.y);
     }
     ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = "#4f46e5";
+    ctx.strokeStyle = "#18181b"; // High contrast charcoal black for maximum Gemini Vision recognition accuracy
     ctx.lineWidth = 10; // Bolder lines (10px) to make drawings more visible to Gemini Vision
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -128,8 +183,16 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
-    const hasDrawn = pixelBuffer.some(color => color !== 0);
+    // Robust checks of alpha-channel on canvas pixels to ensure there are strokes
+    const imgDataObj = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const imgData = imgDataObj.data;
+    let hasDrawn = false;
+    for (let i = 3; i < imgData.length; i += 4) {
+      if (imgData[i] > 10) {
+        hasDrawn = true;
+        break;
+      }
+    }
     if (!hasDrawn) return;
 
     // Convert transparent canvas drawing to a white background canvas so vision models can see it clearly
@@ -157,10 +220,11 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         model: "gemini-3.5-flash",
         contents: [
             { text: `The user is trying to draw: "${currentWord}" in an interactive 10-second sketching game.
-            Evaluate this indigo ink drawing sketched on a solid white background.
-            Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint of a "${currentWord}"?
-            Since this is a quick 10-second game for elementary/middle school students, be extremely flexible, lenient, and generous.
-            If the drawing has even a slight resemblance, a symbolic simplified icon representation, or captures the basic essence of "${currentWord}", consider it a match (set matched: true).
+            Evaluate this sketch drawn in dark charcoal ink on a solid white background.
+            Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint/doodle of a "${currentWord}"?
+            Since this is a quick 10-second game for elementary/middle school students who are drawing on screens with their clumsy fingers, you must be EXTREMELY, HYPER-LENIENT and friendly.
+            If the drawing has even a slight resemblance, is a symbolic simplified icon representation, or captures the basic essence or imaginative representation of "${currentWord}", consider it a match (set matched: true).
+            Under no circumstances should you be strict. Vague doodle lines that outline or remotely hint at the shape should pass!
             
             Here are keyword-specific leniency guidelines to help you:
             - 사과 (Apple): circle with a small stem or leaf on top.
@@ -210,7 +274,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             { inlineData: { mimeType: "image/png", data: imageData } }
         ],
         config: {
-          systemInstruction: "You are an extremely generous and lenient professional Quick-Draw recognition engine. You specialize in identifying objects from minimal, rough, hand-drawn sketches. Even very abstract, simplified icon-style, or incomplete shapes should be matched (matched: true) if they suggest the target word. Provide guesses in Korean, selecting from or matching the essence of the game's vocabulary.",
+          systemInstruction: "You are an extremely generous, hyper-lenient, and encouraging professional Quick-Draw recognition engine for young students. You specialize in identifying objects from minimal, rough, hand-drawn sketches. Even very abstract, simplified icon-style, or incomplete shapes should be matched (matched: true) if they suggest the target word. Provide guesses in Korean, selecting from or matching the essence of the game's vocabulary.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -234,9 +298,14 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       
       if (text) {
         const parsed = JSON.parse(text);
-        setAiGuesses(parsed.guesses || []);
+        const guessesList = parsed.guesses || [];
+        setAiGuesses(guessesList);
         
-        if (parsed.matched && !matchedRef.current) {
+        const isMatchedByAI = !!parsed.matched;
+        const isMatchedBySynonym = matchSynonym(currentWord, guessesList);
+        const finalMatched = isMatchedByAI || isMatchedBySynonym;
+
+        if (finalMatched && !matchedRef.current) {
           matchedRef.current = true;
           setMatched(true);
           clearInterval(timerRef.current);
@@ -246,7 +315,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               audio.volume = 0.2;
               audio.play().catch(() => {});
           }
-          setTimeout(() => finishRound(true, parsed.guesses), 1500);
+          setTimeout(() => finishRound(true, guessesList), 1500);
         }
       }
     } catch (err) {
