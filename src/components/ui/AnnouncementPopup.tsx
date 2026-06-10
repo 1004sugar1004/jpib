@@ -9,8 +9,8 @@ export const AnnouncementPopup = () => {
   const [dontShowForWeek, setDontShowForWeek] = useState(false);
 
   useEffect(() => {
-    const lastClosed = localStorage.getItem('announcement_june_last_closed');
-    const dontShowUntil = localStorage.getItem('announcement_june_dont_show_until');
+    const lastClosed = localStorage.getItem('announcement_level20_last_closed');
+    const dontShowUntil = localStorage.getItem('announcement_level20_dont_show_until');
     const now = Date.now();
     const today = new Date().toDateString();
     
@@ -27,10 +27,10 @@ export const AnnouncementPopup = () => {
   const handleClose = () => {
     if (dontShowForWeek) {
       const nextWeek = Date.now() + 7 * 24 * 60 * 60 * 1000;
-      localStorage.setItem('announcement_june_dont_show_until', nextWeek.toString());
+      localStorage.setItem('announcement_level20_dont_show_until', nextWeek.toString());
     } else if (dontShowToday) {
       const today = new Date().toDateString();
-      localStorage.setItem('announcement_june_last_closed', today);
+      localStorage.setItem('announcement_level20_last_closed', today);
     }
     setIsOpen(false);
   };
@@ -103,6 +103,10 @@ export const AnnouncementPopup = () => {
                     <p className="flex gap-1.5">
                       <span className="text-pink-500">🔥</span>
                       <span><span className="font-black text-pink-600">모두의 시작선:</span> 6월 1일부터 모두 점수 0점에서 출발하여 새로운 랭킹 경쟁이 치열해집니다!</span>
+                    </p>
+                    <p className="flex gap-1.5">
+                      <span className="text-amber-500">🗺️</span>
+                      <span><span className="font-black text-amber-600">20단계 레벨 개편:</span> 대폭 확장된 무대! 총 20단계 세부 등급 체계와 경험치 도달 기준 조정이 적용되었습니다. 최고 영예의 <strong>‘궁극의 IB 탐험가’</strong> 타이틀에 등극해 보세요!</span>
                     </p>
                   </div>
                 </div>

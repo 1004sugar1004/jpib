@@ -620,8 +620,15 @@ export const HomeView = ({
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className="px-8 pb-8"
         >
+          <div className="mb-4 mt-2 p-4 bg-amber-50 border border-amber-200/60 rounded-3xl flex items-start gap-3">
+            <span className="text-lg">📢</span>
+            <div className="text-xs text-amber-900 font-semibold leading-relaxed">
+              <span className="text-amber-800 block font-black mb-0.5">탐험가 레벨 시스템 20단계 전면 개편 안내!</span>
+              더 알찬 탐험과 풍성한 성취감을 위해 <strong>총 20단계 레벨 시스템</strong>으로 전면 재편되었습니다. 등급 체계 개편에 따라 각 레벨 구간 및 달성 기준 XP도 새롭게 상향 조정되었습니다.
+            </div>
+          </div>
           <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[0, 200, 600, 1200, 2000, 3000, 4500, 6000, 8000, 10000].map((threshold) => {
+            {[0, 200, 600, 1200, 2000, 3000, 5000, 10000, 20000, 35000, 50000, 70000, 90000, 110000, 130000, 150000, 170000, 190000, 210000, 225000].map((threshold) => {
               const lv = getLevel(threshold);
               return (
                 <div key={threshold} className="flex items-center gap-4 p-4 bg-white/80 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
