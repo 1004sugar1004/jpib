@@ -228,9 +228,10 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             { text: `The user is trying to draw: "${currentWord}" in an interactive 10-second sketching game.
             Evaluate this sketch drawn in dark charcoal ink on a solid white background.
             Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint/doodle of a "${currentWord}"?
-            Since this is a quick 10-second game for elementary/middle school students who are drawing on screens with their clumsy fingers, you must be EXTREMELY, HYPER-LENIENT and friendly.
-            If the drawing has even a slight resemblance, is a symbolic simplified icon representation, or captures the basic essence or imaginative representation of "${currentWord}", consider it a match (set matched: true).
-            Under no circumstances should you be strict. Vague doodle lines that outline or remotely hint at the shape should pass!
+            
+            Evaluation Guidelines:
+            - Be friendly and lenient towards simple, child-like sketches, basic outline representations, or standard symbolic representations of "${currentWord}".
+            - However, you MUST be honest and balanced so that the game is fun and challenging: if the drawing consists of completely unrelated random scribbles (such as a simple scribble line, meaningless scratch, or an empty canvas), or is a drawing of something entirely different, you MUST set "matched": false and do NOT include "${currentWord}" in the "guesses" list.
             
             Here are keyword-specific leniency guidelines to help you:
             - 사과 (Apple): circle with a small stem or leaf on top.
@@ -274,14 +275,14 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             - 곰 (Bear): bear mask outline with small round ears.
             - 코끼리 (Elephant): big ear contours and a long dangling nose tube trunk.
  
-            If the drawing has even a slight resemblance, a symbolic simplified icon representation, or captures the basic essence of "${currentWord}", consider it a match (set matched: true).
-            Furthermore, you must be extremely generous. If it looks even 10% like "${currentWord}", set "matched": true, and make sure that you include "${currentWord}" in the "guesses" list!
+            If the drawing captures any distinctive shape, iconic features, or essence of "${currentWord}", set "matched": true, and include "${currentWord}" in the "guesses".
+            If the drawing is just an unrelated doodle, simple scribble, or does not resemble "${currentWord}", set "matched": false and do NOT include "${currentWord}" in the "guesses".
             
             Here is the list of all possible vocabulary words in this game for context: ${WORDS.join(", ")}.` },
             { inlineData: { mimeType: "image/png", data: imageData } }
         ],
         config: {
-          systemInstruction: "You are an extremely generous, hyper-lenient, and encouraging professional Quick-Draw recognition engine for young students. You specialize in identifying objects from minimal, rough, hand-drawn sketches. Even very abstract, simplified icon-style, or incomplete shapes should be matched (matched: true) if they suggest the target word. Provide guesses in Korean, selecting from or matching the essence of the game's vocabulary. If there's any drawing at all that resembles the shape (even if poorly drawn), you MUST set matched to true.",
+          systemInstruction: "You are an intelligent, friendly, yet honest and fair Quick-Draw sketch recognition AI. Your goal is to identify if the student's doodle is a reasonable drawing of the target word. Accept rough, child-like, simple sketches, but do NOT match completely unrelated scribbles, meaningless shapes, or blank drawings. Provide 3 guesses in Korean of what the drawing actually looks like.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,

@@ -110,12 +110,50 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     }
   }, []);
 
+  // Helper function to dynamically map visual Left, Center, Right columns to physical 0, 1, 2 indices based on camera view
+  const getTopPlaceableMapping = useCallback(() => {
+    if (!cameraRef.current) {
+      return { visualToPhysical: [0, 1, 2], physicalToVisual: [0, 1, 2] };
+    }
+    const opt = getPlaceableOptions();
+    const nr = opt.row;
+    const rot = (nr % 2 === 1);
+    
+    // Axis of placement: along X if rot is true, along Z if rot is false
+    const topAxis = rot ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+    
+    // Camera's local right vector projected to world space
+    const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(cameraRef.current.quaternion);
+    
+    const dot = topAxis.dot(cameraRight);
+    
+    // If dot >= 0, physical column 0 (-index) aligns with visual Left, and col 2 (+index) with visual Right.
+    // If dot < 0, physical column 0 matches visual Right, and col 2 matches visual Left (so we swap them).
+    if (dot >= 0) {
+      return {
+        visualToPhysical: [0, 1, 2],
+        physicalToVisual: [0, 1, 2]
+      };
+    } else {
+      return {
+        visualToPhysical: [2, 1, 0],
+        physicalToVisual: [2, 1, 0]
+      };
+    }
+  }, [getPlaceableOptions]);
+
   // Refs for WebGL coordination
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const blocksRef = useRef<THREE.Mesh[]>([]);
   const selRef = useRef<THREE.Mesh | null>(null);
+  const indicatorLeftRef = useRef<THREE.Mesh | null>(null);
+  const indicatorRightRef = useRef<THREE.Mesh | null>(null);
+  const placementIndicatorLeftRef = useRef<THREE.Mesh | null>(null);
+  const placementIndicatorCenterRef = useRef<THREE.Mesh | null>(null);
+  const placementIndicatorRightRef = useRef<THREE.Mesh | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
   // Fast animation states in mutable refs to avoid React closure lag
   const pullingRef = useRef<boolean>(false);
@@ -166,9 +204,22 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   }, [difficulty]);
 
   // Handle external actions
-  const startPullBlock = (dir: number) => {
+  const startPullBlock = (visualDir: 'left' | 'right') => {
     const b = selRef.current;
     if (!b || pullingRef.current || overRef.current) return;
+
+    let dir = visualDir === 'left' ? -1 : 1;
+    if (cameraRef.current) {
+      const pullAxis = b.userData.rot ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
+      const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(cameraRef.current.quaternion);
+      const dot = pullAxis.dot(cameraRight);
+      
+      if (visualDir === 'left') {
+        dir = dot >= 0 ? -1 : 1;
+      } else {
+        dir = dot >= 0 ? 1 : -1;
+      }
+    }
 
     setMessage(`🪵 선택한 "${b.userData.data.term}" 블록을 빼내는 중입니다... 균형을 주목하세요!`);
     playSound('pull');
@@ -289,6 +340,7 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+    cameraRef.current = camera;
 
     // Warm elegant classroom lights
     scene.add(new THREE.AmbientLight(0xfff4e2, 0.6));
@@ -323,6 +375,48 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
     // Setup initial showcase tower
     setUpTowerScene();
+
+    // Create visual pulling direction indicator helpers (glowing spheres)
+    const indLeftGeom = new THREE.SphereGeometry(0.18, 16, 16);
+    const indLeftMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, depthTest: false, transparent: true, opacity: 0.95 });
+    const indLeft = new THREE.Mesh(indLeftGeom, indLeftMat);
+    indLeft.renderOrder = 999; // Render on top of everything
+    indLeft.visible = false;
+    scene.add(indLeft);
+    indicatorLeftRef.current = indLeft;
+
+    const indRightGeom = new THREE.SphereGeometry(0.18, 16, 16);
+    const indRightMat = new THREE.MeshBasicMaterial({ color: 0x00b4d8, depthTest: false, transparent: true, opacity: 0.95 });
+    const indRight = new THREE.Mesh(indRightGeom, indRightMat);
+    indRight.renderOrder = 999;
+    indRight.visible = false;
+    scene.add(indRight);
+    indicatorRightRef.current = indRight;
+
+    // Create visual placement destination indicators (glowing spheres)
+    const placeLeftGeom = new THREE.SphereGeometry(0.18, 16, 16);
+    const placeLeftMat = new THREE.MeshBasicMaterial({ color: 0x10b981, depthTest: false, transparent: true, opacity: 0.95 });
+    const placeLeft = new THREE.Mesh(placeLeftGeom, placeLeftMat);
+    placeLeft.renderOrder = 999;
+    placeLeft.visible = false;
+    scene.add(placeLeft);
+    placementIndicatorLeftRef.current = placeLeft;
+
+    const placeCenterGeom = new THREE.SphereGeometry(0.18, 16, 16);
+    const placeCenterMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 0.95 });
+    const placeCenter = new THREE.Mesh(placeCenterGeom, placeCenterMat);
+    placeCenter.renderOrder = 999;
+    placeCenter.visible = false;
+    scene.add(placeCenter);
+    placementIndicatorCenterRef.current = placeCenter;
+
+    const placeRightGeom = new THREE.SphereGeometry(0.18, 16, 16);
+    const placeRightMat = new THREE.MeshBasicMaterial({ color: 0xd946ef, depthTest: false, transparent: true, opacity: 0.95 });
+    const placeRight = new THREE.Mesh(placeRightGeom, placeRightMat);
+    placeRight.renderOrder = 999;
+    placeRight.visible = false;
+    scene.add(placeRight);
+    placementIndicatorRightRef.current = placeRight;
 
     // Camera viewpoints Setup (Spherical coordinates)
     let th = 0.5;
@@ -607,8 +701,8 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     // Keyboard support
     const handleKeyDownGlobal = (ev: KeyboardEvent) => {
       if (pendingPlaceBlockRef.current) return;
-      if (ev.key === 'ArrowLeft') startPullBlock(-1);
-      if (ev.key === 'ArrowRight') startPullBlock(1);
+      if (ev.key === 'ArrowLeft') startPullBlock('left');
+      if (ev.key === 'ArrowRight') startPullBlock('right');
       if (ev.key === 'Escape') deselectCurrent();
     };
 
@@ -859,6 +953,88 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           }
         }
       });
+
+      // Update interactive 3D indicators on the selected block
+      if (selRef.current && !pullingRef.current && !overRef.current) {
+        const b = selRef.current;
+        const pullAxis = b.userData.rot ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
+        
+        let leftDir = -1;
+        let rightDir = 1;
+        if (camera) {
+          const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+          const dot = pullAxis.dot(cameraRight);
+          if (dot >= 0) {
+            leftDir = -1;
+            rightDir = 1;
+          } else {
+            leftDir = 1;
+            rightDir = -1;
+          }
+        }
+
+        // Project positions: block width is 1.5, let's put helper spheres just beyond the visual left/right ends (e.g. 1.5 * 0.5 + 0.1 = 0.85)
+        const posL = b.position.clone().addScaledVector(pullAxis, 0.85 * leftDir);
+        const posR = b.position.clone().addScaledVector(pullAxis, 0.85 * rightDir);
+
+        if (indicatorLeftRef.current) {
+          indicatorLeftRef.current.position.copy(posL);
+          indicatorLeftRef.current.visible = true;
+        }
+        if (indicatorRightRef.current) {
+          indicatorRightRef.current.position.copy(posR);
+          indicatorRightRef.current.visible = true;
+        }
+      } else {
+        if (indicatorLeftRef.current) indicatorLeftRef.current.visible = false;
+        if (indicatorRightRef.current) indicatorRightRef.current.visible = false;
+      }
+
+      // Update placement destination indicators at top layer
+      const pb = pendingPlaceBlockRef.current;
+      if (pb) {
+        const opt = getPlaceableOptions();
+        const nr = opt.row;
+        const y = 0.3 + nr * (BH + 0.02);
+        const rot = (nr % 2 === 1);
+
+        let visualToPhysical = [0, 1, 2];
+        if (camera) {
+          const topAxis = rot ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+          const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+          const dot = topAxis.dot(cameraRight);
+          if (dot < 0) {
+            visualToPhysical = [2, 1, 0];
+          }
+        }
+
+        const getPosForColLocal = (colIdx: number) => {
+          const bx = rot ? (colIdx - 1) * SP : 0;
+          const bz = rot ? 0 : (colIdx - 1) * SP;
+          return new THREE.Vector3(bx, y + 0.35, bz);
+        };
+
+        const physL = visualToPhysical[0];
+        const physC = visualToPhysical[1];
+        const physR = visualToPhysical[2];
+
+        if (placementIndicatorLeftRef.current) {
+          placementIndicatorLeftRef.current.position.copy(getPosForColLocal(physL));
+          placementIndicatorLeftRef.current.visible = opt.freeCols.includes(physL);
+        }
+        if (placementIndicatorCenterRef.current) {
+          placementIndicatorCenterRef.current.position.copy(getPosForColLocal(physC));
+          placementIndicatorCenterRef.current.visible = opt.freeCols.includes(physC);
+        }
+        if (placementIndicatorRightRef.current) {
+          placementIndicatorRightRef.current.position.copy(getPosForColLocal(physR));
+          placementIndicatorRightRef.current.visible = opt.freeCols.includes(physR);
+        }
+      } else {
+        if (placementIndicatorLeftRef.current) placementIndicatorLeftRef.current.visible = false;
+        if (placementIndicatorCenterRef.current) placementIndicatorCenterRef.current.visible = false;
+        if (placementIndicatorRightRef.current) placementIndicatorRightRef.current.visible = false;
+      }
 
       renderer.render(scene, camera);
     };
@@ -1125,57 +1301,78 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             {pendingPlaceBlock ? (
               <div className="flex flex-col gap-1.5 w-full animate-fade-in">
                 <span className="text-[10px] text-amber-300 font-extrabold text-center block bg-amber-950/40 py-1 rounded border border-amber-900/30">
-                  🧱 어디에 완벽히 쌓을지 균형 게이지를 보며 선택하세요!
+                  🧱 어디에 완벽히 쌓을지 균형 게이지와 3D 표식(초록,하양,보라)을 보며 선택하세요!
                 </span>
                 <div className="flex gap-1.5 w-full">
-                  {[0, 1, 2].map((colIndex) => {
-                    const options = getPlaceableOptions();
-                    const isAvailable = options.freeCols.includes(colIndex);
-                    return (
-                      <button
-                        key={colIndex}
-                        onClick={() => confirmPlaceTopRef.current?.(colIndex)}
-                        disabled={!isAvailable}
-                        className={`flex-grow flex-1 py-1.5 block text-xs font-black rounded-lg border-b-4 transition-all flex flex-col items-center justify-center select-none ${
-                          isAvailable
-                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white border-emerald-800 active:translate-y-0.5 active:border-b-2 cursor-pointer'
-                            : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-30'
-                        }`}
-                      >
-                        <span className="font-extrabold text-[11px]">
-                          {colIndex === 0 ? '◀ 왼쪽' : colIndex === 1 ? '■ 가운데' : '오른쪽 ▶'}
-                        </span>
-                        <span className="text-[8px] opacity-75 mt-0.5">
-                          {isAvailable ? '비어있음' : '꽉 참'}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {(() => {
+                    const { visualToPhysical } = getTopPlaceableMapping();
+                    return [0, 1, 2].map((visualIndex) => {
+                      const colIndex = visualToPhysical[visualIndex];
+                      const options = getPlaceableOptions();
+                      const isAvailable = options.freeCols.includes(colIndex);
+                      
+                      let btnStyle = '';
+                      let label = '';
+                      
+                      if (visualIndex === 0) {
+                        label = '🟢 ◀ 왼쪽';
+                        btnStyle = isAvailable
+                          ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white border-emerald-800 active:translate-y-0.5 active:border-b-2 cursor-pointer'
+                          : 'bg-emerald-950/20 text-emerald-800 border-emerald-950/30 cursor-not-allowed opacity-30';
+                      } else if (visualIndex === 1) {
+                        label = '⚪ ■ 가운데';
+                        btnStyle = isAvailable
+                          ? 'bg-gradient-to-r from-zinc-200 to-zinc-300 hover:from-zinc-100 hover:to-zinc-200 text-zinc-950 border-zinc-400 active:translate-y-0.5 active:border-b-2 cursor-pointer'
+                          : 'bg-zinc-900/40 text-zinc-700 border-zinc-950/30 cursor-not-allowed opacity-30';
+                      } else {
+                        label = '🟣 오른쪽 ▶';
+                        btnStyle = isAvailable
+                          ? 'bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-400 hover:to-pink-500 text-white border-fuchsia-800 active:translate-y-0.5 active:border-b-2 cursor-pointer'
+                          : 'bg-fuchsia-950/20 text-fuchsia-800 border-fuchsia-950/30 cursor-not-allowed opacity-30';
+                      }
+
+                      return (
+                        <button
+                          key={visualIndex}
+                          onClick={() => confirmPlaceTopRef.current?.(colIndex)}
+                          disabled={!isAvailable}
+                          className={`flex-grow flex-1 py-1.5 block text-xs font-black rounded-lg border-b-4 transition-all flex flex-col items-center justify-center select-none ${btnStyle}`}
+                        >
+                          <span className="font-extrabold text-[11px]">
+                            {label}
+                          </span>
+                          <span className="text-[8px] opacity-75 mt-0.5">
+                            {isAvailable ? '비어있음' : '꽉 참'}
+                          </span>
+                        </button>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             ) : (
               <div className="flex gap-2 text-center items-center justify-between w-full">
                 <button 
-                  onClick={() => startPullBlock(-1)}
+                  onClick={() => startPullBlock('left')}
                   disabled={!selectedBlockInfo}
-                  className={`flex-grow flex-1 py-1.5 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
+                  className={`flex-grow flex-1 py-2 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
                     selectedBlockInfo 
-                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-700 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 border-amber-700 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
                       : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-40'
                   }`}
                 >
-                  ← 왼쪽으로 빼기
+                  ← 🟡 왼쪽으로 빼기
                 </button>
                 <button 
-                  onClick={() => startPullBlock(1)}
+                  onClick={() => startPullBlock('right')}
                   disabled={!selectedBlockInfo}
-                  className={`flex-grow flex-1 py-1.5 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
+                  className={`flex-grow flex-1 py-2 border-b-4 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1 select-none ${
                     selectedBlockInfo 
-                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-700 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
+                      ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-white border-cyan-800 active:translate-y-0.5 active:border-b-2 cursor-pointer' 
                       : 'bg-zinc-800/40 text-zinc-600 border-zinc-900 cursor-not-allowed opacity-40'
                   }`}
                 >
-                  오른쪽으로 빼기 →
+                  오른쪽으로 빼기 🔵 →
                 </button>
               </div>
             )}

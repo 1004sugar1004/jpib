@@ -16,8 +16,8 @@ import {
   RefreshCcw,
   Trash2
 } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writeBatch, doc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writeBatch, doc, deleteDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { ActivityLog, Feedback } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -34,6 +34,8 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
   const [filterType, setFilterType] = useState<string>('all');
   const [isResetting, setIsResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [feedbackToDelete, setFeedbackToDelete] = useState<Feedback | null>(null);
+  const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
 
   useEffect(() => {
     const logsQuery = query(
@@ -45,7 +47,7 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
     const feedbackQuery = query(
       collection(db, 'feedback'),
       orderBy('timestamp', 'desc'),
-      limit(100)
+      limit(1000)
     );
 
     const unsubLogs = onSnapshot(logsQuery, (snapshot) => {
@@ -146,6 +148,20 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
       const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleDeleteFeedbackConfirm = async () => {
+    if (!feedbackToDelete) return;
+    setIsDeletingFeedback(true);
+    try {
+      await deleteDoc(doc(db, 'feedback', feedbackToDelete.id));
+      setFeedbackToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete feedback:", error);
+      handleFirestoreError(error, OperationType.DELETE, `feedback/${feedbackToDelete.id}`);
+    } finally {
+      setIsDeletingFeedback(false);
     }
   };
 
@@ -438,8 +454,18 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                               <div className="text-[10px] font-bold text-gray-400">{fb.grade} {fb.class}</div>
                             </div>
                           </div>
-                          <div className="text-[10px] font-bold text-gray-400">
-                            {formatDate(fb.timestamp)}
+                          <div className="flex items-center gap-3">
+                            <div className="text-[10px] font-bold text-gray-400">
+                              {formatDate(fb.timestamp)}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              onClick={() => setFeedbackToDelete(fb)}
+                              icon={Trash2}
+                              className="w-8 h-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full flex items-center justify-center shrink-0 border border-transparent hover:border-red-100"
+                            >
+                              {""}
+                            </Button>
                           </div>
                         </div>
                         <p className="text-sm text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
@@ -485,6 +511,47 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                 className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100"
               >
                 {isResetting ? "초기화 중..." : "네, 초기화합니다"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Feedback Deletion Confirmation Modal */}
+      {feedbackToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-[2.5rem] p-8 max-w-md w-full border-4 border-rose-100 shadow-2xl"
+          >
+            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <Trash2 className="w-8 h-8 text-rose-600" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 text-center mb-4">의견을 삭제할까요?</h3>
+            <p className="text-gray-500 font-bold text-center mb-3 leading-relaxed">
+              선택한 의견을 삭제하시겠습니까? <br />
+              이 작업은 되돌릴 수 없습니다.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-2xl text-left border border-gray-100 text-xs text-gray-600 font-semibold mb-8 max-h-32 overflow-y-auto whitespace-pre-wrap">
+              <strong>{feedbackToDelete.userName} ({feedbackToDelete.grade} {feedbackToDelete.class}):</strong><br />
+              {feedbackToDelete.content}
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => setFeedbackToDelete(null)}
+                className="flex-1 py-4 rounded-2xl font-black"
+                disabled={isDeletingFeedback}
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleDeleteFeedbackConfirm}
+                disabled={isDeletingFeedback}
+                className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100"
+              >
+                {isDeletingFeedback ? "삭제 중..." : "네, 삭제합니다"}
               </Button>
             </div>
           </motion.div>
