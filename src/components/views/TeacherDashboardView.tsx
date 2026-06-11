@@ -36,6 +36,7 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [feedbackToDelete, setFeedbackToDelete] = useState<Feedback | null>(null);
   const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
+  const [deleteFeedbackError, setDeleteFeedbackError] = useState<string | null>(null);
 
   useEffect(() => {
     const logsQuery = query(
@@ -154,12 +155,23 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
   const handleDeleteFeedbackConfirm = async () => {
     if (!feedbackToDelete) return;
     setIsDeletingFeedback(true);
+    setDeleteFeedbackError(null);
     try {
       await deleteDoc(doc(db, 'feedback', feedbackToDelete.id));
       setFeedbackToDelete(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete feedback:", error);
-      handleFirestoreError(error, OperationType.DELETE, `feedback/${feedbackToDelete.id}`);
+      const errMessage = error instanceof Error ? error.message : String(error);
+      if (errMessage.includes("permission-denied") || errMessage.includes("insufficient permissions")) {
+        setDeleteFeedbackError("삭제 권한이 없습니다. 관리자/교사 계정(1004sugar1004@gmail.com)으로 로그인하셨는지 확인해 주세요.");
+      } else {
+        setDeleteFeedbackError(`오류가 발생하여 삭제에 실패했습니다: ${errMessage}`);
+      }
+      try {
+        handleFirestoreError(error, OperationType.DELETE, `feedback/${feedbackToDelete.id}`);
+      } catch (e) {
+        // Suppress secondary crash to allow UI to display error
+      }
     } finally {
       setIsDeletingFeedback(false);
     }
@@ -537,10 +549,15 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
               <strong>{feedbackToDelete.userName} ({feedbackToDelete.grade} {feedbackToDelete.class}):</strong><br />
               {feedbackToDelete.content}
             </div>
+            {deleteFeedbackError && (
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-xs text-rose-700 font-bold rounded-2xl text-center leading-relaxed">
+                {deleteFeedbackError}
+              </div>
+            )}
             <div className="flex gap-3">
               <Button 
                 variant="ghost" 
-                onClick={() => setFeedbackToDelete(null)}
+                onClick={() => { setFeedbackToDelete(null); setDeleteFeedbackError(null); }}
                 className="flex-1 py-4 rounded-2xl font-black"
                 disabled={isDeletingFeedback}
               >

@@ -532,6 +532,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
   // 미디어파이프 가상 인스턴스 소유
   const mediaPipeHandsInstanceRef = useRef<any>(null);
   const mediaPipeCameraInstanceRef = useRef<any>(null);
+  const frameCountRef = useRef<number>(0);
 
   // 실시간 손가락 랜드마크 데이터 자취 보조
   const latestHandResultsRef = useRef<any>(null);
@@ -712,9 +713,13 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
         // 충격파
         shockwavesRef.current.push(new Shockwave(fruit.x, fruit.y, fruit.color));
 
-        // 파티클
-        for (let i = 0; i < 28; i++) {
+        // 파티클 (개수를 12개로 축소하여 렉 감소 및 모바일과 저가 기기 성능 향상)
+        for (let i = 0; i < 12; i++) {
           particlesRef.current.push(new JuiceParticle(fruit.x, fruit.y, fruit.color));
+        }
+        // 전체 파티클 숫자가 90개를 넘어가면 렉 방지를 위해 초과분 잘라내기
+        if (particlesRef.current.length > 90) {
+          particlesRef.current = particlesRef.current.slice(-90);
         }
 
         // 콤보 팝업 지문 데코레이터
@@ -761,7 +766,11 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
         const camera = new CameraClass(videoRef.current, {
           onFrame: async () => {
             if (mediaPipeHandsInstanceRef.current && videoRef.current) {
-              await mediaPipeHandsInstanceRef.current.send({ image: videoRef.current });
+              frameCountRef.current += 1;
+              // Skip every 2nd frame to drop CPU processing by 50%
+              if (frameCountRef.current % 2 === 0) {
+                await mediaPipeHandsInstanceRef.current.send({ image: videoRef.current });
+              }
             }
           },
           width: 640,

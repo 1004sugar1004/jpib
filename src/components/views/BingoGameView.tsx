@@ -394,8 +394,8 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
       let choice: string | number | null = null;
 
       if (currentDiff === 'easy') {
-        // Easy mode: mostly random (90% random selection, 10% smart)
-        const isRandom = Math.random() < 0.90;
+        // Easy mode: mostly random (75% random selection, 25% smart)
+        const isRandom = Math.random() < 0.75;
         if (isRandom) {
           const randCell = unselectedCells[Math.floor(Math.random() * unselectedCells.length)];
           choice = randCell.value;
@@ -419,7 +419,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
             // Row score (how many already marked in this row)
             const rowCells = computerBoard.slice(r * 5, r * 5 + 5);
             const rowMarkedCount = rowCells.filter(cell => cell.marked).length;
-            const ownRowWeight = currentDiff === 'hard' ? 2.5 : 1.5;
+            const ownRowWeight = currentDiff === 'hard' ? 3.5 : currentDiff === 'normal' ? 2.2 : 1.5;
             cellScore += rowMarkedCount * ownRowWeight;
 
             // Column score
@@ -427,7 +427,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
             for (let i = 0; i < 5; i++) {
               if (computerBoard[i * 5 + c].marked) colMarkedCount++;
             }
-            const ownColWeight = currentDiff === 'hard' ? 2.5 : 1.5;
+            const ownColWeight = currentDiff === 'hard' ? 3.5 : currentDiff === 'normal' ? 2.2 : 1.5;
             cellScore += colMarkedCount * ownColWeight;
 
             // Diagonal 1 (top-left to bottom-right)
@@ -436,7 +436,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
               for (let i = 0; i < 5; i++) {
                 if (computerBoard[i * 5 + i].marked) d1Marked++;
               }
-              const ownDiagWeight = currentDiff === 'hard' ? 2.0 : 1.2;
+              const ownDiagWeight = currentDiff === 'hard' ? 2.8 : currentDiff === 'normal' ? 1.8 : 1.2;
               cellScore += d1Marked * ownDiagWeight;
             }
 
@@ -446,7 +446,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
               for (let i = 0; i < 5; i++) {
                 if (computerBoard[i * 5 + (4 - i)].marked) d2Marked++;
               }
-              const ownDiagWeight = currentDiff === 'hard' ? 2.0 : 1.2;
+              const ownDiagWeight = currentDiff === 'hard' ? 2.8 : currentDiff === 'normal' ? 1.8 : 1.2;
               cellScore += d2Marked * ownDiagWeight;
             }
           }
@@ -461,7 +461,7 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
             const pRowCells = playerBoard.slice(pr * 5, pr * 5 + 5);
             const pRowMarked = pRowCells.filter(cell => cell.marked).length;
             if (pRowMarked >= 3) {
-              const defWeight = currentDiff === 'hard' ? 4.0 : 2.0;
+              const defWeight = currentDiff === 'hard' ? 5.5 : currentDiff === 'normal' ? 3.2 : 2.0;
               cellScore += pRowMarked * defWeight; // high defensive weight to block player Completing Bingo
             }
 
@@ -471,13 +471,13 @@ export const BingoGameView = ({ setView, onEarnXP, soundEnabled }: BingoGameView
               if (playerBoard[i * 5 + pc].marked) pColMarked++;
             }
             if (pColMarked >= 3) {
-              const defWeight = currentDiff === 'hard' ? 4.0 : 2.0;
+              const defWeight = currentDiff === 'hard' ? 5.5 : currentDiff === 'normal' ? 3.2 : 2.0;
               cellScore += pColMarked * defWeight;
             }
           }
 
           // Add slight random noise to prevent predictability
-          const noiseLevel = currentDiff === 'hard' ? 0.05 : 0.6;
+          const noiseLevel = currentDiff === 'hard' ? 0.01 : currentDiff === 'normal' ? 0.25 : 0.6;
           cellScore += Math.random() * noiseLevel;
 
           if (cellScore > bestScore) {

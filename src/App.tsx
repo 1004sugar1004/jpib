@@ -48,6 +48,46 @@ import { AlertTriangle } from 'lucide-react';
 
 const DAILY_XP_LIMIT = 1500;
 
+const QUESTS_POOL: Record<string, Omit<DailyQuest, 'progress' | 'completed'>[]> = {
+  study: [
+    { id: 'study_1', title: 'IB 지식 탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 한 번씩 읽으세요.', type: 'study', target: 34, xpReward: 150, ticketReward: 2 },
+    { id: 'study_2', title: '지식 탐험 키워드 5개 성찰하기', description: '지식 탐험에서 키워드를 5개 읽어 개념을 성찰하세요.', type: 'study', target: 5, xpReward: 50, ticketReward: 1 },
+    { id: 'study_3', title: '지식 탐험 집중 학습 12회 완료', description: '탐색 항목을 클릭하여 12회 이상 학습을 확인하세요.', type: 'study', target: 12, xpReward: 80, ticketReward: 2 },
+  ],
+  flashcards: [
+    { id: 'fc_1', title: '플래시카드 10회 학습', description: '개념 플래시카드를 10번 넘겨 학습을 진행하세요.', type: 'flashcards', target: 10, xpReward: 40, ticketReward: 2 },
+    { id: 'fc_2', title: '플래시카드 마스터 20회 달성', description: '플래시카드를 20번 뒤집어 확실히 머리에 복습하세요.', type: 'flashcards', target: 20, xpReward: 80, ticketReward: 2 },
+    { id: 'fc_3', title: '속성 플래시카드 6장 완독', description: '다양한 카드로 속속들이 6장의 핵심 단어를 터치하세요.', type: 'flashcards', target: 6, xpReward: 30, ticketReward: 1 },
+  ],
+  memory: [
+    { id: 'mem_1', title: '메모리 매칭 게임 1회 달성', description: '단어 매칭 메모리 게임을 완성해 두뇌를 단련하세요.', type: 'memory', target: 1, xpReward: 50, ticketReward: 2 },
+    { id: 'mem_2', title: '메모리 카드 고수 도전 (2회 완료)', description: '메모리 게임을 2판 완주하여 IB 키워드 짝을 맞추세요.', type: 'memory', target: 2, xpReward: 90, ticketReward: 3 },
+  ],
+  quiz: [
+    { id: 'quiz_1', title: '개념 퀴즈 또는 지식 빙고 1회 완료', description: '개념 퀴즈나 지식 빙고를 한 세트 플레이하여 정복하세요.', type: 'quiz', target: 1, xpReward: 50, ticketReward: 2 },
+    { id: 'quiz_2', title: '종합 퀴즈&빙고 더블 패스(2회)', description: '퀴즈 혹은 지식 빙고를 2판 완벽하게 마무리하세요.', type: 'quiz', target: 2, xpReward: 100, ticketReward: 3 },
+    { id: 'quiz_3', title: 'IB 퀴즈 또는 음악 퀴즈 1회', description: 'IB 퀴즈나 신기한 음악 퀴즈를 1회 플레이해 보세요.', type: 'quiz', target: 1, xpReward: 50, ticketReward: 2 }
+  ]
+};
+
+export function getRandomDailyQuests(): DailyQuest[] {
+  const categories: ('study' | 'flashcards' | 'memory' | 'quiz')[] = ['study', 'flashcards', 'memory', 'quiz'];
+  // Shuffle categories
+  const shuffledCats = [...categories].sort(() => Math.random() - 0.5);
+  const selectedCats = shuffledCats.slice(0, 3);
+  
+  return selectedCats.map((cat, index) => {
+    const list = QUESTS_POOL[cat];
+    const picked = list[Math.floor(Math.random() * list.length)];
+    return {
+      ...picked,
+      id: `q_${cat}_${index}`,
+      progress: 0,
+      completed: false
+    } as DailyQuest;
+  });
+}
+
 const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
   { id: 'q1', title: '지식탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 읽고 확인하세요. (보상: 150XP + 티켓 2장)', type: 'study', target: 34, progress: 0, completed: false, xpReward: 150, ticketReward: 2 },
   { id: 'q2', title: '플래시카드 10개 학습', description: '플래시카드를 10번 뒤집어 학습하세요. (보상: 30XP + 티켓 2장)', type: 'flashcards', target: 10, progress: 0, completed: false, xpReward: 30, ticketReward: 2 },
@@ -201,7 +241,7 @@ export default function App() {
                 dailyScore: 0,
                 lastXPDate: today,
                 activityCounts: {},
-                dailyQuests: DEFAULT_DAILY_QUESTS,
+                dailyQuests: getRandomDailyQuests(),
                 completedStudyItems: [] // Reset study items daily
               };
               await updateDoc(docRef, {
@@ -209,7 +249,7 @@ export default function App() {
                 dailyScore: 0,
                 lastXPDate: today,
                 activityCounts: {},
-                dailyQuests: DEFAULT_DAILY_QUESTS,
+                dailyQuests: getRandomDailyQuests(),
                 completedStudyItems: []
               });
               // Sync reset to public profile with full info to ensure it exists
@@ -227,8 +267,8 @@ export default function App() {
               }, { merge: true });
             } else if (!userData.dailyQuests || userData.dailyQuests.length === 0) {
               // Ensure dailyQuests exist even if it's not a new day (for transitional users)
-              userData.dailyQuests = DEFAULT_DAILY_QUESTS;
-              await updateDoc(docRef, { dailyQuests: DEFAULT_DAILY_QUESTS });
+              userData.dailyQuests = getRandomDailyQuests();
+              await updateDoc(docRef, { dailyQuests: getRandomDailyQuests() });
             } else {
               // Repair logic: ensure public profile exists even if it's not a new day
               const publicRef = doc(db, 'publicProfiles', firebaseUser.uid);
@@ -298,7 +338,7 @@ export default function App() {
           dailyScore: 0,
           lastXPDate: today,
           activityCounts: {},
-          dailyQuests: DEFAULT_DAILY_QUESTS,
+          dailyQuests: getRandomDailyQuests(),
           completedStudyItems: []
         };
         
@@ -460,7 +500,7 @@ export default function App() {
       lastXPDate: getCurrentDate(),
       lastActiveMonth: getCurrentMonth(),
       completedStudyItems: [],
-      dailyQuests: DEFAULT_DAILY_QUESTS,
+      dailyQuests: getRandomDailyQuests(),
       photoURL: user.photoURL || undefined,
     };
 
