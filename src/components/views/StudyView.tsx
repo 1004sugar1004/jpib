@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import confetti from 'canvas-confetti';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { ASSETS } from '../../assets';
@@ -112,6 +113,40 @@ const tabs = [
   { id: 3, label: "탐구 사이클", icon: RefreshCcw, color: "bg-blue-500" },
   { id: 4, label: "ATL 기능", icon: GraduationCap, color: "bg-purple-500" },
   { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
+  { id: 6, label: "초성 퀴즈", icon: Lightbulb, color: "bg-cyan-500" },
+];
+
+interface ConsonantQuestion {
+  word: string;
+  consonants: string;
+  category: '학습자상' | '7대 개념' | 'ATL 기능';
+  description: string;
+}
+
+const CONSONANT_QUESTIONS: ConsonantQuestion[] = [
+  { word: "탐구하는 사람", consonants: "ㅌㄱㅎㄴ ㅅㄹ", category: "학습자상", description: "질문을 품고 스스로 깊이 탐구하고 조사하며 배움을 주도하는 사람입니다." },
+  { word: "지식을 갖춘 사람", consonants: "ㅈㅅㅇ ㄱㅊ ㅅㄹ", category: "학습자상", description: "중요한 개념과 지식을 깊이 있게 탐구하여 전 세계의 다양한 문제에 대해 다각도로 아는 사람입니다." },
+  { word: "생각하는 사람", consonants: "ㅅㄱㅎㄴ ㅅㄹ", category: "학습자상", description: "문제를 발견하고 창의적이고 비판적인 사고를 통해 윤리적이고 합리적인 결정을 내리는 사람입니다." },
+  { word: "소통하는 사람", consonants: "ㅅㅌㅎㄴ ㅅㄹ", category: "학습자상", description: "자신의 생각과 유용한 정보를 다양한 의사소통 방식으로 자신감 있고 풍성하게 나눌 줄 아는 사람입니다." },
+  { word: "원칙을 지키는 사람", consonants: "ㅇㅊㅇ ㅈㅋㄴ ㅅㄹ", category: "학습자상", description: "정직함과 공정함을 바탕으로 행동하며, 타인의 권리와 공동체의 가치를 존중하고 책임감 있게 행동하는 사람입니다." },
+  { word: "열린 마음을 가진 사람", consonants: "ㅇㄹ ㅁㅇㅇ ㄱㅈ ㅅㄹ", category: "학습자상", description: "자신의 가치뿐만 아니라 타인의 문화와 관점을 포용하며, 다양한 생각에서 배울 수 있도록 수용하는 사람입니다." },
+  { word: "배려하는 사람", consonants: "ㅂㄹㅎㄴ ㅅㄹ", category: "학습자상", description: "타인을 존중하고, 아끼며, 주위의 복지와 환경에 긍정적인 변화를 일으키기 위해 봉사하고 행동하는 사람입니다." },
+  { word: "도전하는 사람", consonants: "ㄷㅈㅎㄴ ㅅㄹ", category: "학습자상", description: "새로운 상황에 능동적으로 대처하며, 자신의 신념을 자신 있게 관철하고 다양한 모험을 즐겁게 경험하는 사람입니다." },
+  { word: "균형 잡힌 사람", consonants: "ㄱㅎ ㅈㅍ ㅅㄹ", category: "학습자상", description: "지성, 신체, 감성이 조화를 이룰 수 있도록 균형을 유지하고, 자신과 세계의 웰빙을 성실하게 가꾸는 사람입니다." },
+  { word: "성찰하는 사람", consonants: "ㅅㅊㅎㄴ ㅅㄹ", category: "학습자상", description: "자신의 배움과 삶을 진지하게 깊이 돌아보며 스스로 장단점을 성실하게 보완하고 발전해 나가는 사람입니다." },
+  { word: "형태", consonants: "ㅎㅌ", category: "7대 개념", description: "이것은 어떠한 특징과 구조를 지니고 있을까? 고유한 성질을 깊이 관찰하는 질문 렌즈입니다." },
+  { word: "기능", consonants: "ㄱㄴ", category: "7대 개념", description: "이것은 어떠한 역할을 하며 어떻게 작동하고 있을까? 쓰임새와 작동 원리를 탐색하는 질문 렌즈입니다." },
+  { word: "인과 관계", consonants: "ㅇㄱ ㄱㄱ", category: "7대 개념", description: "왜 이런 일이 일어났을까? 원인과 결과는 무엇이고 어떻게 연결되어 있는지 탐색하는 질문 렌즈입니다." },
+  { word: "변화", consonants: "ㅂㅎ", category: "7대 개념", description: "이것은 시간이 흐르며 어떠한 모습으로 다르게 달라지고 있을까? 상태의 이행을 연구하는 질문 렌즈입니다." },
+  { word: "연결", consonants: "ㅇㄱ", category: "7대 개념", description: "이것은 다른 것들과 어떠한 관계가 있고 어떻게 서로 상호작용하고 있을까? 네트워크적 연결을 묻는 질문 렌즈입니다." },
+  { word: "관점", consonants: "ㄱㅈ", category: "7대 개념", description: "이 물건을 엄마는 어떻게 보시고 내 친구는 어떻게 생각할까? 서로 다른 시각과 가치관을 탐색하는 질문 렌즈입니다." },
+  { word: "책임", consonants: "ㅊㅇ", category: "7대 개념", description: "내가 알게 된 지식과 행동을 바탕으로 나는 어떠한 실천을 해야 할까? 행동과 윤리적 의무를 성찰하는 질문 렌즈입니다." },
+  { word: "성찰", consonants: "ㅅㅊ", category: "7대 개념", description: "자신의 배움과 활동 과정을 돌아보고 발전 방향을 깊이 모색하는 질문 렌즈입니다." },
+  { word: "사고 기능", consonants: "ㅅㄱ ㄱㄴ", category: "ATL 기능", description: "개념과 이론을 비판적으로 평가하고, 아이디어를 창의적으로 융합하여 새로운 해결책을 설계하는 기능입니다." },
+  { word: "의사소통 기능", consonants: "ㅇㅅㅅㅌ ㄱㄴ", category: "ATL 기능", description: "자신의 생각과 정보를 읽기, 쓰기, 말하기, 듣기 등 다양한 수단으로 안전하고 유용하게 주고받는 기능입니다." },
+  { word: "사회적 기능", consonants: "ㅅㅎㅈ ㄱㄴ", category: "ATL 기능", description: "다른 사람과 서로 존중하며 긍정적으로 소통하고, 공동의 목적을 위해 배려하고 협력해 협동하는 기능입니다." },
+  { word: "자기 관리 기능", consonants: "ㅈㄱ ㄱㄹ ㄱㄴ", category: "ATL 기능", description: "시간을 계획적으로 관리하고 목표를 달성하며, 자신의 감정, 동기, 마음을 건강하게 조율하는 기능입니다." },
+  { word: "연구 기능", consonants: "ㅇㄱ ㄱㄴ", category: "ATL 기능", description: "다양한 매체에서 필요한 데이터를 수집 및 선별하고, 비교/분석을 거쳐 가치 있는 정보로 엮어내는 기능입니다." }
 ];
 
 export const StudyView = ({ 
@@ -128,6 +163,52 @@ export const StudyView = ({
 }: StudyViewProps) => {
   const [activeTab, setActiveTab] = useState(0);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  
+  // Consonant Quiz States
+  const [consonantQuestions] = useState<ConsonantQuestion[]>(() => {
+    return [...CONSONANT_QUESTIONS].sort(() => Math.random() - 0.5);
+  });
+  const [consonantIdx, setConsonantIdx] = useState(0);
+  const [consonantInput, setConsonantInput] = useState('');
+  const [consonantFeedback, setConsonantFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [consonantStreak, setConsonantStreak] = useState(0);
+
+  const handleCheckConsonant = () => {
+    const q = consonantQuestions[consonantIdx];
+    const userAns = consonantInput.trim().replace(/\s+/g, '');
+    const correctAns = q.word.trim().replace(/\s+/g, '');
+
+    if (userAns === correctAns) {
+      setConsonantFeedback('correct');
+      setConsonantStreak(prev => prev + 1);
+      if (soundEnabled) {
+        const audio = new Audio("https://ik.imagekit.io/foefnjeua/correct.mp3");
+        audio.volume = 0.2;
+        audio.play().catch(() => {});
+      }
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.75 }
+      });
+      // award +50 XP and log to count for quests!
+      onEarnXP(50, 'study', 1, 15, 1);
+    } else {
+      setConsonantFeedback('wrong');
+      setConsonantStreak(0);
+      if (soundEnabled) {
+        const audio = new Audio("https://ik.imagekit.io/foefnjeua/wrong.mp3");
+        audio.volume = 0.2;
+        audio.play().catch(() => {});
+      }
+    }
+  };
+
+  const handleNextConsonant = () => {
+    setConsonantInput('');
+    setConsonantFeedback(null);
+    setConsonantIdx(prev => (prev + 1) % consonantQuestions.length);
+  };
   const [tabStartTime, setTabStartTime] = useState(Date.now());
   const [message, setMessage] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -172,6 +253,9 @@ export const StudyView = ({
 
   const tabCompletionStatus = useMemo(() => {
     return tabs.map(tab => {
+      if (tab.id === 6) {
+        return consonantIdx > 0 || consonantFeedback === 'correct';
+      }
       if (tab.id === 5) {
         const answers = randomQuestions.map(q => reflectionData[q] || '');
         return answers.every(a => {
@@ -531,7 +615,7 @@ export const StudyView = ({
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeTab === 5 ? (
             <div className="space-y-8">
               <div className="bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-white/20 shadow-inner">
                 <div className="flex items-center justify-between mb-4 px-2">
@@ -660,6 +744,109 @@ export const StudyView = ({
                   initial={{ width: 0 }}
                   animate={{ width: `${((currentCardIndex + 1) / (randomQuestions.length + 1)) * 100}%` }}
                   className="h-full bg-rose-500 transition-all duration-500"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8 max-w-4xl mx-auto">
+              <div className="bg-white rounded-[3.5rem] shadow-2xl border border-gray-100 overflow-hidden p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center">
+                
+                {/* Visual Area */}
+                <div className="w-full md:w-1/2 bg-gradient-to-br from-cyan-50 to-emerald-50/50 p-8 rounded-[2.5rem] border border-cyan-100/60 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[300px]">
+                  <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-4 py-1.5 rounded-full border border-cyan-100 flex items-center gap-1.5 shadow-sm">
+                    <Star className="w-4 h-4 text-cyan-500 fill-cyan-400" />
+                    <span className="text-xs font-black text-cyan-700">연속 {consonantStreak}회 달성</span>
+                  </div>
+
+                  <div className="px-4 py-1.5 bg-cyan-500 text-white font-extrabold text-xs rounded-full shadow-md shadow-cyan-100 mb-6 uppercase tracking-widest">
+                    {consonantQuestions[consonantIdx]?.category}
+                  </div>
+
+                  {/* Consonants representation */}
+                  <div className="text-4xl md:text-5xl font-black text-cyan-900 tracking-wider py-4 select-none drop-shadow-sm font-mono bg-white px-8 py-5 rounded-3xl shadow-sm border border-cyan-100">
+                    {consonantQuestions[consonantIdx]?.consonants}
+                  </div>
+
+                  <p className="mt-6 text-sm text-gray-500 font-semibold leading-relaxed max-w-sm">
+                    "{consonantQuestions[consonantIdx]?.description}"
+                  </p>
+                </div>
+
+                {/* Solving Area */}
+                <div className="flex-1 w-full flex flex-col justify-center space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">🔎 IB 탐험 초성 퀴즈</h2>
+                    <p className="text-xs font-bold text-gray-400 mt-1">올바른 개념이나 학습자상 이름을 한글로 정확히 입력하세요.</p>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={consonantInput}
+                    onChange={(e) => {
+                      setConsonantInput(e.target.value);
+                      setConsonantFeedback(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCheckConsonant();
+                    }}
+                    placeholder="정답 단어를 적어주세요 (예 : 소통하는 사람)"
+                    className="w-full px-6 py-5 rounded-[2rem] bg-gray-50 border-2 border-gray-100 focus:border-cyan-300 focus:bg-white outline-none transition-all text-center text-xl font-black text-cyan-950 shadow-inner"
+                  />
+
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleCheckConsonant}
+                      className="flex-1 h-14 text-base font-black bg-cyan-500 hover:bg-cyan-600 shrink-0 text-white shadow-lg shadow-cyan-100 rounded-2xl flex items-center justify-center gap-2"
+                      icon={ShieldCheck}
+                    >
+                      정답 확인
+                    </Button>
+                    <button
+                      onClick={handleNextConsonant}
+                      className="px-6 h-14 rounded-2xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors flex items-center justify-center font-bold gap-1"
+                    >
+                      다음 문제
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Feedback Overlay inside panel */}
+                  <AnimatePresence mode="wait">
+                    {consonantFeedback === 'correct' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-5 bg-emerald-50 text-emerald-800 font-bold border border-emerald-100 rounded-[2rem] text-center flex flex-col gap-1 shadow-sm"
+                      >
+                        <div className="text-base flex items-center justify-center gap-1.5">
+                          🎉 완벽합니다! 정답이에요! (+50 XP)
+                        </div>
+                        <div className="text-xs text-emerald-600">성장 완료: "{consonantQuestions[consonantIdx]?.word}"</div>
+                      </motion.div>
+                    )}
+                    {consonantFeedback === 'wrong' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-5 bg-rose-50 text-rose-800 font-bold border border-rose-100 rounded-[2rem] text-center flex flex-col gap-1 shadow-sm"
+                      >
+                        <div className="text-base">❌ 어라, 다시 한 번 볼까요?</div>
+                        <div className="text-xs text-rose-600">초성과 힌트 설명을 자세히 읽고 알맞은 단어 조합을 입력하세요.</div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+              </div>
+
+              {/* Progress visual bar */}
+              <div className="mt-8 h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${consonantQuestions.length > 0 ? ((consonantIdx + 1) / consonantQuestions.length) * 100 : 0}%` }}
+                  className="h-full bg-cyan-500 transition-all duration-500"
                 />
               </div>
             </div>

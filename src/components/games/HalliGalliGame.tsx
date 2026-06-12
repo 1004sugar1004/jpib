@@ -245,6 +245,8 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled, isPlayer }:
   );
 };
 
+let sharedAudioContext: AudioContext | null = null;
+
 export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
@@ -299,7 +301,13 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
+      if (!sharedAudioContext) {
+        sharedAudioContext = new AudioContextClass();
+      }
+      const ctx = sharedAudioContext;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
 
       if (type === 'beep') {
         // High-pitch crisp primary chime (metallic impact)
@@ -617,16 +625,16 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     const b2Total = bot2DeckRef.current.length + bot2PlayedRef.current.length;
 
     // Dynamic reaction speeds based on selected difficulty
-    let b1ReactTime = 1100 + Math.random() * 1000;
-    let b2ReactTime = 1200 + Math.random() * 1100;
-
     const diff = difficultyRef.current;
+    let b1ReactTime = 750 + Math.random() * 350; // 750ms to 1100ms (normal)
+    let b2ReactTime = 800 + Math.random() * 400; // 800ms to 1200ms (normal)
+
     if (diff === 'easy') {
-      b1ReactTime = 1800 + Math.random() * 1000;
-      b2ReactTime = 2000 + Math.random() * 1000;
+      b1ReactTime = 1200 + Math.random() * 600; // 1200ms to 1800ms
+      b2ReactTime = 1300 + Math.random() * 700; // 1300ms to 2000ms
     } else if (diff === 'hard') {
-      b1ReactTime = 400 + Math.random() * 400; // super fast: 400ms to 800ms
-      b2ReactTime = 450 + Math.random() * 450; // super fast: 450ms to 900ms
+      b1ReactTime = 250 + Math.random() * 200; // 250ms to 450ms (super fast pro level!)
+      b2ReactTime = 280 + Math.random() * 220; // 280ms to 500ms
     }
 
     if (b1Total > 0) {

@@ -53,6 +53,7 @@ const QUESTS_POOL: Record<string, Omit<DailyQuest, 'progress' | 'completed'>[]> 
     { id: 'study_1', title: 'IB 지식 탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 한 번씩 읽으세요.', type: 'study', target: 34, xpReward: 150, ticketReward: 2 },
     { id: 'study_2', title: '지식 탐험 키워드 5개 성찰하기', description: '지식 탐험에서 키워드를 5개 읽어 개념을 성찰하세요.', type: 'study', target: 5, xpReward: 50, ticketReward: 1 },
     { id: 'study_3', title: '지식 탐험 집중 학습 12회 완료', description: '탐색 항목을 클릭하여 12회 이상 학습을 확인하세요.', type: 'study', target: 12, xpReward: 80, ticketReward: 2 },
+    { id: 'study_4', title: '초성 퀴즈 1회 정답 도전', description: '지식 탐험의 초성 퀴즈를 1회 맞추어 보세요.', type: 'study', target: 1, xpReward: 50, ticketReward: 1 },
   ],
   flashcards: [
     { id: 'fc_1', title: '플래시카드 10회 학습', description: '개념 플래시카드를 10번 넘겨 학습을 진행하세요.', type: 'flashcards', target: 10, xpReward: 40, ticketReward: 2 },
@@ -66,7 +67,8 @@ const QUESTS_POOL: Record<string, Omit<DailyQuest, 'progress' | 'completed'>[]> 
   quiz: [
     { id: 'quiz_1', title: '개념 퀴즈 또는 지식 빙고 1회 완료', description: '개념 퀴즈나 지식 빙고를 한 세트 플레이하여 정복하세요.', type: 'quiz', target: 1, xpReward: 50, ticketReward: 2 },
     { id: 'quiz_2', title: '종합 퀴즈&빙고 더블 패스(2회)', description: '퀴즈 혹은 지식 빙고를 2판 완벽하게 마무리하세요.', type: 'quiz', target: 2, xpReward: 100, ticketReward: 3 },
-    { id: 'quiz_3', title: 'IB 퀴즈 또는 음악 퀴즈 1회', description: 'IB 퀴즈나 신기한 음악 퀴즈를 1회 플레이해 보세요.', type: 'quiz', target: 1, xpReward: 50, ticketReward: 2 }
+    { id: 'quiz_3', title: 'IB 퀴즈 또는 음악 퀴즈 1회', description: 'IB 퀴즈나 신기한 음악 퀴즈를 1회 플레이해 보세요.', type: 'quiz', target: 1, xpReward: 50, ticketReward: 2 },
+    { id: 'quiz_4', title: '개념 초성 퀴즈 정답 달성', description: '초성 단어 맞추기 퀴즈에서 정답을 골라 성공하세요.', type: 'quiz', target: 1, xpReward: 50, ticketReward: 1 },
   ]
 };
 
@@ -562,12 +564,8 @@ export default function App() {
 
       const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
 
-      // Accuracy check: Only give XP if accuracy >= 80%
+      // Always award full quizScore as XP
       let xpToGain = quizScore;
-      if (accuracy < 0.8) {
-        xpToGain = 0;
-        console.log("Accuracy below 80%. No XP earned.");
-      }
 
       // Daily XP limit check
       if (currentDailyXP >= DAILY_XP_LIMIT) {

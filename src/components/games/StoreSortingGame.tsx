@@ -39,17 +39,48 @@ const makeInitialShelves = (stage: number): string[][] => {
     pool.push(item, item, item);
   }
   
-  // Shuffle pool
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+  let newShelves: string[][] = [];
+  let attempts = 0;
+  
+  while (attempts < 500) {
+    // Shuffle pool
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    
+    newShelves = [];
+    let hasPrecompleted = false;
+    for (let i = 0; i < SHELF_COUNT; i++) {
+      const shelf = pool.slice(i * SLOT_PER_SHELF, (i + 1) * SLOT_PER_SHELF);
+      if (shelf[0] === shelf[1] && shelf[1] === shelf[2]) {
+        hasPrecompleted = true;
+        break;
+      }
+      newShelves.push(shelf);
+    }
+    
+    if (!hasPrecompleted) {
+      return newShelves;
+    }
+    attempts++;
   }
-
-  const newShelves: string[][] = [];
+  
+  // Fallback: manually disrupt any precompleted shelf by swapping elements
+  newShelves = [];
   for (let i = 0; i < SHELF_COUNT; i++) {
     newShelves.push(pool.slice(i * SLOT_PER_SHELF, (i + 1) * SLOT_PER_SHELF));
   }
-
+  
+  for (let i = 0; i < SHELF_COUNT; i++) {
+    if (newShelves[i][0] === newShelves[i][1] && newShelves[i][1] === newShelves[i][2]) {
+      const nextIdx = (i + 1) % SHELF_COUNT;
+      const temp = newShelves[i][2];
+      newShelves[i][2] = newShelves[nextIdx][2];
+      newShelves[nextIdx][2] = temp;
+    }
+  }
+  
   return newShelves;
 };
 
@@ -70,6 +101,24 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   const [hintShelfIdx, setHintShelfIdx] = useState<number | null>(null);
   const [justClosedShelf, setJustClosedShelf] = useState<number | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
+
+  // Scan shelves to auto-lock any prearranged completed shelves on game start or stage load
+  useEffect(() => {
+    if (gameState === 'PLAYING') {
+      const precompleted: number[] = [];
+      shelves.forEach((shelf, idx) => {
+        if (shelf.length === SLOT_PER_SHELF && shelf.every(v => v === shelf[0])) {
+          precompleted.push(idx);
+        }
+      });
+      if (precompleted.length > 0) {
+        setClosedShelves(prev => {
+          const combined = Array.from(new Set([...prev, ...precompleted]));
+          return combined;
+        });
+      }
+    }
+  }, [gameState, shelves]);
 
   const playSound = useCallback((type: 'correct' | 'click' | 'fail') => {
     if (!soundEnabled) return;
