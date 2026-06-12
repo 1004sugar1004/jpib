@@ -38,7 +38,6 @@ import { PlanView } from './components/views/PlanView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
 import { AnnouncementPopup } from './components/ui/AnnouncementPopup';
-import { EventPopup } from './components/ui/EventPopup';
 import { FeedbackForm } from './components/ui/FeedbackForm';
 import { UserProfile, ActivityLog, DailyQuest } from './types';
 import { getLevel } from './lib/utils';
@@ -1055,7 +1054,6 @@ export default function App() {
       />
 
       <AnnouncementPopup />
-      <EventPopup />
       
       {/* Exit Confirmation Modal */}
       <AnimatePresence>
