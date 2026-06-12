@@ -113,6 +113,7 @@ export default function App() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [dontShowForAWeek, setDontShowForAWeek] = useState(false);
   const [pendingView, setPendingView] = useState<typeof view | null>(null);
+  const [studyInitialTab, setStudyInitialTab] = useState<number | undefined>(undefined);
   const [reflectionData, setReflectionData] = useState<Record<string, string>>({});
   const [atlData, setAtlData] = useState<Record<string, number>>({});
 
@@ -1012,10 +1013,14 @@ export default function App() {
     setDontShowForAWeek(false);
   };
 
-  const handleProtectedViewChange = (newView: typeof view) => {
+  const handleProtectedViewChange = (newView: typeof view, initialStudyTab?: number) => {
     const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games'];
     const dontShowUntil = localStorage.getItem('dontShowExitConfirmUntil');
     const isMuted = dontShowUntil && new Date().getTime() < parseInt(dontShowUntil);
+
+    if (newView === 'study') {
+      setStudyInitialTab(initialStudyTab);
+    }
 
     if (protectedViews.includes(view) && newView === 'home' && !isMuted) {
       setPendingView(newView);
@@ -1161,7 +1166,13 @@ export default function App() {
             )}
             {view === 'study' && (
               <StudyView 
-                setView={handleProtectedViewChange} 
+                setView={(v) => {
+                  if (v !== 'study') {
+                    setStudyInitialTab(undefined);
+                  }
+                  handleProtectedViewChange(v);
+                }} 
+                initialTab={studyInitialTab}
                 atlData={atlData} 
                 onSaveATL={handleSaveATL} 
                 reflectionData={reflectionData} 

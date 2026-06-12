@@ -22,7 +22,8 @@ import {
   CheckCircle2,
   ListTodo,
   Activity,
-  Settings
+  Settings,
+  Lightbulb
 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { ibReflectionQuestions } from '../../content';
@@ -35,7 +36,7 @@ interface HomeViewProps {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard', initialStudyTab?: number) => void;
   rankings: UserProfile[];
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
@@ -687,6 +688,28 @@ export const HomeView = ({
 
             <div className="mt-6 flex items-center gap-1 text-blue-600 font-bold text-sm">
               탐험 시작하기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('study', 6)}
+          className="group"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-cyan-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-cyan-50/30">
+            <div className="w-20 h-20 bg-cyan-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-cyan-100 overflow-hidden p-3 text-cyan-600">
+              <Lightbulb className="w-12 h-12" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">개념 초성 퀴즈</h3>
+            <p className="text-gray-500 text-sm font-medium mb-1">초성 힌트를 보고 한글 단어를 맞춰보세요!</p>
+            <div className="flex items-center gap-1 px-3 py-1 bg-cyan-50 rounded-full text-[10px] font-black text-cyan-600 border border-cyan-100 mt-2">
+              <Star className="w-3 h-3 fill-cyan-400 text-cyan-500" />
+              정답 당 +50 XP
+            </div>
+            <div className="mt-6 flex items-center gap-1 text-cyan-600 font-bold text-sm">
+              퀴즈 시작하기 <ChevronRight className="w-4 h-4" />
             </div>
           </Card>
         </motion.div>

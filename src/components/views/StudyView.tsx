@@ -39,7 +39,8 @@ import {
 } from '../../content';
 
 interface StudyViewProps {
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan') => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard') => void;
+  initialTab?: number;
   atlData: Record<string, number>;
   onSaveATL: (key: string, value: number) => void;
   reflectionData: Record<string, string>;
@@ -151,6 +152,7 @@ const CONSONANT_QUESTIONS: ConsonantQuestion[] = [
 
 export const StudyView = ({ 
   setView, 
+  initialTab,
   atlData, 
   onSaveATL, 
   reflectionData, 
@@ -161,7 +163,7 @@ export const StudyView = ({
   onEarnXP,
   soundEnabled
 }: StudyViewProps) => {
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(initialTab !== undefined ? initialTab : 0);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   
   // Consonant Quiz States
@@ -385,7 +387,7 @@ export const StudyView = ({
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {tabs.map((tab, idx) => {
           const isCompleted = tabCompletionStatus[idx];
           const isLocked = tab.id === 5 && !allPreviousTabsCompleted;
