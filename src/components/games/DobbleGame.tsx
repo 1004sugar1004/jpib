@@ -34,21 +34,21 @@ const BASE_TERMS: Omit<Term, 'pokemonId' | 'pokemon' | 'sprite'>[] = [
   { id: "perspective", ko: "관점", en: "Perspective", category: "concept" },
   { id: "responsibility", ko: "책임", en: "Responsibility", category: "concept" },
   { id: "reflection", ko: "성찰", en: "Reflection", category: "concept" },
-  { id: "inquirers", ko: "탐구", en: "Inquirers", category: "profile" },
-  { id: "knowledgeable", ko: "지식", en: "Knowledgeable", category: "profile" },
-  { id: "thinkers", ko: "사고", en: "Thinkers", category: "profile" },
-  { id: "communicators", ko: "소통", en: "Communicators", category: "profile" },
-  { id: "principled", ko: "원칙", en: "Principled", category: "profile" },
-  { id: "open-minded", ko: "열린마음", en: "Open-minded", category: "profile" },
-  { id: "caring", ko: "배려", en: "Caring", category: "profile" },
-  { id: "risk-takers", ko: "도전", en: "Risk-takers", category: "profile" },
-  { id: "balanced", ko: "균형합", en: "Balanced", category: "profile" },
-  { id: "reflective", ko: "성찰인", en: "Reflective", category: "profile" },
-  { id: "thinking-skills", ko: "사고기능", en: "Thinking Skills", category: "atl" },
-  { id: "communication-skills", ko: "소통기능", en: "Comm. Skills", category: "atl" },
-  { id: "social-skills", ko: "사회기능", en: "Social Skills", category: "atl" },
-  { id: "self-management-skills", ko: "자기관리", en: "Self-mgmt", category: "atl" },
-  { id: "research-skills", ko: "조사기능", en: "Research Skills", category: "atl" }
+  { id: "inquirers", ko: "탐구하는 사람", en: "Inquirers", category: "profile" },
+  { id: "knowledgeable", ko: "지식이 풍부한 사람", en: "Knowledgeable", category: "profile" },
+  { id: "thinkers", ko: "사고하는 사람", en: "Thinkers", category: "profile" },
+  { id: "communicators", ko: "소통하는 사람", en: "Communicators", category: "profile" },
+  { id: "principled", ko: "원칙을 지키는 사람", en: "Principled", category: "profile" },
+  { id: "open-minded", ko: "열린 마음을 가진 사람", en: "Open-minded", category: "profile" },
+  { id: "caring", ko: "배려하는 사람", en: "Caring", category: "profile" },
+  { id: "risk-takers", ko: "도전하는 사람", en: "Risk-takers", category: "profile" },
+  { id: "balanced", ko: "균형 잡힌 사람", en: "Balanced", category: "profile" },
+  { id: "reflective", ko: "성찰하는 사람", en: "Reflective", category: "profile" },
+  { id: "thinking-skills", ko: "사고 기능", en: "Thinking Skills", category: "atl" },
+  { id: "communication-skills", ko: "의사소통 기능", en: "Communication Skills", category: "atl" },
+  { id: "social-skills", ko: "사회적 기능", en: "Social Skills", category: "atl" },
+  { id: "self-management-skills", ko: "자기 관리 기능", en: "Self-management Skills", category: "atl" },
+  { id: "research-skills", ko: "조사 기능", en: "Research Skills", category: "atl" }
 ];
 
 const fallbackPokemon = [
@@ -58,15 +58,42 @@ const fallbackPokemon = [
   "rattata", "raticate", "spearow", "fearow", "ekans"
 ];
 
-// 정밀히 외곽으로 밀어내어 삐져나감이나 서로간의 겹침 현상이 전혀 없는 6방향 좌표 배치 (시계 방향 배치)
+// 1개의 중앙 배치와 5개의 대칭적 외곽 배치를 결합하여 서로 간의 중첩이 발생하지 않고 공간을 가장 효율적으로 사용하는 6방향 스마트 레이아웃
 const positions = [
-  { x: 50, y: 17, r: -2, w: "34%", mw: "35%" },  // 12시 방향 (상단)
-  { x: 79, y: 34, r: 10, w: "34%", mw: "35%" },  // 2시 방향
-  { x: 78, y: 66, r: -10, w: "34%", mw: "35%" }, // 4시 방향
-  { x: 50, y: 83, r: 2, w: "34%", mw: "35%" },   // 6시 방향 (하단)
-  { x: 22, y: 66, r: 10, w: "34%", mw: "35%" },  // 8시 방향
-  { x: 21, y: 34, r: -10, w: "34%", mw: "35%" }  // 10시 방향
+  { x: 50, y: 50, r: 0, w: "38%", mw: "39%" },   // 1. 중앙 대표 배치
+  { x: 50, y: 18, r: -5, w: "38%", mw: "39%" },  // 2. 12시 방향 (상단)
+  { x: 80, y: 39, r: 8, w: "38%", mw: "39%" },   // 3. 2시 방향
+  { x: 68, y: 78, r: -8, w: "38%", mw: "39%" },  // 4. 5시 방향
+  { x: 32, y: 78, r: 12, w: "38%", mw: "39%" },  // 5. 7시 방향
+  { x: 20, y: 39, r: -10, w: "38%", mw: "39%" }  // 6. 10시 방향
 ];
+
+// 단어 길이에 맞춰 글자 크기를 세밀하게 조정하여 긴 단어도 말줄임이나 잘림 없이 100% 한눈에 보이게 비례 스케일링하는 든든한 헬퍼
+const getEnFontSizeClass = (text: string) => {
+  if (text.length > 18) {
+    return "text-[5.5px] xs:text-[6px] sm:text-[7px] md:text-[7.5px] lg:text-[8px] xl:text-[9.5px]";
+  }
+  if (text.length > 13) {
+    return "text-[6px] xs:text-[6.5px] sm:text-[7.5px] md:text-[8px] lg:text-[8.5px] xl:text-[10px]";
+  }
+  if (text.length > 9) {
+    return "text-[6.5px] xs:text-[7px] sm:text-[8px] md:text-[8.5px] lg:text-[9.5px] xl:text-[10.5px]";
+  }
+  return "text-[7.5px] xs:text-[8px] sm:text-[9.5px] md:text-[10px] lg:text-[10.5px] xl:text-[11.5px]";
+};
+
+const getKoFontSizeClass = (text: string) => {
+  if (text.length > 9) {
+    return "text-[9px] xs:text-[10px] sm:text-[11.5px] md:text-[12px] lg:text-[13px] xl:text-[14px]";
+  }
+  if (text.length > 6) {
+    return "text-[10px] xs:text-[11px] sm:text-[12.5px] md:text-[13px] lg:text-[14px] xl:text-[15px]";
+  }
+  if (text.length > 4) {
+    return "text-[12px] xs:text-[13px] sm:text-[15px] md:text-[15.5px] lg:text-[16.5px] xl:text-[18px]";
+  }
+  return "text-[13px] xs:text-[14px] sm:text-[16.5px] md:text-[17.5px] lg:text-[18.5px] xl:text-[21px]";
+};
 
 const classicColors = {
   concept: { color: "#2563eb", bg: "#eff6ff", borderClass: "border-blue-500", textClass: "text-blue-600", bgClass: "bg-blue-50" },
@@ -93,6 +120,7 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
   const [selectedDeckSize, setSelectedDeckSize] = useState<number>(12);
   const [selectedMode, setSelectedMode] = useState<'computer' | 'two'>('computer');
+  const [gameMode, setGameMode] = useState<'computer' | 'two'>('computer');
   const [gameEdition, setGameEdition] = useState<'pokemon' | 'classic'>('pokemon');
   
   const [cardsLeft, setCardsLeft] = useState<number>(12);
@@ -245,9 +273,12 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     initializeTerms();
   }, []);
 
-  const startRound = useCallback((currentLeftCards: number) => {
+  const startRound = useCallback((currentLeftCards: number, currentMode: 'computer' | 'two') => {
+    if (computerTimerRef.current) {
+      clearTimeout(computerTimerRef.current);
+    }
+
     if (currentLeftCards <= 0) {
-      clearTimeout(computerTimerRef.current!);
       setGameState('END');
       playSound('win');
       confetti({
@@ -285,26 +316,30 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setLeftCards(shuffleArray<Term>(left));
     setRightCards(shuffleArray<Term>(right));
 
-    if (selectedMode === 'computer') {
-      const delay = 3000 + Math.random() * 3200; // 3.0초 ~ 6.2초 (충분히 찾을 시간 보장)
+    if (currentMode === 'computer') {
+      const delay = 3500 + Math.random() * 3200; // 3.5초 ~ 6.7초 (컴퓨터 대치 상태)
       computerTimerRef.current = setTimeout(() => {
         if (!acceptingClicksRef.current) return;
         handleComputerWin(rightAns as Term);
       }, delay);
     }
-  }, [termsList, selectedMode, playSound]);
+  }, [termsList, playSound]);
 
   const startGame = () => {
+    if (computerTimerRef.current) {
+      clearTimeout(computerTimerRef.current);
+    }
+    setGameMode(selectedMode);
     playSound('start');
     setPlayerScore(0);
     setRivalScore(0);
     setCardsLeft(selectedDeckSize);
     setGameState('PLAYING');
-    setFeedback('나의 카드와 가운데 더미에서 똑같은 아이콘 단 1개만 찾으세요!');
+    setFeedback(selectedMode === 'computer' ? '나의 카드와 가운데 더미에서 똑같은 아이콘 단 1개만 찾으세요!' : '각자 카드와 가운데 공용 더미가 겹치는 아이콘을 먼저 찾으세요!');
     setFeedbackType('normal');
     
     setTimeout(() => {
-      startRound(selectedDeckSize);
+      startRound(selectedDeckSize, selectedMode);
     }, 100);
   };
 
@@ -315,12 +350,12 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setCardsLeft(prev => {
       const nextCount = prev - 1;
       setRightCorrectId(term.id);
-      setFeedback(`컴퓨터가 어울리는 카드를 가져갔어요: ${term.en} / ${term.ko}`);
+      setFeedback(`컴퓨터가 어울리는 카드를 가져갔어요: ${term.ko}`);
       setFeedbackType('wrong');
       playSound('computer_win');
       
       setTimeout(() => {
-        startRound(nextCount);
+        startRound(nextCount, 'computer');
       }, 1600);
       return nextCount;
     });
@@ -328,7 +363,7 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
   const handleGuess = (term: Term, side: 'left' | 'right') => {
     if (!acceptingClicks || !acceptingClicksRef.current) return;
-    if (selectedMode === 'computer' && side === 'right') return;
+    if (gameMode === 'computer' && side === 'right') return;
 
     const answer = side === 'left' ? leftAnswer : rightAnswer;
 
@@ -340,11 +375,11 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       if (side === 'left') {
         setPlayerScore(prev => prev + 1);
         setLeftCorrectId(term.id);
-        setFeedback(`${selectedMode === 'computer' ? '내가' : '1번 플레이어가'} 더미 카드를 가져갑니다: ${term.en} / ${term.ko}`);
+        setFeedback(`${gameMode === 'computer' ? '내가' : '1번 플레이어가'} 더미 카드를 가져갑니다: ${term.ko}`);
       } else {
         setRivalScore(prev => prev + 1);
         setRightCorrectId(term.id);
-        setFeedback(`2번 플레이어가 더미 카드를 가져갑니다: ${term.en} / ${term.ko}`);
+        setFeedback(`2번 플레이어가 더미 카드를 가져갑니다: ${term.ko}`);
       }
 
       setFeedbackType('correct');
@@ -353,7 +388,7 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       setCardsLeft(prev => {
         const nextCount = prev - 1;
         setTimeout(() => {
-          startRound(nextCount);
+          startRound(nextCount, gameMode);
         }, 1600);
         return nextCount;
       });
@@ -405,12 +440,12 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 transform: `translate(${offset}px, ${offset}px)`,
                 zIndex: -1 - i
               }}
-              className={`absolute top-0 left-0 w-[175px] h-[175px] xs:w-[200px] xs:h-[200px] sm:w-[245px] sm:h-[245px] md:w-[260px] md:h-[260px] lg:w-[285px] lg:h-[285px] xl:w-[325px] xl:h-[325px] rounded-full border-[6px] ${borderStyle} ${wrapperBg} opacity-40 shadow-md pointer-events-none`}
+              className={`absolute top-0 left-0 w-[185px] h-[185px] xs:w-[205px] xs:h-[205px] sm:w-[235px] sm:h-[235px] md:w-[255px] md:h-[255px] lg:w-[275px] lg:h-[275px] xl:w-[325px] xl:h-[325px] rounded-full border-[6px] ${borderStyle} ${wrapperBg} opacity-40 shadow-md pointer-events-none`}
             />
           );
         })}
 
-        <div className={`relative w-[175px] h-[175px] xs:w-[200px] xs:h-[200px] sm:w-[245px] sm:h-[245px] md:w-[260px] md:h-[260px] lg:w-[285px] lg:h-[285px] xl:w-[325px] xl:h-[325px] rounded-full border-[6px] ${borderStyle} ${wrapperBg} shadow-2xl overflow-hidden flex items-center justify-center select-none shrink-0`}>
+        <div className={`relative w-[185px] h-[185px] xs:w-[205px] xs:h-[205px] sm:w-[235px] sm:h-[235px] md:w-[255px] md:h-[255px] lg:w-[275px] lg:h-[275px] xl:w-[325px] xl:h-[325px] rounded-full border-[6px] ${borderStyle} ${wrapperBg} shadow-2xl overflow-hidden flex items-center justify-center select-none shrink-0`}>
           
           {/* Subtle decorative background design */}
           <div className="absolute inset-[6%] border border-neutral-200/40 rounded-full pointer-events-none" />
@@ -442,17 +477,14 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                     width: pos.mw
                   }}
                   className={`
-                    flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 rounded-lg sm:rounded-xl border sm:border-2 text-center leading-tight shadow-sm transition-all duration-150 outline-none
+                    flex flex-col items-center justify-center py-1.5 sm:py-2.5 px-1 rounded-lg sm:rounded-xl border sm:border-2 text-center leading-tight shadow-sm transition-all duration-150 outline-none
                     ${side !== 'center' ? 'cursor-pointer hover:scale-105 active:scale-95' : 'cursor-default'}
                     ${isCorrect ? 'scale-110 shadow-lg z-20' : ''}
                     ${isWrong ? 'scale-90 animate-shake z-20' : ''}
                     ${chipStyle}
                   `}
                 >
-                  <span className="text-[7.5px] xs:text-[8px] sm:text-[9.5px] md:text-[10px] lg:text-[10.5px] xl:text-[11.5px] font-black uppercase tracking-tight break-all truncate">
-                    {term.en}
-                  </span>
-                  <span className="text-[6.5px] xs:text-[7px] sm:text-[8px] md:text-[8.5px] lg:text-[9px] xl:text-[9.5px] font-bold mt-0.5 whitespace-nowrap">
+                  <span className={`${getKoFontSizeClass(term.ko)} font-black break-keep leading-tight text-center px-1`}>
                     {term.ko}
                   </span>
                 </button>
@@ -481,7 +513,7 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                     width: pos.mw
                   }}
                   className={`
-                    flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 md:p-1.5 rounded-xl sm:rounded-2xl border sm:border-2 shadow transition-all duration-150 outline-none
+                    flex items-center gap-1 p-1 md:p-1.5 rounded-xl sm:rounded-2xl border sm:border-2 shadow transition-all duration-150 outline-none
                     ${side !== 'center' ? 'cursor-pointer hover:scale-110 active:scale-95' : 'cursor-default'}
                     ${isCorrect ? 'scale-115 shadow-xl z-20 text-white' : ''}
                     ${isWrong ? 'scale-90 animate-shake z-20 text-white' : ''}
@@ -496,11 +528,8 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                       className="w-full h-full object-contain scale-110 image-render-pixelated"
                     />
                   </div>
-                  <div className="flex flex-col text-left leading-none overflow-hidden pr-0.5 sm:pr-1">
-                    <span className={`text-[7px] xs:text-[7.5px] sm:text-[9px] md:text-[10px] lg:text-[10.5px] xl:text-[11px] font-black uppercase tracking-tight truncate ${isCorrect || isWrong ? 'text-white' : 'text-slate-800'}`}>
-                      {term.en}
-                    </span>
-                    <span className={`text-[6px] xs:text-[6.5px] sm:text-[8px] md:text-[8.5px] lg:text-[9px] xl:text-[9.5px] font-bold truncate ${isCorrect || isWrong ? 'text-white/80' : 'text-slate-500'}`}>
+                  <div className="flex flex-col text-left leading-tight overflow-hidden pr-1 min-w-0 flex-1 justify-center">
+                    <span className={`${getKoFontSizeClass(term.ko)} font-black break-keep leading-tight ${isCorrect || isWrong ? 'text-white' : 'text-slate-800'}`}>
                       {term.ko}
                     </span>
                   </div>
@@ -707,25 +736,25 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       {/* GAME FIELD SCREEN */}
       {gameState === 'PLAYING' && (
         <div className="flex-1 flex flex-col justify-around w-full p-2 z-10 gap-4 overflow-y-auto">
-          {/* DASHBOARD STATUS */}
-          <div className="grid grid-cols-3 gap-2 px-3 py-2 bg-black/50 border border-white/5 rounded-2xl max-w-2xl mx-auto w-full">
-            <div className="flex flex-col items-center justify-center">
-              <span className="text-[9px] text-zinc-400 font-bold uppercase">남은 전체 더미</span>
-              <strong className="text-lg font-mono text-amber-400">{cardsLeft}</strong>
+          {/* DASHBOARD STATUS - 세련되고 높은 명조 대비를 갖춘 고반사 일체형 스코어보드 */}
+          <div className="grid grid-cols-3 gap-3 px-4 py-3 bg-slate-900/90 border-2 border-slate-700/50 rounded-2xl max-w-2xl mx-auto w-full shadow-xl">
+            <div className="flex flex-col items-center justify-center border-r border-slate-800">
+              <span className="text-[10px] sm:text-[11px] text-amber-400 font-black tracking-wider uppercase">남은 전체 더미</span>
+              <span className="text-xl sm:text-2xl font-black font-mono text-amber-400 drop-shadow">{cardsLeft}<span className="text-xs font-bold ml-0.5">장</span></span>
             </div>
 
-            <div className="flex flex-col items-center justify-center bg-slate-900/40 p-1 rounded-xl">
-              <span className="text-[9px] text-[#22c55e] font-black">
-                {selectedMode === 'computer' ? '나의 승리' : 'P1 승리'}
+            <div className="flex flex-col items-center justify-center bg-emerald-950/30 border border-emerald-500/20 py-1.5 px-2 rounded-xl">
+              <span className="text-[10px] sm:text-[11px] text-emerald-400 font-black tracking-wider uppercase">
+                {gameMode === 'computer' ? '나의 득점' : 'P1 (초록) 득점'}
               </span>
-              <strong className="text-lg text-[#22c55e] font-black">{playerScore}</strong>
+              <span className="text-xl sm:text-2xl text-emerald-400 font-black font-mono drop-shadow">{playerScore}<span className="text-xs font-bold ml-0.5">장</span></span>
             </div>
 
-            <div className="flex flex-col items-center justify-center bg-slate-900/40 p-1 rounded-xl">
-              <span className="text-[9px] text-rose-400 font-black">
-                {selectedMode === 'computer' ? '컴퓨터' : 'P2 승리'}
+            <div className="flex flex-col items-center justify-center bg-rose-950/30 border border-rose-500/20 py-1.5 px-2 rounded-xl">
+              <span className="text-[10px] sm:text-[11px] text-rose-400 font-black tracking-wider uppercase">
+                {gameMode === 'computer' ? '컴퓨터 득점' : 'P2 (빨강) 득점'}
               </span>
-              <strong className="text-lg text-rose-400 font-black">{rivalScore}</strong>
+              <span className="text-xl sm:text-2xl text-rose-400 font-black font-mono drop-shadow">{rivalScore}<span className="text-xs font-bold ml-0.5">장</span></span>
             </div>
           </div>
 
@@ -739,58 +768,58 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             </span>
           </div>
 
-          {/* 3 CARDS ALIGNED AS GRID, TO BE SCALED PERFECTLY IN ANY VIEWPORT */}
-          <div className="w-full max-w-[1360px] mx-auto flex flex-col lg:flex-row items-center justify-center gap-6 xl:gap-14 py-2">
+          {/* 3 CARDS ALIGNED AS GRID - 태블릿 화면 최적화: 가로 스택으로 감싸 세로 잘림 완벽 차단 */}
+          <div className="w-full max-w-[1360px] mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-8 lg:gap-14 py-2">
             
             {/* L SIDE: P1 CARDS */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex flex-col items-center gap-1 bg-emerald-950/40 border border-emerald-500/30 p-2 sm:p-2.5 rounded-2xl w-[175px] xs:w-[200px] sm:w-[245px] text-center shadow-md">
-                <span className="text-[11px] sm:text-[13px] font-black text-emerald-400 flex items-center justify-center gap-1">
-                  <User className="w-4 h-4" />
-                  <span>{selectedMode === 'computer' ? '나의 카드' : '1번 플레이어 카드'}</span>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex flex-col items-center gap-0.5 bg-emerald-950/60 border-2 border-emerald-500/40 p-1.5 sm:p-2 rounded-xl w-[150px] xs:w-[170px] sm:w-[200px] md:w-[225px] text-center shadow-lg">
+                <span className="text-[10px] sm:text-xs font-black text-emerald-400 flex items-center justify-center gap-1">
+                  <User className="w-3.5 h-3.5" />
+                  <span>{gameMode === 'computer' ? '나의 카드' : '1번 플레이어'}</span>
                 </span>
-                <span className="text-[11.5px] sm:text-[14px] font-black text-white bg-emerald-600 border border-emerald-400 rounded-xl px-3 sm:px-4 py-0.5 sm:py-1 mt-0.5 shadow-inner">
-                  획득한 카드: {playerScore}장
+                <span className="text-[11px] sm:text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-emerald-500 border border-emerald-400 rounded-lg px-2 py-0.5 mt-0.5 shadow-md w-full text-center">
+                  획득: {playerScore}장
                 </span>
               </div>
               {renderCard(leftCards, 'left', 2)}
             </div>
 
             {/* CENTER: DECK CARDS */}
-            <div className="flex flex-col items-center gap-2 scale-100 sm:scale-105">
-              <div className="flex flex-col items-center gap-1 bg-amber-950/40 border border-amber-500/30 p-2 sm:p-2.5 rounded-2xl w-[175px] xs:w-[200px] sm:w-[245px] text-center shadow-md">
-                <span className="text-[11px] sm:text-[13px] font-black text-amber-400 flex items-center justify-center gap-1 animate-pulse">
-                  <Sparkle className="w-4 h-4 text-amber-400" />
+            <div className="flex flex-col items-center gap-1.5 scale-100 sm:scale-105">
+              <div className="flex flex-col items-center gap-0.5 bg-amber-950/60 border-2 border-amber-500/40 p-1.5 sm:p-2 rounded-xl w-[150px] xs:w-[170px] sm:w-[200px] md:w-[225px] text-center shadow-lg">
+                <span className="text-[10px] sm:text-xs font-black text-amber-400 flex items-center justify-center gap-1 animate-pulse">
+                  <Sparkle className="w-3.5 h-3.5 text-amber-400" />
                   <span>가운데 공용 더미</span>
                 </span>
-                <span className="text-[11.5px] sm:text-[14px] font-black text-slate-950 bg-amber-400 border border-amber-300 rounded-xl px-3 sm:px-4 py-0.5 sm:py-1 mt-0.5 shadow-inner">
-                  남은 카드: {cardsLeft}장
+                <span className="text-[11px] sm:text-xs font-black text-slate-950 bg-amber-400 border border-amber-300 rounded-lg px-2 py-0.5 mt-0.5 shadow-md w-full text-center font-black">
+                  남음: {cardsLeft}장
                 </span>
               </div>
               {renderCard(centerCards, 'center', 0)}
             </div>
 
             {/* R SIDE: P2 CARDS */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex flex-col items-center gap-1 bg-rose-950/40 border border-rose-500/30 p-2 sm:p-2.5 rounded-2xl w-[175px] xs:w-[200px] sm:w-[245px] text-center shadow-md">
-                <span className="text-[11px] sm:text-[13px] font-black text-rose-400 flex items-center justify-center gap-1">
-                  {selectedMode === 'computer' ? (
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex flex-col items-center gap-0.5 bg-rose-950/60 border-2 border-rose-500/40 p-1.5 sm:p-2 rounded-xl w-[150px] xs:w-[170px] sm:w-[200px] md:w-[225px] text-center shadow-lg">
+                <span className="text-[10px] sm:text-xs font-black text-rose-400 flex items-center justify-center gap-1">
+                  {gameMode === 'computer' ? (
                     <>
-                      <Computer className="w-4 h-4 text-rose-400 animate-bounce" />
+                      <Computer className="w-3.5 h-3.5 text-rose-400 animate-bounce" />
                       <span>컴퓨터 경쟁자</span>
                     </>
                   ) : (
                     <>
-                      <User className="w-4 h-4 text-rose-400" />
-                      <span>2번 플레이어 카드</span>
+                      <User className="w-3.5 h-3.5 text-rose-400" />
+                      <span>2번 플레이어</span>
                     </>
                   )}
                 </span>
-                <span className="text-[11.5px] sm:text-[14px] font-black text-white bg-rose-600 border border-rose-400 rounded-xl px-3 sm:px-4 py-0.5 sm:py-1 mt-0.5 shadow-inner">
-                  획득한 카드: {rivalScore}장
+                <span className="text-[11px] sm:text-xs font-black text-white bg-gradient-to-r from-rose-600 to-rose-500 border border-rose-400 rounded-lg px-2 py-0.5 mt-0.5 shadow-md w-full text-center">
+                  획득: {rivalScore}장
                 </span>
               </div>
-              <div className={selectedMode === 'computer' ? 'opacity-70 pointer-events-none filter saturate-50' : ''}>
+              <div className={gameMode === 'computer' ? 'opacity-70 pointer-events-none filter saturate-50' : ''}>
                 {renderCard(rightCards, 'right', 4)}
               </div>
             </div>
@@ -833,14 +862,14 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             <div className="flex justify-around items-center">
               <div className="text-center font-bold">
                 <p className="text-slate-400 text-xs mb-1">
-                  {selectedMode === 'computer' ? '나의 기증' : '플레이어 1'}
+                  {gameMode === 'computer' ? '나의 득점' : '플레이어 1'}
                 </p>
                 <span className="text-3xl text-[#22c55e] font-black">{playerScore}</span>
               </div>
               <div className="text-slate-600 text-2xl font-black">:</div>
               <div className="text-center font-bold">
                 <p className="text-slate-400 text-xs mb-1">
-                  {selectedMode === 'computer' ? '컴퓨터' : '플레이어 2'}
+                  {gameMode === 'computer' ? '컴퓨터' : '플레이어 2'}
                 </p>
                 <span className="text-3xl text-rose-400 font-black">{rivalScore}</span>
               </div>
