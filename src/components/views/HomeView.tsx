@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
@@ -23,7 +23,10 @@ import {
   ListTodo,
   Activity,
   Settings,
-  Lightbulb
+  Lightbulb,
+  Megaphone,
+  X,
+  Gift
 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { ibReflectionQuestions } from '../../content';
@@ -67,6 +70,13 @@ export const HomeView = ({
 }: HomeViewProps) => {
   const [showLevelGuide, setShowLevelGuide] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
+  const [showNotice, setShowNotice] = React.useState(() => {
+    try {
+      return !sessionStorage.getItem('dismissed_notice_month_end');
+    } catch (e) {
+      return true;
+    }
+  });
   const level = getLevel(profile?.score || 0);
   const studyProgress = Math.floor((Object.keys(reflectionData).length / ibReflectionQuestions.length) * 100);
 
@@ -237,8 +247,17 @@ export const HomeView = ({
             <Button 
               variant="secondary" 
               size="sm" 
+              onClick={() => setShowNotice(true)}
+              className="bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-100 mt-2 font-black"
+              icon={Megaphone}
+            >
+              의견반영 & 버그수정 공지
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="sm" 
               onClick={() => setView('plan')}
-              className="bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 mt-2"
+              className="bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 mt-1"
               icon={BookOpen}
             >
               활용계획서
@@ -893,6 +912,175 @@ export const HomeView = ({
         profile={profile} 
         onUpdate={onUpdateProfile} 
       />
+
+      {/* BUG FIX & OPINIONS NOTICE MODAL POPUP */}
+      <AnimatePresence>
+        {showNotice && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white border-4 border-amber-400 p-6 md:p-8 rounded-[2.5rem] max-w-2xl w-full relative shadow-2xl overflow-hidden text-gray-800"
+            >
+              {/* Top gradient badge & close button */}
+              <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400" />
+              
+              <button 
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem('dismissed_notice_month_end', 'true');
+                  } catch (e) {}
+                  setShowNotice(false);
+                }}
+                className="absolute top-5 right-5 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 flex items-center justify-center transition-colors shadow-sm cursor-pointer z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-start gap-4 mb-6 mt-2">
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center border-2 border-amber-300 text-3xl shrink-0 animate-bounce">
+                  📢
+                </div>
+                <div>
+                  <h3 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight leading-tight">
+                    소중한 의견 반영 & 버그 수정 안내!
+                  </h3>
+                  <p className="text-sm text-gray-500 font-bold mt-1">
+                    학생 여러분이 제출해주신 의견과 버그 내용을 열심히 패치했어요!
+                  </p>
+                </div>
+              </div>
+
+              {/* Notice Details Content Grid */}
+              <div className="space-y-3.5 mb-6 max-h-[50vh] overflow-y-auto pr-2">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm flex items-start gap-3">
+                    <span className="text-lg">🛠️</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-emerald-950 mb-0.5">김*린 학생: 초성퀴즈 버그 수정 완료!</p>
+                      <p className="text-emerald-700 font-medium leading-relaxed">초성퀴즈의 오작동 및 멈춤 버그를 완벽하게 고쳤어요.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 shadow-sm flex items-start gap-3">
+                    <span className="text-lg">🏪</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-indigo-950 mb-0.5">이*민 학생: 편의점 버그 패치 완료!</p>
+                      <p className="text-indigo-700 font-medium leading-relaxed">편의점 정리 3스테이지 클리어 후 시간이 계속 가거나 다음 스테이지가 안 가던 버그를 고쳤어요.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-sky-50 rounded-2xl border border-sky-100 shadow-sm flex items-start gap-3">
+                    <span className="text-lg">⚡</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-sky-955 mb-0.5">전*원 학생: 할리갈리 렉 개선 완료!</p>
+                      <p className="text-sky-700 font-medium leading-relaxed">할리갈리 게임 진행 속도와 원치 않는 로딩 렉 버그를 제어했어요.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-pink-50 rounded-2xl border border-pink-100 shadow-sm flex items-start gap-3">
+                    <span className="text-lg">🥤</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-pink-950 mb-0.5">반*아 학생: 할리갈리 컵 쌓기 (구상중)</p>
+                      <p className="text-pink-700 font-medium leading-relaxed">익사이팅한 컵 쌓기 게임 추가를 적극적으로 기획하고 연구 중이에요!</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 shadow-sm flex items-start gap-3">
+                    <span className="text-lg">🏔️</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-rose-950 mb-0.5">조*아 학생: 점프맵 관련 안내</p>
+                      <p className="text-rose-700 font-medium leading-relaxed">점프맵 게임은 무거운 렌더링 서버 및 제작 비용이 아주 크게 들어, 대체할 수 있는 멋진 아이디어를 생각 중이에요.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 shadow-sm flex items-start gap-3">
+                    <span className="text-lg">🃏</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-amber-955 mb-0.5">권*훈 학생: 도블 게임 (구상중)</p>
+                      <p className="text-amber-700 font-medium leading-relaxed">겹치는 무늬를 손쉽게 맞추는 재밌는 도블 카드 게임을 구상하고 있어요.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 shadow-sm flex items-start gap-3 col-span-1 md:col-span-2">
+                    <span className="text-lg">🎮</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-purple-950 mb-0.5">엄*우 학생: 1인 2인 패드 모드 관련 안내</p>
+                      <p className="text-purple-700 font-medium leading-relaxed">친구와 대면해서 <strong>하나의 태블릿 패드로 함께 조작</strong>하는 미니게임은 기획 중이에요! 각자의 무선 태블릿 패드로 실시간 연동하는 것은 서버 버그가 많아 면밀히 알아보고 있어요.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-cyan-50 rounded-2xl border border-cyan-100 shadow-sm flex items-start gap-3 col-span-1 md:col-span-2">
+                    <span className="text-lg">🥷</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-cyan-950 mb-0.5">손날닌자 카메라 꿀팁!</p>
+                      <p className="text-cyan-700 font-medium leading-relaxed">카메라 기능이 제대로 켜져 있는지 확인해 보세요! <strong>카메라가 활성화되면 화면을 직접 터치하지 않고도</strong> 손날 모션을 인식해 더 편하게 게임할 수 있답니다.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-teal-50 rounded-2xl border border-teal-100 shadow-sm flex items-start gap-3 col-span-1 md:col-span-2">
+                    <span className="text-lg">📅</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-teal-950 mb-0.5">엄*수 학생: 일일퀘스트 다양화!</p>
+                      <p className="text-teal-700 font-medium leading-relaxed">매일 완료할 수 있는 일일 탐험 퀘스트를 더 신나고 질리지 않도록 다양한 퀘스트들을 성실하게 보강 완료했습니다.</p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Gift Event Announcement Box */}
+                <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/10 border-2 border-dashed border-amber-300 p-5 rounded-3xl mt-4 text-center relative overflow-hidden">
+                  <div className="absolute -top-3 -right-3 opacity-20 select-none pointer-events-none">
+                    <Gift className="w-16 h-16 text-amber-500" />
+                  </div>
+                  <div className="flex justify-center mb-2 text-2xl">
+                    🎁 🎉 💝
+                  </div>
+                  <h4 className="text-sm font-black text-amber-900 tracking-tight mb-1">
+                    소중한 의견 감사 선물 추첨 이벤트!
+                  </h4>
+                  <p className="text-xs text-gray-700 font-bold leading-relaxed">
+                    여러분들의 애정 어린 탐험가 의견들에 진심으로 감사드립니다! 소중한 아이디어를 제출해준 <br />
+                    <span className="text-amber-800 font-extrabold">모든 학생들을 대상으로 이번 월말에 정성스런 기프트 추첨을 통해 선물을 증정할게요! ^^</span>
+                  </p>
+                </div>
+
+                <div className="text-center py-2">
+                  <p className="text-xs font-black text-indigo-600 bg-indigo-50 py-2.5 px-4 rounded-full inline-block border border-indigo-100">
+                    💡 오늘도 열심히 탐구하는 영리한 IB 가치 탐험가가 되어 보세요!
+                  </p>
+                </div>
+
+              </div>
+
+              {/* Close Bottom CTA Button */}
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => {
+                    try {
+                      sessionStorage.setItem('dismissed_notice_month_end', 'true');
+                    } catch (e) {}
+                    setShowNotice(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-base font-black py-4 rounded-2xl shadow-xl shadow-amber-200 border-b-4 border-orange-700 flex items-center justify-center gap-2 cursor-pointer"
+                  id="notice-popup-close-btn"
+                >
+                  확인했습니다 ! 탐험 계속하기
+                </Button>
+              </div>
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   </div>
   );

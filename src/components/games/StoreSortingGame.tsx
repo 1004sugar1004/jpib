@@ -84,10 +84,13 @@ const makeInitialShelves = (stage: number): string[][] => {
   return newShelves;
 };
 
+const checkShelf = (shelf: string[]) => {
+  return shelf.length === SLOT_PER_SHELF && shelf.every(v => v === shelf[0]);
+};
+
 export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [stage, setStage] = useState(1);
   const [shelves, setShelves] = useState<string[][]>(() => makeInitialShelves(1));
-  const [closedShelves, setClosedShelves] = useState<number[]>([]);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(STAGE_TIME);
@@ -102,23 +105,9 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   const [justClosedShelf, setJustClosedShelf] = useState<number | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
-  // Scan shelves to auto-lock any prearranged completed shelves on game start or stage load
-  useEffect(() => {
-    if (gameState === 'PLAYING') {
-      const precompleted: number[] = [];
-      shelves.forEach((shelf, idx) => {
-        if (shelf.length === SLOT_PER_SHELF && shelf.every(v => v === shelf[0])) {
-          precompleted.push(idx);
-        }
-      });
-      if (precompleted.length > 0) {
-        setClosedShelves(prev => {
-          const combined = Array.from(new Set([...prev, ...precompleted]));
-          return combined;
-        });
-      }
-    }
-  }, [gameState, shelves]);
+  // Deriving closedShelves directly from shelves state avoids race conditions & state synchronization issues
+  const closedShelves = shelves.map((shelf, idx) => checkShelf(shelf) ? idx : -1).filter(idx => idx !== -1);
+  const closedCount = closedShelves.length;
 
   const playSound = useCallback((type: 'correct' | 'click' | 'fail') => {
     if (!soundEnabled) return;
@@ -199,10 +188,6 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
     return () => clearInterval(hintTimer);
   }, [gameState, showQuiz, gameWon, gameOver, isPaused, lastActionTime, closedShelves]);
 
-  const checkShelf = (shelf: string[]) => {
-    return shelf.length === SLOT_PER_SHELF && shelf.every(v => v === shelf[0]);
-  };
-
   const handleItemClick = (shelfIdx: number, itemIdx: number) => {
     if (showQuiz || gameWon || gameOver || closedShelves.includes(shelfIdx) || gameState !== 'PLAYING') return;
 
@@ -224,16 +209,15 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
       newShelves[shelfIdx][itemIdx] = temp;
 
       const newlyClosed: number[] = [];
-      if (checkShelf(newShelves[selection.shelfIdx]) && !closedShelves.includes(selection.shelfIdx)) {
+      if (checkShelf(newShelves[selection.shelfIdx]) && !checkShelf(shelves[selection.shelfIdx])) {
         newlyClosed.push(selection.shelfIdx);
       }
-      if (checkShelf(newShelves[shelfIdx]) && !closedShelves.includes(shelfIdx)) {
+      if (checkShelf(newShelves[shelfIdx]) && !checkShelf(shelves[shelfIdx])) {
         newlyClosed.push(shelfIdx);
       }
 
       if (newlyClosed.length > 0) {
         setScore(s => s + (newlyClosed.length * 500 * stage));
-        setClosedShelves(prev => [...prev, ...newlyClosed]);
         setJustClosedShelf(newlyClosed[newlyClosed.length - 1]);
         setTimeout(() => setJustClosedShelf(null), 1000);
         playSound('correct');
@@ -245,17 +229,16 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   };
 
   useEffect(() => {
-    if (closedShelves.length === SHELF_COUNT && SHELF_COUNT > 0) {
+    if (closedCount === SHELF_COUNT && SHELF_COUNT > 0) {
       setGameWon(true);
       playSound('correct');
     }
-  }, [closedShelves, playSound]);
+  }, [closedCount, playSound]);
 
   const nextStage = () => {
     const nextS = stage + 1;
     setStage(nextS);
     setShelves(makeInitialShelves(nextS));
-    setClosedShelves([]);
     setSelection(null);
     setTimeLeft(STAGE_TIME);
     setGameWon(false);
@@ -265,7 +248,6 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   const restart = () => {
     setStage(1);
     setShelves(makeInitialShelves(1));
-    setClosedShelves([]);
     setSelection(null);
     setScore(0);
     setQuizWrongCount(0);
