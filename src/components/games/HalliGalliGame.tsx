@@ -15,6 +15,7 @@ import {
   MousePointer
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { quizQuestions } from '../../content';
 
 interface Card {
   fruit: number; // 0: 🍓, 1: 🍌, 2: 🫐, 3: 🍋
@@ -268,6 +269,15 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [isMuted, setIsMuted] = useState<boolean>(!soundEnabled);
   const [showHelp, setShowHelp] = useState<boolean>(false);
 
+  // IB Mission Quiz states
+  const [totalGameFlips, setTotalGameFlips] = useState<number>(0);
+  const [showQuizPopup, setShowQuizPopup] = useState<boolean>(false);
+  const [hasPromptedQuiz, setHasPromptedQuiz] = useState<boolean>(false);
+  const [quizQuestion, setQuizQuestion] = useState<any>(null);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [quizAnswered, setQuizAnswered] = useState<boolean>(false);
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean>(false);
+
   const bot1ActionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const bot2ActionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const processingBellRef = useRef<boolean>(false);
@@ -294,6 +304,9 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   useEffect(() => { currentTurnRef.current = currentTurn; }, [currentTurn]);
   useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
   useEffect(() => { difficultyRef.current = difficulty; }, [difficulty]);
+
+  const showQuizPopupRef = useRef<boolean>(false);
+  useEffect(() => { showQuizPopupRef.current = showQuizPopup; }, [showQuizPopup]);
 
   // Play synthetic beeps so there are no network delay or loading issues on schools iPads!
   const playSound = useCallback((type: 'beep' | 'win' | 'fail' | 'flip') => {
@@ -404,6 +417,21 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     return current;
   };
 
+  const startQuizPopup = useCallback(() => {
+    if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
+    if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
+    
+    // Choose a random question from quizQuestions
+    const randomIndex = Math.floor(Math.random() * quizQuestions.length);
+    const q = quizQuestions[randomIndex];
+    setQuizQuestion(q);
+    setSelectedOption(null);
+    setQuizAnswered(false);
+    setIsAnswerCorrect(false);
+    setHasPromptedQuiz(true);
+    setShowQuizPopup(true);
+  }, []);
+
   const initGame = useCallback(() => {
     if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
     if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
@@ -413,6 +441,14 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setGameOver(false);
     setWinner(null);
     setToastText(null);
+
+    setTotalGameFlips(0);
+    setHasPromptedQuiz(false);
+    setShowQuizPopup(false);
+    setQuizQuestion(null);
+    setSelectedOption(null);
+    setQuizAnswered(false);
+    setIsAnswerCorrect(false);
 
     const full = makeDeck();
     // 10 cards each as explicitly requested!
@@ -651,7 +687,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   };
 
   const ringBell = (who: 'player' | 'bot1' | 'bot2') => {
-    if (gameOverRef.current || processingBellRef.current) return;
+    if (gameOverRef.current || processingBellRef.current || showQuizPopup) return;
 
     const pPlayed = playerPlayedRef.current;
     const b1Played = bot1PlayedRef.current;
@@ -801,6 +837,33 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     }
   };
 
+  const handleQuizCorrectResume = () => {
+    setShowQuizPopup(false);
+    
+    // Check if there is still a game playing (not over)
+    if (gameOverRef.current) return;
+    
+    // Assess 5 conditions normally
+    const counts = getTopFruitCountsInternal(
+      playerPlayedRef.current,
+      bot1PlayedRef.current,
+      bot2PlayedRef.current
+    );
+    const hasFive = Object.values(counts).some(v => v === 5);
+
+    if (hasFive) {
+      setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
+      triggerBotsBellReaction();
+    } else {
+      const nextTurnId = currentTurnRef.current;
+      if (nextTurnId !== 'player') {
+        triggerBotFlip(nextTurnId);
+      } else {
+        setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+      }
+    }
+  };
+
   const triggerBotFlip = (botId: 'bot1' | 'bot2') => {
     if (gameOverRef.current) return;
 
@@ -878,22 +941,31 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         setMessage(`아이비봇 ${nextTurnId === 'bot1' ? '1' : '2'}의 차례입니다... 🤖`);
       }
 
-      // Assess 5 conditions
-      const counts = getTopFruitCountsInternal(
-        playerPlayedRef.current,
-        bot1PlayedRef.current,
-        bot2PlayedRef.current
-      );
-      const hasFive = Object.values(counts).some(v => v === 5);
-
-      if (hasFive) {
-        setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
-        triggerBotsBellReaction();
-      } else {
-        if (nextTurnId !== 'player') {
-          triggerBotFlip(nextTurnId);
+      setTotalGameFlips(prev => {
+        const nextFlips = prev + 1;
+        if (nextFlips === 8 && !hasPromptedQuiz) {
+          setTimeout(() => startQuizPopup(), 100);
+          return nextFlips;
         }
-      }
+
+        // Assess 5 conditions
+        const counts = getTopFruitCountsInternal(
+          playerPlayedRef.current,
+          bot1PlayedRef.current,
+          bot2PlayedRef.current
+        );
+        const hasFive = Object.values(counts).some(v => v === 5);
+
+        if (hasFive) {
+          setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
+          triggerBotsBellReaction();
+        } else {
+          if (nextTurnId !== 'player') {
+            triggerBotFlip(nextTurnId);
+          }
+        }
+        return nextFlips;
+      });
 
     }, delay);
 
@@ -905,7 +977,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   };
 
   const playerFlip = () => {
-    if (gameOverRef.current || processingBellRef.current || currentTurnRef.current !== 'player') return;
+    if (gameOverRef.current || processingBellRef.current || currentTurnRef.current !== 'player' || showQuizPopup) return;
     
     let activePlayerDeck = [...playerDeckRef.current];
     let nextPlayerPlayed = [...playerPlayedRef.current];
@@ -942,22 +1014,31 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       setMessage(`아이비봇 ${nextTurnId === 'bot1' ? '1' : '2'}의 차례입니다... 🤖`);
     }
 
-    // Is there a 5 on the board now?
-    const counts = getTopFruitCountsInternal(
-      nextPlayerPlayed,
-      bot1PlayedRef.current,
-      bot2PlayedRef.current
-    );
-    const hasFive = Object.values(counts).some(v => v === 5);
-
-    if (hasFive) {
-      setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
-      triggerBotsBellReaction();
-    } else {
-      if (nextTurnId !== 'player') {
-        triggerBotFlip(nextTurnId);
+    setTotalGameFlips(prev => {
+      const nextFlips = prev + 1;
+      if (nextFlips === 8 && !hasPromptedQuiz) {
+        setTimeout(() => startQuizPopup(), 100);
+        return nextFlips;
       }
-    }
+
+      // Is there a 5 on the board now?
+      const counts = getTopFruitCountsInternal(
+        nextPlayerPlayed,
+        bot1PlayedRef.current,
+        bot2PlayedRef.current
+      );
+      const hasFive = Object.values(counts).some(v => v === 5);
+
+      if (hasFive) {
+        setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
+        triggerBotsBellReaction();
+      } else {
+        if (nextTurnId !== 'player') {
+          triggerBotFlip(nextTurnId);
+        }
+      }
+      return nextFlips;
+    });
   };
 
   // Keyboard hooks
@@ -968,6 +1049,7 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (showQuizPopupRef.current) return;
       if (e.code === 'Space') {
         e.preventDefault();
         ringBellStaticRef.current('player');
@@ -1430,6 +1512,134 @@ export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 닫고 게임으로 복귀하기
               </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* IB MISSION QUIZ MODAL POPUP */}
+      <AnimatePresence>
+        {showQuizPopup && quizQuestion && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-4 text-center z-50 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-slate-900 border-2 border-amber-500/40 p-6 rounded-3xl max-w-md w-full text-left relative shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex items-center gap-3 mb-4 border-b border-zinc-800 pb-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-2xl shrink-0">
+                  {quizQuestion.emoji || '🌟'}
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-amber-300">IB 탐험가 깜짝 미션 퀴즈!</h3>
+                  <p className="text-[10px] text-zinc-400 font-bold">정답을 맞추면 멈춘 할리갈리 게임을 계속할 수 있어요!</p>
+                </div>
+              </div>
+
+              <div className="mb-5 bg-zinc-950/40 p-4 rounded-2xl border border-zinc-800/30">
+                <p className="text-xs font-bold text-zinc-100 leading-relaxed">
+                  {quizQuestion.question}
+                </p>
+              </div>
+
+              <div className="space-y-2 mb-5">
+                {quizQuestion.options.map((option: string, idx: number) => {
+                  const isSelected = selectedOption === idx;
+                  const isCorrectAnswer = idx === quizQuestion.correctAnswer;
+                  
+                  let btnStyle = "bg-zinc-800/60 hover:bg-zinc-855 border-zinc-700/50 text-zinc-200";
+                  if (isSelected) {
+                    if (isCorrectAnswer) {
+                      btnStyle = "bg-green-500/20 border-green-500 text-green-300";
+                    } else {
+                      btnStyle = "bg-red-500/20 border-red-500 text-red-300";
+                    }
+                  } else if (quizAnswered && isCorrectAnswer) {
+                    btnStyle = "bg-green-500/20 border-green-500 text-green-300";
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      disabled={quizAnswered && isAnswerCorrect}
+                      onClick={() => {
+                        setSelectedOption(idx);
+                        if (idx === quizQuestion.correctAnswer) {
+                          playSound('win');
+                          setIsAnswerCorrect(true);
+                          setQuizAnswered(true);
+                          try {
+                            confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+                          } catch (e) {}
+                        } else {
+                          playSound('fail');
+                          setIsAnswerCorrect(false);
+                          setQuizAnswered(true);
+                        }
+                      }}
+                      className={`w-full text-left p-3 rounded-xl border text-xs font-bold transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer disabled:opacity-80 active:scale-98 ${btnStyle}`}
+                    >
+                      <span>{option}</span>
+                      {isSelected && (
+                        <span className="text-xs shrink-0 select-none">
+                          {isCorrectAnswer ? '✅ 정답' : '❌ 오답'}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <AnimatePresence mode="wait">
+                {quizAnswered && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="p-3.5 rounded-2xl border bg-zinc-950/60 text-[10px] leading-relaxed mb-4"
+                    style={{
+                      borderColor: isAnswerCorrect ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'
+                    }}
+                  >
+                    {isAnswerCorrect ? (
+                      <div>
+                        <p className="text-green-400 font-extrabold mb-1 flex items-center gap-1 text-xs">
+                          🎉 완벽합니다! 정답이에요!
+                        </p>
+                        <p className="text-zinc-300 font-medium">
+                          {quizQuestion.explanation}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-red-400 font-extrabold mb-1 text-xs">
+                          😢 틀렸습니다! 다시 생각해보세요.
+                        </p>
+                        <p className="text-zinc-400 font-medium">
+                          IB 핵심 철학을 잘 되짚어보고 올바른 선택지를 탭하세요!
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {isAnswerCorrect && (
+                <Button 
+                  onClick={handleQuizCorrectResume}
+                  className="w-full bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-zinc-950 text-xs font-black py-3 rounded-xl shadow-lg border-b-4 border-emerald-700 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                  id="halligalli-quiz-resume-btn"
+                >
+                  <Sparkles className="w-4 h-4 text-emerald-950 fill-current" />
+                  계속 게임하기
+                </Button>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
