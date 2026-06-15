@@ -31,6 +31,9 @@ import { HalliGalliGame } from '../games/HalliGalliGame';
 import { JengaGame } from '../games/JengaGame';
 import { NinjaGame } from '../games/NinjaGame';
 import { UnoGame } from '../games/UnoGame';
+import { DobbleGame } from '../games/DobbleGame';
+// @ts-ignore
+import dobbleImage from '../../assets/dobble.png';
 
 import { UserProfile } from '../../types';
 import { db } from '../../firebase';
@@ -67,8 +70,10 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
     { id: 'drawing', name: '10초 드로잉', icon: Pencil, color: 'bg-indigo-600', unlockXp: 0, description: 'AI가 당신의 그림을 맞힐 수 있을까요?', bgImage: 'https://i.imgur.com/lyCqTY1.png' },
     { id: 'halligalli', name: 'IB 할리갈리', icon: Bell, color: 'bg-emerald-600', unlockXp: 0, description: '과일 개수의 합이 정확히 5개가 될 때 벨을 울리세요!', bgImage: 'https://i.imgur.com/xe54lqW.png' },
     { id: 'jenga', name: 'IB 젠가', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않도록 블록을 조심히 빼내 쌓으세요!', bgImage: 'https://i.imgur.com/0wF00pI.png' },
-    { id: 'ninja', name: 'IB 손날 닌자', icon: Sword, color: 'bg-cyan-500', unlockXp: 0, description: '화면으로 솟구치는 네온 과일을 검지 손날 광선검으로 쪼개 자르세요!', bgImage: 'https://i.imgur.com/DrD9Hmx.png' },
-    { id: 'uno', name: 'IB 우노', icon: Layers, color: 'bg-rose-500', unlockXp: 0, description: '선생님이 전달해 주실 우노 게임 코드 대기 및 테스트 버전입니다!', bgImage: 'https://i.imgur.com/UMcVNRB.png' },
+    { id: 'ninja', name: 'IB 손날 닌자', icon: Sword, color: 'bg-cyan-500', unlockXp: 0, description: '화면으로 솟구치는 네온 과일을 검지 손날 광선검으로 쪼개 자르세요!', bgImage: 'https://i.imgur.com/b2PpuDw.png' },
+    { id: 'uno', name: 'IB 우노', icon: Layers, color: 'bg-rose-500', unlockXp: 0, description: '선생님이 전달해 주실 우노 게임 코드 대기 및 테스트 버전입니다!', bgImage: 'https://i.imgur.com/EJAPDgp.png' },
+    { id: 'dobble', name: 'IB 도블', icon: Sparkles, color: 'bg-amber-500', unlockXp: 0, description: '선생님이 새로운 우노 등과 함께 도블 게임 코드를 기증하실 준비가 진행 중입니다!', bgImage: dobbleImage },
+    { id: 'cuphalligalli', name: 'IB 컵 할리갈리', icon: Bell, color: 'bg-teal-500', unlockXp: 0, description: '반*아 학생이 제안한 컵 쌓기 할리갈리 게임입니다! 코드가 곧 준비될 예정입니다.', bgImage: 'https://i.imgur.com/1KjXT1X.png' },
   ];
 
   if (selectedGame) {
@@ -92,11 +97,18 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         
         <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
           <div className={cn(
-            "w-full max-w-4xl max-h-[70vh] overflow-hidden relative border-4 md:border-8 shadow-2xl transition-all",
+            "w-full overflow-hidden relative border-4 md:border-8 shadow-2xl transition-all",
+            selectedGame === 'dobble' 
+              ? "max-w-6xl xl:max-w-[1300px] max-h-[92vh] aspect-auto min-h-[580px] md:min-h-[680px] lg:min-h-[720px]" 
+              : "max-w-4xl xl:max-w-5xl max-h-[85vh]",
             isDrawingGame 
               ? "bg-transparent border-transparent shadow-none" 
               : "bg-gray-900 border-gray-800 rounded-[1.5rem] md:rounded-[2.5rem]",
-            selectedGame === 'rhythm' || selectedGame === 'jenga' || selectedGame === 'halligalli' || selectedGame === 'ninja' ? "aspect-[3/4] md:aspect-square" : "aspect-[3/4] md:aspect-video"
+            selectedGame === 'dobble'
+              ? ""
+              : selectedGame === 'rhythm' || selectedGame === 'jenga' || selectedGame === 'halligalli' || selectedGame === 'ninja' 
+                ? "aspect-[3/4] md:aspect-square" 
+                : "aspect-[3/4] md:aspect-video"
           )}>
             {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} />}
             {selectedGame === 'galaga' && <GalagaGame soundEnabled={soundEnabled} />}
@@ -109,6 +121,26 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
             {selectedGame === 'jenga' && <JengaGame soundEnabled={soundEnabled} />}
             {selectedGame === 'ninja' && <NinjaGame soundEnabled={soundEnabled} />}
             {selectedGame === 'uno' && <UnoGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'dobble' && <DobbleGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'cuphalligalli' && (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center text-white bg-slate-950 w-full min-h-[50vh]">
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
+                  className="w-20 h-20 rounded-full bg-teal-500/10 border-2 border-teal-500 flex items-center justify-center mb-6 text-teal-400"
+                >
+                  <Bell className="w-10 h-10" />
+                </motion.div>
+                <h3 className="text-xl md:text-2xl font-black mb-2 text-teal-300">IB 컵할리갈리 (준비 중!)</h3>
+                <p className="text-zinc-400 text-xs md:text-sm max-w-md font-bold leading-relaxed mb-4 px-4">
+                  반*아 학생이 제안하고 기획 중인 컵할리갈리 게임입니다! <br />선생님이 멋지게 게임 코드를 추가해 주시는 대로 연동될 예정이에요! 🥤
+                </p>
+                <div className="text-teal-400 text-[10px] font-mono bg-teal-950/40 py-1.5 px-4 rounded-full border border-teal-900/30">
+                  STATUS: WAITING_FOR_USER_CODE 🛠️
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -146,7 +178,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {games.map((game) => {
           const isLocked = false; // All games unlocked as requested
-          const isFreeTestGame = game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja' || game.id === 'uno';
+          const isFreeTestGame = game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja' || game.id === 'uno' || game.id === 'dobble' || game.id === 'cuphalligalli';
           
           return (
             <motion.div
