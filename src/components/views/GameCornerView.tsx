@@ -32,6 +32,7 @@ import { JengaGame } from '../games/JengaGame';
 import { NinjaGame } from '../games/NinjaGame';
 import { UnoGame } from '../games/UnoGame';
 import { DobbleGame } from '../games/DobbleGame';
+import { CupHalliGalliGame } from '../games/CupHalliGalliGame';
 // @ts-ignore
 import dobbleImage from '../../assets/dobble.png';
 
@@ -71,9 +72,9 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
     { id: 'halligalli', name: 'IB 할리갈리', icon: Bell, color: 'bg-emerald-600', unlockXp: 0, description: '과일 개수의 합이 정확히 5개가 될 때 벨을 울리세요!', bgImage: 'https://i.imgur.com/xe54lqW.png' },
     { id: 'jenga', name: 'IB 젠가', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않도록 블록을 조심히 빼내 쌓으세요!', bgImage: 'https://i.imgur.com/0wF00pI.png' },
     { id: 'ninja', name: 'IB 손날 닌자', icon: Sword, color: 'bg-cyan-500', unlockXp: 0, description: '화면으로 솟구치는 네온 과일을 검지 손날 광선검으로 쪼개 자르세요!', bgImage: 'https://i.imgur.com/b2PpuDw.png' },
-    { id: 'uno', name: 'IB 우노', icon: Layers, color: 'bg-rose-500', unlockXp: 0, description: '선생님이 전달해 주실 우노 게임 코드 대기 및 테스트 버전입니다!', bgImage: 'https://i.imgur.com/EJAPDgp.png' },
-    { id: 'dobble', name: 'IB 도블', icon: Sparkles, color: 'bg-amber-500', unlockXp: 0, description: '선생님이 새로운 우노 등과 함께 도블 게임 코드를 기증하실 준비가 진행 중입니다!', bgImage: dobbleImage },
-    { id: 'cuphalligalli', name: 'IB 컵 할리갈리', icon: Bell, color: 'bg-teal-500', unlockXp: 0, description: '반*아 학생이 제안한 컵 쌓기 할리갈리 게임입니다! 코드가 곧 준비될 예정입니다.', bgImage: 'https://i.imgur.com/1KjXT1X.png' },
+    { id: 'uno', name: 'IB 우노', icon: Layers, color: 'bg-rose-500', unlockXp: 0, description: '탑재 완료! 우리들만의 즐거운 신비 탐험 카드 게임!', bgImage: 'https://i.imgur.com/EJAPDgp.png' },
+    { id: 'dobble', name: 'IB 도블', icon: Sparkles, color: 'bg-amber-500', unlockXp: 0, description: '권*훈 학생 기획! 눈보다 손이 활발해야 하는 스릴만점 카드 매칭!', bgImage: dobbleImage },
+    { id: 'cuphalligalli', name: 'IB 컵 할리갈리', icon: Bell, color: 'bg-teal-500', unlockXp: 0, description: '반*아 학생 기획! 최고 인기를 달리는 정렬 조립 식기 대결!', bgImage: 'https://i.imgur.com/1KjXT1X.png' },
   ];
 
   if (selectedGame) {
@@ -98,13 +99,13 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
           <div className={cn(
             "w-full overflow-hidden relative border-4 md:border-8 shadow-2xl transition-all",
-            selectedGame === 'dobble' 
+            selectedGame === 'dobble' || selectedGame === 'cuphalligalli' || selectedGame === 'uno'
               ? "max-w-6xl xl:max-w-[1300px] max-h-[92vh] aspect-auto min-h-[580px] md:min-h-[680px] lg:min-h-[720px]" 
               : "max-w-4xl xl:max-w-5xl max-h-[85vh]",
             isDrawingGame 
               ? "bg-transparent border-transparent shadow-none" 
               : "bg-gray-900 border-gray-800 rounded-[1.5rem] md:rounded-[2.5rem]",
-            selectedGame === 'dobble'
+            selectedGame === 'dobble' || selectedGame === 'cuphalligalli' || selectedGame === 'uno'
               ? ""
               : selectedGame === 'rhythm' || selectedGame === 'jenga' || selectedGame === 'halligalli' || selectedGame === 'ninja' 
                 ? "aspect-[3/4] md:aspect-square" 
@@ -122,25 +123,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
             {selectedGame === 'ninja' && <NinjaGame soundEnabled={soundEnabled} />}
             {selectedGame === 'uno' && <UnoGame soundEnabled={soundEnabled} />}
             {selectedGame === 'dobble' && <DobbleGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'cuphalligalli' && (
-              <div className="flex flex-col items-center justify-center h-full p-8 text-center text-white bg-slate-950 w-full min-h-[50vh]">
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
-                  className="w-20 h-20 rounded-full bg-teal-500/10 border-2 border-teal-500 flex items-center justify-center mb-6 text-teal-400"
-                >
-                  <Bell className="w-10 h-10" />
-                </motion.div>
-                <h3 className="text-xl md:text-2xl font-black mb-2 text-teal-300">IB 컵할리갈리 (준비 중!)</h3>
-                <p className="text-zinc-400 text-xs md:text-sm max-w-md font-bold leading-relaxed mb-4 px-4">
-                  반*아 학생이 제안하고 기획 중인 컵할리갈리 게임입니다! <br />선생님이 멋지게 게임 코드를 추가해 주시는 대로 연동될 예정이에요! 🥤
-                </p>
-                <div className="text-teal-400 text-[10px] font-mono bg-teal-950/40 py-1.5 px-4 rounded-full border border-teal-900/30">
-                  STATUS: WAITING_FOR_USER_CODE 🛠️
-                </div>
-              </div>
-            )}
+            {selectedGame === 'cuphalligalli' && <CupHalliGalliGame soundEnabled={soundEnabled} />}
           </div>
         </div>
       </div>
@@ -286,22 +269,22 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
               <Sparkles className="w-10 h-10 text-emerald-600" />
             </div>
 
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">🎉 할리갈리 · 젠가 · 손날닌자 · 우노 무료 오픈!</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">🎉 우노 · 도블 · 컵할리갈리 대공개 및 가동 완료!</h2>
             <p className="text-indigo-600 font-bold mb-6 text-sm bg-indigo-50 px-4 py-1.5 rounded-full inline-block">
-              신규 게임 4종 테스트 버전 출시 🌟
+              우리가 힘을 합쳐 개발한 고품격 보드게임 대개장 🌟
             </p>
 
             <div className="bg-gray-50 rounded-2xl p-4 md:p-6 mb-6 border border-gray-100 text-left space-y-3">
               <div className="flex items-start gap-2.5">
                 <span className="bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">✓</span>
                 <p className="text-gray-700 font-medium text-sm leading-relaxed">
-                  새로 출시된 <strong className="text-gray-900">IB 할리갈리 🍉, IB 젠가 🧱, IB 손날 닌자 ⚔️, IB 우노 🃏</strong> 게임은 <strong className="text-emerald-600">티켓 없이 무료</strong>로 플레이하실 수 있습니다!
+                  선생님과 학생들이 기획하고 완성한 <strong className="text-gray-900">IB 우노 🃏, IB 도블 🎨, IB 컵할리갈리 🥤</strong> 게임이 모두 성공적으로 탑재 및 연동 완료되었습니다! <strong className="text-emerald-600">티켓 제한 없이</strong> 신나게 플레이해 보세요!
                 </p>
               </div>
               <div className="flex items-start gap-2.5">
                 <span className="bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">✓</span>
                 <p className="text-gray-700 font-medium text-sm leading-relaxed">
-                  직접 체험해 보시고 재미있었던 점, 버그, 개선할 점 등 여러분의 <strong className="text-indigo-600">소중한 의견</strong>을 편하게 들려주세요.
+                  인공지능 대결과 카드 매칭을 마음껏 체험하면서 재미있는 복습과 소통의 장을 누리시고 <strong className="text-indigo-600">여러분의 소중한 의견</strong>도 언제든지 편하게 들려주세요.
                 </p>
               </div>
             </div>

@@ -989,8 +989,8 @@ export const HomeView = ({
                   <div className="p-4 bg-pink-50 rounded-2xl border border-pink-100 shadow-sm flex items-start gap-3">
                     <span className="text-lg">🥤</span>
                     <div className="text-xs">
-                      <p className="font-extrabold text-pink-950 mb-0.5">반*아 학생: 할리갈리 컵 쌓기 (구상중)</p>
-                      <p className="text-pink-700 font-medium leading-relaxed">익사이팅한 컵 쌓기 게임 추가를 적극적으로 기획하고 연구 중이에요!</p>
+                      <p className="font-extrabold text-pink-950 mb-0.5">반*아 학생: 할리갈리 컵 쌓기 (성공 출시! 🎉)</p>
+                      <p className="text-pink-700 font-medium leading-relaxed">반*아 학생의 아주 신나고 재미있는 컵할리갈리 기획이 훌륭한 게임으로 정식 탑재 및 완성되었습니다!</p>
                     </div>
                   </div>
 
@@ -1005,8 +1005,8 @@ export const HomeView = ({
                   <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 shadow-sm flex items-start gap-3">
                     <span className="text-lg">🃏</span>
                     <div className="text-xs">
-                      <p className="font-extrabold text-amber-955 mb-0.5">권*훈 학생: 도블 게임 (구상중)</p>
-                      <p className="text-amber-700 font-medium leading-relaxed">겹치는 무늬를 손쉽게 맞추는 재밌는 도블 카드 게임을 구상하고 있어요.</p>
+                      <p className="font-extrabold text-amber-955 mb-0.5">권*훈 학생: 도블 게임 (성공 출시! 🎉)</p>
+                      <p className="text-amber-700 font-medium leading-relaxed">권*훈 학생이 제안하고 기획한 고품격 도블 카드 매칭 게임이 멋진 디자인과 함께 정식 런칭되었습니다!</p>
                     </div>
                   </div>
 
