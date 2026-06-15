@@ -133,7 +133,7 @@ const CONSONANT_QUESTIONS: ConsonantQuestion[] = [
   { word: "열린 마음을 가진 사람", consonants: "ㅇㄹ ㅁㅇㅇ ㄱㅈ ㅅㄹ", category: "학습자상", description: "자신의 가치뿐만 아니라 타인의 문화와 관점을 포용하며, 다양한 생각에서 배울 수 있도록 수용하는 사람입니다." },
   { word: "배려하는 사람", consonants: "ㅂㄹㅎㄴ ㅅㄹ", category: "학습자상", description: "타인을 존중하고, 아끼며, 주위의 복지와 환경에 긍정적인 변화를 일으키기 위해 봉사하고 행동하는 사람입니다." },
   { word: "도전하는 사람", consonants: "ㄷㅈㅎㄴ ㅅㄹ", category: "학습자상", description: "새로운 상황에 능동적으로 대처하며, 자신의 신념을 자신 있게 관철하고 다양한 모험을 즐겁게 경험하는 사람입니다." },
-  { word: "균형 잡힌 사람", consonants: "ㄱㅎ ㅈㅍ ㅅㄹ", category: "학습자상", description: "지성, 신체, 감성이 조화를 이룰 수 있도록 균형을 유지하고, 자신과 세계의 웰빙을 성실하게 가꾸는 사람입니다." },
+  { word: "균형 잡힌 사람", consonants: "ㄱㅎ ㅈㅎ ㅅㄹ", category: "학습자상", description: "지성, 신체, 감성이 조화를 이룰 수 있도록 균형을 유지하고, 자신과 세계의 웰빙을 성실하게 가꾸는 사람입니다." },
   { word: "성찰하는 사람", consonants: "ㅅㅊㅎㄴ ㅅㄹ", category: "학습자상", description: "자신의 배움과 삶을 진지하게 깊이 돌아보며 스스로 장단점을 성실하게 보완하고 발전해 나가는 사람입니다." },
   { word: "형태", consonants: "ㅎㅌ", category: "7대 개념", description: "이것은 어떠한 특징과 구조를 지니고 있을까? 고유한 성질을 깊이 관찰하는 질문 렌즈입니다." },
   { word: "기능", consonants: "ㄱㄴ", category: "7대 개념", description: "이것은 어떠한 역할을 하며 어떻게 작동하고 있을까? 쓰임새와 작동 원리를 탐색하는 질문 렌즈입니다." },
@@ -176,6 +176,8 @@ export const StudyView = ({
   const [consonantStreak, setConsonantStreak] = useState(0);
 
   const handleCheckConsonant = () => {
+    if (consonantFeedback === 'correct') return;
+
     const q = consonantQuestions[consonantIdx];
     const userAns = consonantInput.trim().replace(/\s+/g, '');
     const correctAns = q.word.trim().replace(/\s+/g, '');
@@ -798,10 +800,11 @@ export const StudyView = ({
                   <div className="flex gap-3">
                     <Button
                       onClick={handleCheckConsonant}
+                      disabled={consonantFeedback === 'correct'}
                       className="flex-1 h-14 text-base font-black bg-cyan-500 hover:bg-cyan-600 shrink-0 text-white shadow-lg shadow-cyan-100 rounded-2xl flex items-center justify-center gap-2"
                       icon={ShieldCheck}
                     >
-                      정답 확인
+                      {consonantFeedback === 'correct' ? '정답 확인 완료' : '정답 확인'}
                     </Button>
                     <button
                       onClick={handleNextConsonant}
