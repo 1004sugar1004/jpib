@@ -126,7 +126,7 @@ interface ConsonantQuestion {
 
 const CONSONANT_QUESTIONS: ConsonantQuestion[] = [
   { word: "탐구하는 사람", consonants: "ㅌㄱㅎㄴ ㅅㄹ", category: "학습자상", description: "질문을 품고 스스로 깊이 탐구하고 조사하며 배움을 주도하는 사람입니다." },
-  { word: "지식을 갖춘 사람", consonants: "ㅈㅅㅇ ㄱㅊ ㅅㄹ", category: "학습자상", description: "중요한 개념과 지식을 깊이 있게 탐구하여 전 세계의 다양한 문제에 대해 다각도로 아는 사람입니다." },
+  { word: "지식이 풍부한 사람", consonants: "ㅈㅅㅇ ㅍㅂㅎ ㅅㄹ", category: "학습자상", description: "중요한 개념과 지식을 깊이 있게 탐구하여 전 세계의 다양한 문제에 대해 다각도로 아는 사람입니다." },
   { word: "생각하는 사람", consonants: "ㅅㄱㅎㄴ ㅅㄹ", category: "학습자상", description: "문제를 발견하고 창의적이고 비판적인 사고를 통해 윤리적이고 합리적인 결정을 내리는 사람입니다." },
   { word: "소통하는 사람", consonants: "ㅅㅌㅎㄴ ㅅㄹ", category: "학습자상", description: "자신의 생각과 유용한 정보를 다양한 의사소통 방식으로 자신감 있고 풍성하게 나눌 줄 아는 사람입니다." },
   { word: "원칙을 지키는 사람", consonants: "ㅇㅊㅇ ㅈㅋㄴ ㅅㄹ", category: "학습자상", description: "정직함과 공정함을 바탕으로 행동하며, 타인의 권리와 공동체의 가치를 존중하고 책임감 있게 행동하는 사람입니다." },
@@ -147,7 +147,7 @@ const CONSONANT_QUESTIONS: ConsonantQuestion[] = [
   { word: "의사소통 기능", consonants: "ㅇㅅㅅㅌ ㄱㄴ", category: "ATL 기능", description: "자신의 생각과 정보를 읽기, 쓰기, 말하기, 듣기 등 다양한 수단으로 안전하고 유용하게 주고받는 기능입니다." },
   { word: "사회적 기능", consonants: "ㅅㅎㅈ ㄱㄴ", category: "ATL 기능", description: "다른 사람과 서로 존중하며 긍정적으로 소통하고, 공동의 목적을 위해 배려하고 협력해 협동하는 기능입니다." },
   { word: "자기 관리 기능", consonants: "ㅈㄱ ㄱㄹ ㄱㄴ", category: "ATL 기능", description: "시간을 계획적으로 관리하고 목표를 달성하며, 자신의 감정, 동기, 마음을 건강하게 조율하는 기능입니다." },
-  { word: "연구 기능", consonants: "ㅇㄱ ㄱㄴ", category: "ATL 기능", description: "다양한 매체에서 필요한 데이터를 수집 및 선별하고, 비교/분석을 거쳐 가치 있는 정보로 엮어내는 기능입니다." }
+  { word: "조사 기능", consonants: "ㅈㅅ ㄱㄴ", category: "ATL 기능", description: "다양한 매체에서 필요한 데이터를 수집 및 선별하고, 비교/분석을 거쳐 가치 있는 정보로 엮어내는 기능입니다." }
 ];
 
 export const StudyView = ({ 

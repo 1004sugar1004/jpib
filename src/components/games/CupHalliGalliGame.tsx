@@ -96,7 +96,7 @@ const CARDS_POOL: CupCard[] = [
   { id: '3', pattern: ['blue', 'black', 'red', 'green', 'yellow'], direction: 'vertical', themeWord: '배려하는 사람', themeDesc: '타인의 감정을 공감하고 주위 커뮤니티에 따뜻한 도움을 줍니다.' },
   { id: '4', pattern: ['yellow', 'green', 'red', 'black', 'blue'], direction: 'vertical', themeWord: '원칙을 지키는 사람', themeDesc: '지구 공동체의 정의와 정직, 공정함을 바탕으로 약속을 실천해요.' },
   { id: '5', pattern: ['green', 'yellow', 'black', 'red', 'blue'], direction: 'horizontal', themeWord: '열린 마음', themeDesc: '우리 고유의 문화뿐 아니라 다른 공동체의 관점과 생각도 소중히 여깁니다.' },
-  { id: '6', pattern: ['blue', 'red', 'yellow', 'black', 'green'], direction: 'vertical', themeWord: '지식 있는 사람', themeDesc: '다양한 탐구를 넘어서 개념적 지식과 지역사회의 문제를 엮어 생각합니다.' },
+  { id: '6', pattern: ['blue', 'red', 'yellow', 'black', 'green'], direction: 'vertical', themeWord: '지식이 풍부한 사람', themeDesc: '다양한 탐구를 넘어서 개념적 지식과 지역사회의 문제를 엮어 생각합니다.' },
   { id: '7', pattern: ['red', 'black', 'blue', 'green', 'yellow'], direction: 'horizontal', themeWord: '소통하는 사람', themeDesc: '정보와 의견을 다양한 언어와 수단으로 자신감 있고 창의적으로 표현해요.' },
   { id: '8', pattern: ['black', 'yellow', 'green', 'blue', 'red'], direction: 'vertical', themeWord: '균형 잡힌 사람', themeDesc: '지적, 신체적, 조화로운 성장을 통해 삶의 균형을 올바르게 맞춰갑니다.' },
   { id: '9', pattern: ['green', 'blue', 'red', 'yellow', 'black'], direction: 'horizontal', themeWord: '생각하는 사람', themeDesc: '복잡한 문제도 주저하지 않고 비판적이고 창의적인 사색으로 다가갑니다.' },
