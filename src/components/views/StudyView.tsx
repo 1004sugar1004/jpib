@@ -177,8 +177,11 @@ export const StudyView = ({
 
   const handleCheckConsonant = () => {
     if (consonantFeedback === 'correct') return;
+    if (!consonantQuestions || consonantQuestions.length === 0) return;
 
     const q = consonantQuestions[consonantIdx];
+    if (!q) return;
+
     const userAns = consonantInput.trim().replace(/\s+/g, '');
     const correctAns = q.word.trim().replace(/\s+/g, '');
 
@@ -186,7 +189,8 @@ export const StudyView = ({
       setConsonantFeedback('correct');
       setConsonantStreak(prev => prev + 1);
       if (soundEnabled) {
-        const audio = new Audio("https://ik.imagekit.io/foefnjeua/correct.mp3");
+        const soundUrl = ASSETS.sounds.correct || "https://ik.imagekit.io/foefnjeua/correct.mp3";
+        const audio = new Audio(soundUrl);
         audio.volume = 0.2;
         audio.play().catch(() => {});
       }
@@ -201,7 +205,8 @@ export const StudyView = ({
       setConsonantFeedback('wrong');
       setConsonantStreak(0);
       if (soundEnabled) {
-        const audio = new Audio("https://ik.imagekit.io/foefnjeua/wrong.mp3");
+        const soundUrl = ASSETS.sounds.wrong || "https://ik.imagekit.io/foefnjeua/wrong.mp3";
+        const audio = new Audio(soundUrl);
         audio.volume = 0.2;
         audio.play().catch(() => {});
       }
@@ -211,7 +216,9 @@ export const StudyView = ({
   const handleNextConsonant = () => {
     setConsonantInput('');
     setConsonantFeedback(null);
-    setConsonantIdx(prev => (prev + 1) % consonantQuestions.length);
+    if (consonantQuestions && consonantQuestions.length > 0) {
+      setConsonantIdx(prev => (prev + 1) % consonantQuestions.length);
+    }
   };
   const [tabStartTime, setTabStartTime] = useState(Date.now());
   const [message, setMessage] = useState<string | null>(null);
@@ -791,7 +798,13 @@ export const StudyView = ({
                       setConsonantFeedback(null);
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleCheckConsonant();
+                      if (e.key === 'Enter') {
+                        if (consonantFeedback === 'correct') {
+                          handleNextConsonant();
+                        } else {
+                          handleCheckConsonant();
+                        }
+                      }
                     }}
                     placeholder="정답 단어를 적어주세요 (예 : 소통하는 사람)"
                     className="w-full px-6 py-5 rounded-[2rem] bg-gray-50 border-2 border-gray-100 focus:border-cyan-300 focus:bg-white outline-none transition-all text-center text-xl font-black text-cyan-950 shadow-inner"
