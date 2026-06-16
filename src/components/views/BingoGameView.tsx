@@ -98,7 +98,7 @@ const BINGO_CATEGORIES = [
     title: "🚀 실천과 행동",
     color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-300",
     hoverBg: "hover:bg-emerald-500/20 hover:text-white",
-    words: ["배우기", "행동하기", "성장하기", "협력하기", "존중하기", "공감 능력", "창의성", "글로벌 마인드"]
+    words: ["배우기", "행동하기", "성장하기", "협력하기", "존중하기", "공감", "창의성", "글로벌 마인드"]
   }
 ];
 

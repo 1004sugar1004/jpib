@@ -36,11 +36,11 @@ const TERMS: JengaTerm[] = [
   { term: "Reflective (성찰하는 사람)",     cat: "학습자상", desc: "자신의 생각과 경험의 강점과 한계를 사려 깊게 분석하며, 성장의 기회로 삼는 사람입니다." },
 
   // IB 학습 접근방법 (ATL)
-  { term: "Research Skills (탐구/조사 기능)",       cat: "ATL",     desc: "다양한 자료에서 신뢰할 수 있는 정보를 수집, 비교, 분석하고 체계적으로 정리하는 능력입니다." },
-  { term: "Thinking Skills (사고 기능)",       cat: "ATL",     desc: "개념과 이론을 비판적으로 평가하고, 아이디어를 창의적으로 융합하며 해결책을 설계하는 능력입니다." },
-  { term: "Social Skills (사회적/협동 기능)",         cat: "ATL",     desc: "친구들과 협동하고 서로 배려하며, 공동의 목표를 달성하기 위해 긍정적으로 기여하는 상호작용 능력입니다." },
-  { term: "Self-management (자기 관리 기능)",      cat: "ATL",     desc: "시간을 계획대로 활용해 목표를 달성하며, 자신의 마음과 태도를 건강하게 조절·관리하는 능력입니다." },
-  { term: "Communication Skills (의사소통 기능)",  cat: "ATL",     desc: "정보와 생각을 읽기, 쓰기, 말하기, 듣기 등 다양한 방법으로 안전하고 효과적으로 주고받는 능력입니다." }
+  { term: "Research Skills (탐구/조사 기능)",       cat: "ATL",     desc: "다양한 자료에서 신뢰할 수 있는 정보를 수집, 비교, 분석하고 체계적으로 정리하는 기능입니다." },
+  { term: "Thinking Skills (사고 기능)",       cat: "ATL",     desc: "개념과 이론을 비판적으로 평가하고, 아이디어를 창의적으로 융합하며 해결책을 설계하는 기능입니다." },
+  { term: "Social Skills (사회적/협동 기능)",         cat: "ATL",     desc: "친구들과 협동하고 서로 배려하며, 공동의 목표를 달성하기 위해 긍정적으로 기여하는 상호작용 기능입니다." },
+  { term: "Self-management (자기 관리 기능)",      cat: "ATL",     desc: "시간을 계획대로 활용해 목표를 달성하며, 자신의 마음과 태도를 건강하게 조절·관리하는 기능입니다." },
+  { term: "Communication Skills (의사소통 기능)",  cat: "ATL",     desc: "정보와 생각을 읽기, 쓰기, 말하기, 듣기 등 다양한 방법으로 안전하고 효과적으로 주고받는 기능입니다." }
 ];
 
 const WC = [0xDEB887, 0xD2A679, 0xC8956C, 0xE8C99A, 0xCFA869, 0xBA8955, 0xD4A56A, 0xE0BB88];

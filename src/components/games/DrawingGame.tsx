@@ -70,8 +70,28 @@ const matchSynonym = (targetWord: string, guesses: string[]) => {
 };
 
 const ROUND_COUNT = 6;
-const DRAW_TIME = 10;
 const API_INTERVAL = 2000;
+
+const DIFF_SETTINGS = {
+  easy: {
+    name: "하 (쉬움)",
+    time: 20,
+    leniency: "EXPIRED_LENIENCY: Be extremely lenient, generous, and warm. Even a partial outline, very rough scribble, or minimal simple shape that represents the concept should be accepted. Give the benefit of the doubt as much as possible to ensure younger students succeed easily.",
+    desc: "여유로운 20초 제한시간과 아주 너그러운 보너스 판정!"
+  },
+  medium: {
+    name: "중 (보통)",
+    time: 10,
+    leniency: "STANDARD_LENIENCY: Be friendly and lenient towards simple, child-like sketches, basic outlines, or symbolic representations, but reject completely empty canvases or totally unrelated squiggles.",
+    desc: "오리지널 10초 드로잉의 스릴과 표준 균형 판정!"
+  },
+  hard: {
+    name: "상 (어려움)",
+    time: 7,
+    leniency: "STRICT_LENIENCY: Be very precise and fair. The drawing must clearly capture the essential shape, detailed structure, or core recognized design of the object. Simple line scribbles or mismatched objects must be rejected.",
+    desc: "짜릿한 7초 탈출과 깐깐하고 정확한 정밀 판정!"
+  }
+};
 
 function pickWords() {
   const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
@@ -80,9 +100,10 @@ function pickWords() {
 
 export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [phase, setPhase] = useState<"intro" | "countdown" | "drawing" | "roundResult" | "ibQuiz" | "final">("intro");
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [words, setWords] = useState(pickWords());
   const [round, setRound] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(DRAW_TIME);
+  const [timeLeft, setTimeLeft] = useState(10);
   const [countdown, setCountdown] = useState(3);
   const [aiGuesses, setAiGuesses] = useState<string[]>([]);
   const [matched, setMatched] = useState(false);
@@ -113,6 +134,8 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       clearInterval(apiTimerRef.current);
     };
   }, []);
+
+  const drawTime = DIFF_SETTINGS[difficulty].time;
 
   const getPos = (e: any, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
@@ -225,7 +248,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
         contents: [
-            { text: `The user is trying to draw: "${currentWord}" in an interactive 10-second sketching game.
+            { text: `The user is trying to draw: "${currentWord}" in an interactive sketch-guessing game with a ${drawTime}-second time limit, with difficulty level ${difficulty.toUpperCase()}. (Grading policy: ${DIFF_SETTINGS[difficulty].leniency})
             Evaluate this sketch drawn in dark charcoal ink on a solid white background.
             Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint/doodle of a "${currentWord}"?
             
@@ -339,7 +362,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         }, 80);
       }
     }
-  }, [words, soundEnabled]);
+  }, [words, soundEnabled, difficulty, drawTime]);
 
   const finishRound = useCallback((success: boolean, guesses: string[]) => {
     clearInterval(timerRef.current);
@@ -375,11 +398,11 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       if (c <= 0) {
         clearInterval(cdInterval);
         setPhase("drawing");
-        setTimeLeft(DRAW_TIME);
+        setTimeLeft(drawTime);
         
         setTimeout(clearCanvas, 50);
 
-        let t = DRAW_TIME;
+        let t = drawTime;
         timerRef.current = setInterval(() => {
           t--;
           setTimeLeft(t);
@@ -398,7 +421,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         }, API_INTERVAL);
       }
     }, 1000);
-  }, [checkDrawingWithAI, finishRound]);
+  }, [checkDrawingWithAI, finishRound, drawTime]);
 
   const handleIBQuiz = () => {
     const randomQuestion = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
@@ -447,7 +470,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
 
   const score = roundResults.filter(r => r.success).length;
   const currentWord = words[round];
-  const timerPct = (timeLeft / DRAW_TIME) * 100;
+  const timerPct = (timeLeft / drawTime) * 100;
   
   let timerColorClass = "bg-emerald-500";
   let timerTextColorClass = "text-emerald-500";
@@ -478,15 +501,49 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 10초 드로잉!
               </h1>
               <p className="text-sm md:text-base text-gray-500 font-bold mb-4 leading-tight">AI가 10초 안에 여러분의 그림을<br/>맞힐 수 있을까요?</p>
-              <div className="bg-white border border-indigo-100 rounded-xl px-4 py-1.5 text-xs text-indigo-600 font-black mb-6 shadow-sm">
-                {ROUND_COUNT} 라운드 · 각 {DRAW_TIME}초
+              {/* 난이도 선택 섹션 */}
+              <div className="w-[18rem] md:w-[22rem] bg-gray-50/80 p-2.5 rounded-2xl border border-gray-150 flex flex-col gap-2 mb-6 shadow-inner">
+                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest text-center">원하는 난이도를 선택해 보세요!</span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(["easy", "medium", "hard"] as const).map((diff) => (
+                    <button
+                      key={diff}
+                      type="button"
+                      onClick={() => {
+                        setDifficulty(diff);
+                        setTimeLeft(DIFF_SETTINGS[diff].time);
+                      }}
+                      className={cn(
+                        "py-2 px-1 rounded-xl font-bold text-xs transition-all flex flex-col items-center justify-center gap-0.5 pointer-events-auto border",
+                        difficulty === diff
+                          ? diff === "easy"
+                            ? "bg-emerald-500 text-white border-transparent shadow-[0_4px_12px_rgba(16,185,129,0.2)]"
+                            : diff === "medium"
+                            ? "bg-indigo-600 text-white border-transparent shadow-[0_4px_12px_rgba(79,70,229,0.2)]"
+                            : "bg-rose-500 text-white border-transparent shadow-[0_4px_12px_rgba(239,68,68,0.2)]"
+                          : "bg-white hover:bg-gray-100 text-gray-650 border-gray-200"
+                      )}
+                    >
+                      <span className="text-xs font-black">
+                        {diff === "easy" ? "하 ⭐" : diff === "medium" ? "중 ⭐⭐" : "상 ⭐⭐⭐"}
+                      </span>
+                      <span className="text-[9px] opacity-90 font-bold">
+                        {DIFF_SETTINGS[diff].time}초
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-indigo-600 font-extrabold text-center mt-1 bg-white py-1.5 px-2 rounded-lg border border-indigo-50 leading-relaxed shadow-sm">
+                  {DIFF_SETTINGS[difficulty].desc}
+                </p>
               </div>
+
               <Button 
                 onClick={() => { setRound(0); roundRef.current = 0; startRound(); }}
-                className="w-full py-3.5 text-base bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100"
+                className="w-full py-4 text-base bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100 font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
-                게임 시작하기
+                <Sparkles className="w-5 h-5 mr-2" />
+                선택한 난이도로 시작하기
               </Button>
             </motion.div>
           )}
