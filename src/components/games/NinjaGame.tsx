@@ -384,24 +384,33 @@ class FruitObject {
   term: IBTerm;
   isSliced: boolean;
 
-  constructor(canvasWidth: number, canvasHeight: number) {
+  constructor(canvasWidth: number, canvasHeight: number, difficulty: 'easy' | 'medium' | 'hard' = 'medium') {
     const template = fruitTemplates[Math.floor(Math.random() * fruitTemplates.length)];
     this.name = template.name;
     this.color = template.color;
     this.innerColor = template.innerColor;
     this.style = template.type;
 
-    this.radius = Math.min(canvasWidth, canvasHeight) * 0.054 + Math.random() * 8;
+    // 난이도에 따른 과일 크기 가공
+    let sizeModifier = 1.0;
+    if (difficulty === 'easy') sizeModifier = 1.3; // 하: 넉넉하고 큼직하게!
+    if (difficulty === 'hard') sizeModifier = 0.8;  // 상: 자르기 어려운 작은 크기!
+
+    this.radius = (Math.min(canvasWidth, canvasHeight) * 0.054 + Math.random() * 8) * sizeModifier;
     this.x = canvasWidth * 0.15 + Math.random() * (canvasWidth * 0.7);
     this.y = canvasHeight + this.radius;
 
-    // 포물선 운동
-    this.vx = (Math.random() - 0.5) * (canvasWidth * 0.0035);
-    this.vy = -canvasHeight * (0.0135 + Math.random() * 0.0035); 
-    this.gravity = canvasHeight * 0.00014;
+    // 난이도에 따른 포물선 속도와 중력 가속 가이드
+    let speedModifier = 1.0;
+    if (difficulty === 'easy') speedModifier = 0.75;  // 하: 느릿느릿 여유롭게
+    if (difficulty === 'hard') speedModifier = 1.35;  // 상: 전광석화 날쌔게
+
+    this.vx = (Math.random() - 0.5) * (canvasWidth * 0.0035) * speedModifier;
+    this.vy = -canvasHeight * (0.0135 + Math.random() * 0.0035) * speedModifier; 
+    this.gravity = canvasHeight * 0.00014 * speedModifier;
 
     this.angle = Math.random() * Math.PI * 2;
-    this.spin = (Math.random() - 0.5) * 0.025;
+    this.spin = (Math.random() - 0.5) * 0.025 * speedModifier;
 
     this.term = ibTerms[Math.floor(Math.random() * ibTerms.length)];
     this.isSliced = false;
@@ -500,6 +509,14 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
   const [timeLeft, setTimeLeft] = useState<number>(60);
   const [fps, setFps] = useState<number>(0);
   const [slicedTerms, setSlicedTerms] = useState<IBTerm[]>([]);
+
+  // 난이도 상태 (하, 중, 상)
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const difficultyRef = useRef<'easy' | 'medium' | 'hard'>('medium');
+
+  useEffect(() => {
+    difficultyRef.current = difficulty;
+  }, [difficulty]);
 
   // 미디어파이프 상태
   const [isMediaPipeLoading, setIsMediaPipeLoading] = useState<boolean>(true);
@@ -693,7 +710,8 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
           setMaxCombo(nextCombo);
         }
 
-        const addedScore = 100 + (nextCombo - 1) * 20;
+        const multiplier = difficultyRef.current === 'easy' ? 0.8 : difficultyRef.current === 'hard' ? 1.5 : 1.0;
+        const addedScore = Math.round((100 + (nextCombo - 1) * 20) * multiplier);
         const nextScore = scoreRef.current + addedScore;
         scoreRef.current = nextScore;
         setScore(nextScore);
@@ -880,9 +898,13 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // 과일 리젠 속도 조절
-    if (Math.random() < 0.038) {
-      fruitsRef.current.push(new FruitObject(canvas.width, canvas.height));
+    // 과일 리젠 속도 조절 (난이도에 맞춰 미세 조정)
+    let spawnRateThreshold = 0.038;
+    if (difficultyRef.current === 'easy') spawnRateThreshold = 0.025; // 하: 천천히 드물게 등판
+    if (difficultyRef.current === 'hard') spawnRateThreshold = 0.055; // 상: 쉴 틈 없이 다발적으로 소환
+
+    if (Math.random() < spawnRateThreshold) {
+      fruitsRef.current.push(new FruitObject(canvas.width, canvas.height, difficultyRef.current));
     }
 
     // 과일 물리 연산
@@ -1319,6 +1341,48 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
                 </div>
               </div>
 
+              {/* 난이도 선택 (하, 중, 상) */}
+              <div className="bg-zinc-900/60 border border-zinc-800 p-4 rounded-2xl max-w-md w-full mb-6 mx-auto backdrop-blur-md">
+                <h3 className="text-xs font-black text-gray-400 mb-3 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-cyan-400" /> 난이도 선택 (DIFFICULTY SELECT)
+                </h3>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <button
+                    onClick={() => setDifficulty('easy')}
+                    className={`py-2 px-1.5 rounded-xl border text-[11px] font-black transition-all duration-300 flex flex-col items-center gap-1 ${
+                      difficulty === 'easy'
+                        ? 'bg-emerald-950/45 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-500/20 scale-105'
+                        : 'bg-zinc-950/50 border-zinc-850 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                    }`}
+                  >
+                    <span className="text-sm">🌱 하 (Easy)</span>
+                    <span className="text-[8px] opacity-70 font-normal leading-none">점수 0.8배 / 큼직하고 여유로움</span>
+                  </button>
+                  <button
+                    onClick={() => setDifficulty('medium')}
+                    className={`py-2 px-1.5 rounded-xl border text-[11px] font-black transition-all duration-300 flex flex-col items-center gap-1 ${
+                      difficulty === 'medium'
+                        ? 'bg-amber-950/45 border-amber-500 text-amber-300 shadow-md shadow-amber-500/20 scale-105'
+                        : 'bg-zinc-950/50 border-zinc-850 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                    }`}
+                  >
+                    <span className="text-sm">⚔️ 중 (Normal)</span>
+                    <span className="text-[8px] opacity-70 font-normal leading-none text-center">점수 1.0배 / 표준 밸런스</span>
+                  </button>
+                  <button
+                    onClick={() => setDifficulty('hard')}
+                    className={`py-2 px-1.5 rounded-xl border text-[11px] font-black transition-all duration-300 flex flex-col items-center gap-1 ${
+                      difficulty === 'hard'
+                        ? 'bg-rose-950/45 border-rose-500 text-rose-300 shadow-md shadow-rose-500/20 scale-105'
+                        : 'bg-zinc-950/50 border-zinc-850 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                    }`}
+                  >
+                    <span className="text-sm">🔥 상 (Hard)</span>
+                    <span className="text-[8px] opacity-70 font-normal leading-none">점수 1.5배 / 작고 전광석화</span>
+                  </button>
+                </div>
+              </div>
+
               {/* 시작 제어 및 로딩 표시 */}
               <div className="flex flex-col items-center gap-3 w-full">
                 {isMediaPipeLoading ? (
@@ -1384,14 +1448,23 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-cyan-500 text-black font-black text-[10px] rounded-full">
                   PERFORMANCE STATS
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   <div className="flex flex-col items-center border-r border-gray-800">
-                    <span className="text-[10px] text-gray-500 font-bold uppercase">최종 획득 점수</span>
-                    <span className="text-3xl font-black text-cyan-400 mt-1 font-mono">{score}</span>
+                    <span className="text-[9px] text-gray-500 font-bold uppercase">도전 난이도</span>
+                    <span className={`text-base font-black mt-2.5 ${
+                      difficulty === 'easy' ? 'text-emerald-400' :
+                      difficulty === 'hard' ? 'text-rose-450' : 'text-amber-400'
+                    }`}>
+                      {difficulty === 'easy' ? '🌱 하' : difficulty === 'hard' ? '🔥 상' : '⚔️ 중'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center border-r border-gray-800">
+                    <span className="text-[9px] text-gray-500 font-bold uppercase">최종 획득 점수</span>
+                    <span className="text-2xl font-black text-cyan-400 mt-1.5 font-mono">{score}</span>
                   </div>
                   <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-gray-500 font-bold uppercase">최고 연속 콤보</span>
-                    <span className="text-3xl font-black text-yellow-400 mt-1 font-mono">{maxCombo}</span>
+                    <span className="text-[9px] text-gray-500 font-bold uppercase">최고 연속 콤보</span>
+                    <span className="text-2xl font-black text-yellow-400 mt-1.5 font-mono">{maxCombo}</span>
                   </div>
                 </div>
               </div>
@@ -1444,6 +1517,13 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
           </span>
           <span className="text-[8px] text-yellow-400 font-extrabold border border-yellow-400/30 px-2 py-0.5 rounded-full bg-yellow-950/10 hidden sm:inline">
             NEON SLICER
+          </span>
+          <span className={`text-[9.5px] font-black border px-2.5 py-0.5 rounded-full ${
+            difficulty === 'easy' ? 'border-emerald-500/50 text-emerald-400 bg-emerald-950/10' :
+            difficulty === 'hard' ? 'border-rose-500/50 text-rose-400 bg-rose-950/10 animate-pulse' :
+            'border-amber-500/50 text-amber-300 bg-amber-950/10'
+          }`}>
+            난이도: {difficulty === 'easy' ? '하' : difficulty === 'hard' ? '상' : '중'} {difficulty === 'easy' ? '🌱' : difficulty === 'hard' ? '🔥' : '⚔️'}
           </span>
         </div>
 
