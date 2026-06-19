@@ -65,6 +65,18 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     return saved ? parseInt(saved, 10) : 0;
   });
 
+  const [gameMode, setGameMode] = useState<'single' | 'multi'>('single');
+  const gameModeRef = useRef<'single' | 'multi'>('single');
+  useEffect(() => {
+    gameModeRef.current = gameMode;
+  }, [gameMode]);
+
+  const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1);
+  const currentPlayerRef = useRef<1 | 2>(1);
+  useEffect(() => {
+    currentPlayerRef.current = currentPlayer;
+  }, [currentPlayer]);
+
   const [leanIndex, setLeanIndex] = useState(0);
   const [wobbleOffset, setWobbleOffset] = useState(0);
   const [message, setMessage] = useState('가운데나 좌우 블록을 살짝 탭해 빼내세요!');
@@ -229,12 +241,15 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   };
 
   const handleResetClick = () => {
+    setCurrentPlayer(1);
     if (sceneRef.current) {
       setUpTowerScene();
     }
   };
 
-  const initGamePlay = () => {
+  const initGamePlay = (mode: 'single' | 'multi') => {
+    setGameMode(mode);
+    setCurrentPlayer(1);
     setGameState('PLAYING');
     if (sceneRef.current) {
       setUpTowerScene();
@@ -780,7 +795,14 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       // Reset selection state
       pendingPlaceBlockRef.current = null;
       setPendingPlaceBlock(null);
-      setMessage(`🪜 블록을 꼭대기 층의 ${col === 0 ? '왼쪽' : col === 1 ? '가운데' : '오른쪽'}에 완벽히 세웠습니다!`);
+      
+      if (gameModeRef.current === 'multi') {
+        const nextPlayer = currentPlayerRef.current === 1 ? 2 : 1;
+        setCurrentPlayer(nextPlayer);
+        setMessage(`🪜 꼭대기에 블록을 완벽히 쌓았습니다! 다음 차례인 [플레이어 ${nextPlayer}]님, 준비해 주세요! 🎯`);
+      } else {
+        setMessage(`🪜 블록을 꼭대기 층의 ${col === 0 ? '왼쪽' : col === 1 ? '가운데' : '오른쪽'}에 완벽히 세웠습니다!`);
+      }
 
       if (nr >= ROWS + 12) {
         overRef.current = true;
@@ -840,7 +862,14 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       overRef.current = true;
       setGameState('CRASHED');
       playSound('crash');
-      setMessage(`💥 아하! 타워가 버티지 못하고 무너졌습니다! (기록 : ${scoreRef.current}개)`);
+      
+      if (gameModeRef.current === 'multi') {
+        const loser = currentPlayerRef.current;
+        const winner = loser === 1 ? 2 : 1;
+        setMessage(`💥 와장창! [플레이어 ${loser}]님이 그만 탑을 무너뜨렸습니다! [플레이어 ${winner}]님이 최종 승리하였습니다! 🏆🎉`);
+      } else {
+        setMessage(`💥 아하! 타워가 버티지 못하고 무너졌습니다! (기록 : ${scoreRef.current}개)`);
+      }
 
       // Scatter wood blocks physically in 3D scene!
       blocksRef.current.forEach(b => {
@@ -1129,6 +1158,19 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         {/* Stability Balance Slider Overlay - absolutely overlaid inside canvas area! */}
         {gameState === 'PLAYING' && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-sm px-4 py-1.5 bg-zinc-950/85 rounded-xl border border-amber-900/10 z-20 text-center animate-fade-in shadow-xl backdrop-blur-sm">
+            {gameMode === 'multi' && (
+              <div className="mb-2 flex items-center justify-center">
+                <span className={`px-4 py-1.5 rounded-xl text-xs font-black shadow-lg border animate-pulse flex items-center gap-1.5 ${
+                  currentPlayer === 1 
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-cyan-500/5' 
+                    : 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40 shadow-fuchsia-500/5'
+                }`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />
+                  플레이어 {currentPlayer}님의 차례 🎯
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-[10px] font-black text-zinc-400 mb-1">
               <span className="text-cyan-400 flex items-center gap-1">◀ 좌측 기욺</span>
               <span className="bg-amber-950/40 border border-amber-900/30 px-2 py-0.5 rounded text-amber-300 font-black">
@@ -1246,13 +1288,21 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               </div>
             </div>
 
-            <Button 
-              onClick={initGamePlay}
-              icon={Play}
-              className="px-8 py-2.5 text-xs font-black bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 rounded-xl shadow-lg border-b-4 border-amber-800 shrink-0"
-            >
-              도전 탐구 시작하기
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm shrink-0">
+              <Button 
+                onClick={() => initGamePlay('single')}
+                icon={Play}
+                className="flex-1 py-3 text-xs font-black bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 rounded-xl shadow-lg border-b-4 border-amber-800 cursor-pointer"
+              >
+                1인 탐구 학습 👤
+              </Button>
+              <Button 
+                onClick={() => initGamePlay('multi')}
+                className="flex-1 py-3 text-xs font-black bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-650 hover:to-cyan-705 text-white rounded-xl shadow-lg border-b-4 border-cyan-800 cursor-pointer"
+              >
+                2인 대결 (한 패드) 👥
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1383,17 +1433,31 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         {gameState === 'CRASHED' && (
           <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-6 text-center z-30 backdrop-blur-sm animate-fade-in rounded-xl">
             <span className="text-5xl mb-3">💥</span>
-            <h2 className="text-2xl font-black text-rose-100 mb-1">앗! 타워가 쓰러졌습니다!</h2>
-            <p className="text-xs text-zinc-400 mb-6 max-w-xs leading-relaxed font-semibold">
-              {score > 0 
-                ? `훌륭한 탐구정신으로 총 ${score}개의 블록을 무사히 빼내어 쌓아 올렸습니다!` 
-                : '균형 감각을 발휘하여 첫 블록 조각 추출을 성찰해보세요.'}
-            </p>
+            {gameMode === 'multi' ? (
+              <>
+                <h2 className="text-2xl font-black text-amber-200 mb-2">
+                  플레이어 {currentPlayer === 1 ? 2 : 1}님의 최종 승리! 🎉🏆
+                </h2>
+                <p className="text-xs text-zinc-300 mb-6 max-w-xs leading-relaxed font-semibold">
+                  탑에 누적 쌓기 기록은 총 <span className="text-amber-300 font-bold">{score}</span>개였습니다.<br/>
+                  (플레이어 {currentPlayer}님이 조작 과정에서 탑을 무너뜨렸습니다.)
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-black text-rose-100 mb-1">앗! 타워가 쓰러졌습니다!</h2>
+                <p className="text-xs text-zinc-400 mb-6 max-w-xs leading-relaxed font-semibold">
+                  {score > 0 
+                    ? `훌륭한 탐구정신으로 총 ${score}개의 블록을 무사히 빼내어 쌓아 올렸습니다!` 
+                    : '균형 감각을 발휘하여 첫 블록 조각 추출을 성찰해보세요.'}
+                </p>
+              </>
+            )}
 
             <Button 
               onClick={handleResetClick} 
               icon={RefreshCw}
-              className="px-10 py-3.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black border-b-4 border-rose-800 active:translate-y-1 shadow-lg transition-all rounded-xl"
+              className="px-10 py-3.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black border-b-4 border-rose-800 active:translate-y-1 shadow-lg transition-all rounded-xl cursor-pointer"
             >
               다시 새로운 타워 세우기
             </Button>
