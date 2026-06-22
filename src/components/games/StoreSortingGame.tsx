@@ -102,6 +102,7 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   const [isPaused, setIsPaused] = useState(false);
   const [lastActionTime, setLastActionTime] = useState(Date.now());
   const [hintShelfIdx, setHintShelfIdx] = useState<number | null>(null);
+  const [hintItemCoords, setHintItemCoords] = useState<{ shelfIdx: number; itemIdx: number }[]>([]);
   const [justClosedShelf, setJustClosedShelf] = useState<number | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
@@ -174,25 +175,59 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
 
     const hintTimer = setInterval(() => {
       if (Date.now() - lastActionTime > 7000) { // 7 seconds of inactivity
-        // Find a shelf that can be completed or has items that can be moved
-        // For simplicity, just pick a random non-closed shelf
-        const openShelves = Array.from({ length: SHELF_COUNT }, (_, i) => i).filter(i => !closedShelves.includes(i));
-        if (openShelves.length > 0) {
-          setHintShelfIdx(openShelves[Math.floor(Math.random() * openShelves.length)]);
+        // Find all items on non-closed shelves
+        const openShelvesWithIndices = shelves
+          .map((items, idx) => ({ items, idx }))
+          .filter(({ idx }) => !closedShelves.includes(idx));
+
+        const itemCoordsMap: Record<string, { shelfIdx: number; itemIdx: number }[]> = {};
+
+        openShelvesWithIndices.forEach(({ items, idx: shelfIdx }) => {
+          items.forEach((item, itemIdx) => {
+            if (!itemCoordsMap[item]) {
+              itemCoordsMap[item] = [];
+            }
+            itemCoordsMap[item].push({ shelfIdx, itemIdx });
+          });
+        });
+
+        // Search for items existing on multiple different shelves
+        const candidateGroups = Object.keys(itemCoordsMap).map(item => {
+          const coords = itemCoordsMap[item];
+          const uniqueShelves = new Set(coords.map(c => c.shelfIdx));
+          return { item, coords, uniqueShelvesCount: uniqueShelves.size };
+        }).filter(g => g.uniqueShelvesCount >= 2);
+
+        if (candidateGroups.length > 0) {
+          // Select the first group and blink all its matching elements
+          const chosenGroup = candidateGroups[0];
+          setHintItemCoords(chosenGroup.coords);
+          // Set first shelf for general background glow compatibility
+          setHintShelfIdx(chosenGroup.coords[0].shelfIdx);
+        } else {
+          // Fallback to random shelf if no smart group matches
+          const openShelves = Array.from({ length: SHELF_COUNT }, (_, i) => i).filter(i => !closedShelves.includes(i));
+          if (openShelves.length > 0) {
+            const randomShelf = openShelves[Math.floor(Math.random() * openShelves.length)];
+            setHintShelfIdx(randomShelf);
+            setHintItemCoords(shelves[randomShelf].map((_, idx) => ({ shelfIdx: randomShelf, itemIdx: idx })));
+          }
         }
       } else {
         setHintShelfIdx(null);
+        setHintItemCoords([]);
       }
     }, 1000);
 
     return () => clearInterval(hintTimer);
-  }, [gameState, showQuiz, gameWon, gameOver, isPaused, lastActionTime, closedShelves]);
+  }, [gameState, showQuiz, gameWon, gameOver, isPaused, lastActionTime, closedShelves, shelves]);
 
   const handleItemClick = (shelfIdx: number, itemIdx: number) => {
     if (showQuiz || gameWon || gameOver || closedShelves.includes(shelfIdx) || gameState !== 'PLAYING') return;
 
     setLastActionTime(Date.now());
     setHintShelfIdx(null);
+    setHintItemCoords([]);
     playSound('click');
 
     if (!selection) {
@@ -243,6 +278,9 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
     setTimeLeft(STAGE_TIME);
     setGameWon(false);
     setShowQuiz(false);
+    setLastActionTime(Date.now());
+    setHintShelfIdx(null);
+    setHintItemCoords([]);
   };
 
   const restart = () => {
@@ -256,6 +294,9 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
     setGameWon(false);
     setGameOver(false);
     setGameState('PLAYING');
+    setLastActionTime(Date.now());
+    setHintShelfIdx(null);
+    setHintItemCoords([]);
   };
 
   if (gameState === 'START') {
@@ -397,6 +438,13 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
             .shelf-hint {
               animation: shelf-hint-blink 1s infinite ease-in-out;
             }
+            @keyframes item-hint-blink {
+              0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+              50% { transform: scale(1.18); filter: drop-shadow(0 0 10px #fbbf24); }
+            }
+            .item-hint {
+              animation: item-hint-blink 1.2s infinite ease-in-out;
+            }
           `}</style>
           {shelves.map((shelfItems, sIdx) => {
             const isClosed = closedShelves.includes(sIdx);
@@ -432,6 +480,7 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
                 {/* Shelf Items */}
                 {shelfItems.map((item, iIdx) => {
                   const isSelected = selection?.shelfIdx === sIdx && selection?.itemIdx === iIdx;
+                  const isItemHint = hintItemCoords.some(coord => coord.shelfIdx === sIdx && coord.itemIdx === iIdx);
                   
                   return (
                     <motion.div
@@ -446,7 +495,8 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
                     >
                       <span className={cn(
                         "transition-transform",
-                        isSelected && "scale-125 drop-shadow-[0_0_8px_rgba(255,255,255,1)]"
+                        isSelected && "scale-125 drop-shadow-[0_0_8px_rgba(255,255,255,1)]",
+                        isItemHint && "item-hint"
                       )}>
                         {item}
                       </span>

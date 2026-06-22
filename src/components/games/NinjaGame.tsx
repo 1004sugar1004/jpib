@@ -205,15 +205,17 @@ class SlicedShard {
     this.life -= 0.024;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, optimizeMode?: boolean) {
     if (this.life <= 0) return;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
     ctx.globalAlpha = this.life;
 
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = this.color;
+    if (!optimizeMode) {
+      ctx.shadowBlur = 3;
+      ctx.shadowColor = this.color;
+    }
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 3.5;
     ctx.fillStyle = '#0a0a0f';
@@ -265,12 +267,14 @@ class Shockwave {
     this.life -= this.decay;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, optimizeMode?: boolean) {
     if (this.life <= 0) return;
     ctx.save();
     ctx.globalAlpha = this.life;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = this.color;
+    if (!optimizeMode) {
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = this.color;
+    }
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 4;
     
@@ -320,8 +324,6 @@ class JuiceParticle {
     if (this.life <= 0) return;
     ctx.save();
     ctx.globalAlpha = this.life;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = this.color;
     ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -353,12 +355,14 @@ class ComboText {
     this.life -= 0.02;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, optimizeMode?: boolean) {
     if (this.life <= 0) return;
     ctx.save();
     ctx.globalAlpha = this.life;
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = this.color;
+    if (!optimizeMode) {
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = this.color;
+    }
     ctx.fillStyle = this.color;
     ctx.font = `900 ${20 + (1.0 - this.life) * 8}px 'Orbitron', 'Noto Sans KR'`;
     ctx.textAlign = 'center';
@@ -423,13 +427,15 @@ class FruitObject {
     this.angle += this.spin;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, optimizeMode?: boolean) {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
 
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = this.color;
+    if (!optimizeMode) {
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = this.color;
+    }
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 4;
     ctx.fillStyle = '#0f0f15';
@@ -517,6 +523,19 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
   useEffect(() => {
     difficultyRef.current = difficulty;
   }, [difficulty]);
+
+  // 저사양/초고속 최적화 모드 (60 FPS)
+  const [optimizeMode, setOptimizeMode] = useState<boolean>(false);
+  const optimizeModeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    optimizeModeRef.current = optimizeMode;
+    if (mediaPipeHandsInstanceRef.current) {
+      mediaPipeHandsInstanceRef.current.setOptions({
+        modelComplexity: optimizeMode ? 0 : 1
+      });
+    }
+  }, [optimizeMode]);
 
   // 미디어파이프 상태
   const [isMediaPipeLoading, setIsMediaPipeLoading] = useState<boolean>(true);
@@ -731,13 +750,15 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
         // 충격파
         shockwavesRef.current.push(new Shockwave(fruit.x, fruit.y, fruit.color));
 
-        // 파티클 (개수를 12개로 축소하여 렉 감소 및 모바일과 저가 기기 성능 향상)
-        for (let i = 0; i < 12; i++) {
+        // 파티클 (개수를 12개로 축소하여 렉 감소 및 모바일과 저가 기기 성능 향상, 최적화 모드에서는 4개만 소환)
+        const particleCount = optimizeModeRef.current ? 4 : 12;
+        for (let i = 0; i < particleCount; i++) {
           particlesRef.current.push(new JuiceParticle(fruit.x, fruit.y, fruit.color));
         }
-        // 전체 파티클 숫자가 90개를 넘어가면 렉 방지를 위해 초과분 잘라내기
-        if (particlesRef.current.length > 90) {
-          particlesRef.current = particlesRef.current.slice(-90);
+        // 전체 파티클 숫자가 넘어가면 렉 방지를 위해 초과분 잘라내기
+        const maxParticles = optimizeModeRef.current ? 35 : 90;
+        if (particlesRef.current.length > maxParticles) {
+          particlesRef.current = particlesRef.current.slice(-maxParticles);
         }
 
         // 콤보 팝업 지문 데코레이터
@@ -769,7 +790,7 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
 
       hands.setOptions({
         maxNumHands: 2,
-        modelComplexity: 1,
+        modelComplexity: optimizeModeRef.current ? 0 : 1,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
       });
@@ -785,8 +806,9 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
           onFrame: async () => {
             if (mediaPipeHandsInstanceRef.current && videoRef.current) {
               frameCountRef.current += 1;
-              // Skip every 2nd frame to drop CPU processing by 50%
-              if (frameCountRef.current % 2 === 0) {
+              // Skip every 2nd frame in normal mode, or skip 2 out of 3 frames in optimize mode to lower CPU load
+              const skipRate = optimizeModeRef.current ? 3 : 2;
+              if (frameCountRef.current % skipRate === 0) {
                 await mediaPipeHandsInstanceRef.current.send({ image: videoRef.current });
               }
             }
@@ -908,50 +930,44 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
     }
 
     // 과일 물리 연산
-    fruitsRef.current.forEach((fruit, idx) => {
+    fruitsRef.current = fruitsRef.current.filter((fruit) => {
+      if (fruit.isSliced) {
+        return false; // Sliced fruits are immediately removed from drawing list!
+      }
       fruit.update();
       
       // 화면 밖으로 이탈
       if (fruit.y > canvas.height + fruit.radius * 2) {
-        if (!fruit.isSliced) {
-          // 과일을 놓치면 콤보 리셋
-          setCombo(0);
-          comboRef.current = 0;
-        }
-        fruitsRef.current.splice(idx, 1);
+        // 과일을 놓치면 콤보 리셋
+        setCombo(0);
+        comboRef.current = 0;
+        return false;
       }
+      return true;
     });
 
     // 파편 물리 연산
-    shardsRef.current.forEach((shard, idx) => {
+    shardsRef.current = shardsRef.current.filter((shard) => {
       shard.update();
-      if (shard.life <= 0 || shard.y > canvas.height + shard.radius * 2) {
-        shardsRef.current.splice(idx, 1);
-      }
+      return !(shard.life <= 0 || shard.y > canvas.height + shard.radius * 2);
     });
 
     // 충격파 연산
-    shockwavesRef.current.forEach((wave, idx) => {
+    shockwavesRef.current = shockwavesRef.current.filter((wave) => {
       wave.update();
-      if (wave.life <= 0) {
-        shockwavesRef.current.splice(idx, 1);
-      }
+      return wave.life > 0;
     });
 
     // 주스 물방울 연산
-    particlesRef.current.forEach((p, idx) => {
+    particlesRef.current = particlesRef.current.filter((p) => {
       p.update();
-      if (p.life <= 0) {
-        particlesRef.current.splice(idx, 1);
-      }
+      return p.life > 0;
     });
 
     // 콤보 팝업 텍스트 연산
-    comboTextsRef.current.forEach((t, idx) => {
+    comboTextsRef.current = comboTextsRef.current.filter((t) => {
       t.update();
-      if (t.life <= 0) {
-        comboTextsRef.current.splice(idx, 1);
-      }
+      return t.life > 0;
     });
 
     // Hand trail 천천히 축소
@@ -987,8 +1003,10 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
 
     // 네온 배경 디비전 가이드 라인
     ctx.save();
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = 'rgba(0, 240, 255, 0.15)';
+    if (!optimizeModeRef.current) {
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(0, 240, 255, 0.15)';
+    }
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -999,19 +1017,22 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
 
     // 1. 진행 중인 게임 플레이 오브젝트 (오직 PLAYING 시에만 렌더링)
     if (gameStateRef.current === 'PLAYING') {
-      fruitsRef.current.forEach(f => f.draw(ctx));
-      shardsRef.current.forEach(s => s.draw(ctx));
-      shockwavesRef.current.forEach(w => w.draw(ctx));
+      const opt = optimizeModeRef.current;
+      fruitsRef.current.forEach(f => f.draw(ctx, opt));
+      shardsRef.current.forEach(s => s.draw(ctx, opt));
+      shockwavesRef.current.forEach(w => w.draw(ctx, opt));
       particlesRef.current.forEach(p => p.draw(ctx));
-      comboTextsRef.current.forEach(t => t.draw(ctx));
+      comboTextsRef.current.forEach(t => t.draw(ctx, opt));
     }
 
     // 2. 마우스 드래그 궤적 그리기 (언제나 활성)
     const mouseTrail = mouseTrailRef.current;
     if (mouseTrail.length > 1) {
       ctx.save();
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#00f0ff';
+      if (!optimizeModeRef.current) {
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#00f0ff';
+      }
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 8;
       ctx.lineCap = 'round';
@@ -1030,8 +1051,10 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
     trails.forEach((trail) => {
       if (trail.length > 1) {
         ctx.save();
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = '#00f0ff';
+        if (!optimizeModeRef.current) {
+          ctx.shadowBlur = 25;
+          ctx.shadowColor = '#00f0ff';
+        }
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 12;
         ctx.lineCap = 'round';
@@ -1066,8 +1089,10 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
 
         // 1. 네온 빛 아우라 (두껍고 밝은 사이언 주위광)
         ctx.save();
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = '#00ffff';
+        if (!optimizeModeRef.current) {
+          ctx.shadowBlur = 20;
+          ctx.shadowColor = '#00ffff';
+        }
         ctx.strokeStyle = 'rgba(0, 255, 255, 0.85)';
         ctx.lineWidth = 8;
         ctx.lineCap = 'round';
@@ -1086,8 +1111,10 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
         ctx.stroke();
 
         // 3. 광선검 양끝 충전 구슬 가이드 (노란색 아우라)
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#ffea00';
+        if (!optimizeModeRef.current) {
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = '#ffea00';
+        }
         ctx.fillStyle = '#ffea00';
         
         ctx.beginPath();
@@ -1383,6 +1410,33 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
                 </div>
               </div>
 
+              {/* 성능 최적화 옵션 (60 FPS 보증) */}
+              <div className="bg-zinc-900/60 border border-zinc-800 p-4 rounded-2xl max-w-md w-full mb-6 mx-auto backdrop-blur-md text-left transition-all hover:border-zinc-700">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <h4 className="text-xs font-black text-cyan-400 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" /> 초고속 최적화 모드 (60 FPS 보장)
+                    </h4>
+                    <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
+                      필터 그래픽 연산 중 CPU/GPU 부하가 심한 <strong className="text-zinc-300">네온 빛 아우라(그림자 블러) 효과</strong>를 간소화하고, 웹캠 핸드 트래킹 모델을 <strong className="text-white">모바일 초경량 모델(Lite)</strong>로 자동 전향하여 끊김 현상(렉)을 완벽히 방지합니다.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setOptimizeMode(prev => !prev)}
+                    className={`shrink-0 w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer relative ${
+                      optimizeMode ? 'bg-cyan-500' : 'bg-zinc-700'
+                    }`}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                        optimizeMode ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
               {/* 시작 제어 및 로딩 표시 */}
               <div className="flex flex-col items-center gap-3 w-full">
                 {isMediaPipeLoading ? (
@@ -1537,8 +1591,13 @@ export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
           </div>
         </div>
 
-        <div className="text-[10px] font-mono text-zinc-600">
-          FPS: {fps}
+        <div className="flex flex-col items-end text-[10px] font-mono gap-1 text-right">
+          <span className="text-zinc-600 font-bold">FPS: {fps}</span>
+          {optimizeMode && (
+            <span className="text-cyan-400 font-extrabold bg-cyan-950/45 border border-cyan-500/30 px-1.5 py-0.5 rounded text-[8px] animate-pulse tracking-tight">
+              ⚡ 초고속 모드
+            </span>
+          )}
         </div>
       </header>
 

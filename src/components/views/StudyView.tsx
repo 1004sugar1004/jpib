@@ -183,9 +183,19 @@ export const StudyView = ({
     if (!q) return;
 
     const userAns = consonantInput.trim().replace(/\s+/g, '');
-    const correctAns = q.word.trim().replace(/\s+/g, '');
+    let correctAns = q.word.trim().replace(/\s+/g, '');
 
-    if (userAns === correctAns) {
+    let isCorrect = (userAns === correctAns);
+
+    // 균형 잡힌 사람의 경우, 예외적으로 구어 발음 혹은 맞춤법 오류 대처 (예: 균형자핀사람) 허용하여 유연한 학습 보장 및 오답 수용성 확대
+    if (!isCorrect && q.word === "균형 잡힌 사람") {
+      const allowedAltAnswers = ["균형잡힌사람", "균형자핀사람", "균형잡힌", "균형자핀"];
+      if (allowedAltAnswers.includes(userAns)) {
+        isCorrect = true;
+      }
+    }
+
+    if (isCorrect) {
       setConsonantFeedback('correct');
       setConsonantStreak(prev => prev + 1);
       if (soundEnabled) {

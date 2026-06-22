@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { HelpCircle, Info, BookOpen, Heart, X, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface UnoGameProps {
@@ -83,12 +84,62 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
   const [hands, setHands] = useState<UnoCard[][]>([]);
   const [activeColor, setActiveColor] = useState('');
   const [currentTurn, setCurrentTurn] = useState<number>(-1); // -1 is game not started yet
+  const [turnTrigger, setTurnTrigger] = useState(0);
   const [isClockwise, setIsClockwise] = useState(true);
   const [gameMessage, setGameMessage] = useState('세팅 후 게임 시작 버튼을 눌러주세요.');
   const [activeExplanation, setActiveExplanation] = useState('');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [pendingWild, setPendingWild] = useState<any>(null);
   const [attackEffect, setAttackEffect] = useState(''); // 스크린 공격 이펙트 알림용
+  const [showGuide, setShowGuide] = useState(false); // 가이드 모달용
+
+  // Synchronously assigned refs on every render to guarantee absolute freshness and eliminate timing race conditions
+  const handsRef = useRef<UnoCard[][]>([]);
+  const deckRef = useRef<UnoCard[]>([]);
+  const activeColorRef = useRef<string>('');
+  const discardPileRef = useRef<UnoCard[]>([]);
+  const isClockwiseRef = useRef<boolean>(true);
+  const playerCountRef = useRef<number>(2);
+  const difficultyRef = useRef<string>('normal');
+
+  handsRef.current = hands;
+  deckRef.current = deck;
+  activeColorRef.current = activeColor;
+  discardPileRef.current = discardPile;
+  isClockwiseRef.current = isClockwise;
+  playerCountRef.current = playerCount;
+  difficultyRef.current = difficulty;
+
+  // Shuffled discard pile replication when draw deck runs out
+  const drawCards = (
+    count: number,
+    currentDeck: UnoCard[],
+    currentDiscard: UnoCard[]
+  ): { drawn: UnoCard[]; newDeck: UnoCard[]; newDiscard: UnoCard[] } => {
+    let tempDeck = [...currentDeck];
+    let tempDiscard = [...currentDiscard];
+    const drawnCards: UnoCard[] = [];
+
+    for (let i = 0; i < count; i++) {
+      if (tempDeck.length === 0) {
+        if (tempDiscard.length > 1) {
+          const top = tempDiscard.pop()!; // Save current top card
+          const rest = tempDiscard;
+          const shuffled = rest.sort(() => Math.random() - 0.5);
+          tempDeck = shuffled;
+          tempDiscard = [top];
+        } else {
+          break; // No cards left to shuffle
+        }
+      }
+      const card = tempDeck.shift();
+      if (card) {
+        drawnCards.push(card);
+      }
+    }
+
+    return { drawn: drawnCards, newDeck: tempDeck, newDiscard: tempDiscard };
+  };
 
   const startGame = () => {
     const freshDeck = buildDeck();
@@ -117,34 +168,46 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
 
   const canPlayCard = (card: UnoCard) => {
     if (card.color === 'Wild') return true;
-    if (card.color === activeColor) return true;
-    if (topCard && card.type === topCard.type && card.value === topCard.value) return true;
+    if (card.color === activeColorRef.current) return true;
+    const top = discardPileRef.current[discardPileRef.current.length - 1];
+    if (top && card.type === top.type && card.value === top.value) return true;
     return false;
   };
 
   const handlePlayerDraw = () => {
-    if (currentTurn !== 0 || deck.length === 0) return;
-    const nextDeck = [...deck];
-    const drawn = nextDeck.shift();
-    const nextHands = [...hands];
-    if (drawn) {
-      nextHands[0].push(drawn);
-      setDeck(nextDeck);
+    if (currentTurn !== 0) return;
+    const { drawn, newDeck, newDiscard } = drawCards(1, deckRef.current, discardPileRef.current);
+    if (drawn.length > 0) {
+      const nextHands = [...handsRef.current];
+      nextHands[0].push(drawn[0]);
+      
+      // Update refs immediately to avoid microtask lag
+      handsRef.current = nextHands;
+      deckRef.current = newDeck;
+
+      setDeck(newDeck);
+      setDiscardPile(newDiscard);
       setHands(nextHands);
       setGameMessage('카드를 1장 뽑았습니다. 다음 차례로 넘어갑니다.');
       passTurn(nextHands);
+    } else {
+      setGameMessage('더 이상 가져올 카드가 없습니다. 차례를 넘깁니다.');
+      passTurn(handsRef.current);
     }
   };
 
   const playCard = (cardId: string, playerIdx: number) => {
     if (currentTurn !== playerIdx) return;
-    const nextHands = [...hands];
+    const nextHands = [...handsRef.current];
     const card = nextHands[playerIdx].find(c => c.id === cardId);
     if (!card || !canPlayCard(card)) return;
 
     nextHands[playerIdx] = nextHands[playerIdx].filter(c => c.id !== cardId);
     setDiscardPile(prev => [...prev, card]);
     setHands(nextHands);
+    
+    // Update ref synchronously to bypass React rendering cycle gaps
+    handsRef.current = nextHands;
 
     // 승리조건 체크
     if (nextHands[playerIdx].length === 0) {
@@ -175,7 +238,7 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
     if (card.value === 'Skip') {
       skipNext = true;
     } else if (card.value === 'Reverse') {
-      if (playerCount === 2) skipNext = true;
+      if (playerCountRef.current === 2) skipNext = true;
       else setIsClockwise(prev => !prev);
     } else if (card.value === 'DrawTwo') {
       drawCount = 2;
@@ -216,31 +279,47 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
   };
 
   const applyTurnCalculations = (skipNext: boolean, drawCount: number, currentHands: UnoCard[][]) => {
-    let nextDeck = [...deck];
+    let nextDeck = [...deckRef.current];
     let nextHands = [...currentHands];
     let step = skipNext ? 2 : 1;
     let nextTurn = currentTurn;
 
     if (drawCount > 0) {
-      let targetIdx = isClockwise ? (currentTurn + 1) % playerCount : (currentTurn - 1 + playerCount) % playerCount;
-      const drawn = nextDeck.splice(0, drawCount);
+      let targetIdx = isClockwiseRef.current
+        ? (currentTurn + 1) % playerCountRef.current
+        : (currentTurn - 1 + playerCountRef.current) % playerCountRef.current;
+      
+      const { drawn, newDeck, newDiscard } = drawCards(drawCount, nextDeck, discardPileRef.current);
       nextHands[targetIdx] = [...nextHands[targetIdx], ...drawn];
-      setDeck(nextDeck);
+      nextDeck = newDeck;
+
+      setDeck(newDeck);
+      setDiscardPile(newDiscard);
       setHands(nextHands);
     }
 
-    if (isClockwise) {
-      nextTurn = (currentTurn + step) % playerCount;
+    if (isClockwiseRef.current) {
+      nextTurn = (currentTurn + step) % playerCountRef.current;
     } else {
-      nextTurn = (currentTurn - step + playerCount) % playerCount;
+      nextTurn = (currentTurn - step + playerCountRef.current) % playerCountRef.current;
     }
 
+    // Synchronize latest structural state elements inside the ref immediately
+    handsRef.current = nextHands;
+    deckRef.current = nextDeck;
+
     setCurrentTurn(nextTurn);
+    setTurnTrigger(prev => prev + 1);
   };
 
   const passTurn = (currHands: UnoCard[][]) => {
-    let nextTurn = isClockwise ? (currentTurn + 1) % playerCount : (currentTurn - 1 + playerCount) % playerCount;
+    let nextTurn = isClockwiseRef.current
+      ? (currentTurn + 1) % playerCountRef.current
+      : (currentTurn - 1 + playerCountRef.current) % playerCountRef.current;
+    
+    handsRef.current = currHands;
     setCurrentTurn(nextTurn);
+    setTurnTrigger(prev => prev + 1);
   };
 
   // 컴퓨터 인공지능 핸들러
@@ -248,37 +327,45 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
     if (currentTurn === 0 || currentTurn === -1) return;
 
     const timer = setTimeout(() => {
-      const aiHand = hands[currentTurn];
+      const currentHands = handsRef.current;
+      const currentDeck = deckRef.current;
+      const aiHand = currentHands[currentTurn];
       if (!aiHand) return;
       const playable = aiHand.filter(c => canPlayCard(c));
 
       if (playable.length > 0) {
         let chosen = playable[0];
         // 상급 모드 지능 고도화 (저격 시스템)
-        if (difficulty === 'hard' && hands[0].length <= 3) {
-          chosen = playable.find(c => c.value === 'WildDrawFour' || c.value === 'DrawTwo') || playable[0];
-        } else if (difficulty === 'normal') {
+        const userHand = currentHands[0];
+        if (difficultyRef.current === 'hard' && userHand && userHand.length <= 3) {
+          chosen =
+            playable.find(c => c.value === 'WildDrawFour' || c.value === 'DrawTwo') || playable[0];
+        } else if (difficultyRef.current === 'normal') {
           chosen = playable.find(c => c.type === 'number') || playable[0];
         }
         playCard(chosen.id, currentTurn);
       } else {
-        if (deck.length > 0) {
-          const nextDeck = [...deck];
-          const drawn = nextDeck.shift();
-          const nextHands = [...hands];
-          if (drawn) {
-            nextHands[currentTurn].push(drawn);
-            setDeck(nextDeck);
-            setHands(nextHands);
-            setGameMessage(`컴퓨터 ${currentTurn}번이 카드가 없어 1장 획득했습니다.`);
-          }
+        const nextHands = [...currentHands];
+        const { drawn, newDeck, newDiscard } = drawCards(
+          1,
+          currentDeck,
+          discardPileRef.current
+        );
+        if (drawn.length > 0) {
+          nextHands[currentTurn] = [...nextHands[currentTurn], drawn[0]];
+          setDeck(newDeck);
+          setDiscardPile(newDiscard);
+          setHands(nextHands);
+          setGameMessage(`컴퓨터 ${currentTurn}번이 놓을 카드가 없어 1장을 뽑았습니다.`);
+        } else {
+          setGameMessage(`컴퓨터 ${currentTurn}번이 뽑을 카드가 없어 차례를 넘겼습니다.`);
         }
-        passTurn(hands);
+        passTurn(nextHands);
       }
     }, 1600);
 
     return () => clearTimeout(timer);
-  }, [currentTurn]);
+  }, [currentTurn, turnTrigger]);
 
   return (
     <div className="w-full h-full absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-900 text-white p-2.5 md:p-4 flex flex-col justify-between items-center overflow-y-auto overflow-x-hidden font-sans select-none scrollbar-thin">
@@ -316,6 +403,10 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
             <option value="3">3인용</option>
             <option value="4">4인용</option>
           </select>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowGuide(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-2.5 py-1 md:py-1.5 rounded-lg text-[10px] cursor-pointer shadow-md flex items-center gap-1">
+            <HelpCircle className="w-3.5 h-3.5" />
+            초보 가이드
+          </motion.button>
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={startGame} className="bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-950 font-black px-3.5 py-1 md:py-1.5 rounded-lg text-[10px] cursor-pointer shadow-md shadow-yellow-500/10">
             GAME START
           </motion.button>
@@ -470,6 +561,132 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
                     {color}
                   </button>
                 ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 📖 초보자용 가이드북 모달 */}
+      <AnimatePresence>
+        {showGuide && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 pointer-events-auto overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 30 }}
+              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]"
+            >
+              <div className="bg-gradient-to-r from-indigo-900 to-slate-900 p-4 border-b border-slate-800 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-yellow-400 animate-pulse" />
+                  <div>
+                    <h3 className="text-sm font-black text-white tracking-wide">IB 우노(UNO) 초보자 가이드북</h3>
+                    <p className="text-[10px] text-slate-300 font-medium">처음이어도 1분 만에 배워서 바로 시작할 수 있어요!</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowGuide(false)}
+                  className="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* 가이드북 바디 스크롤 영역 */}
+              <div className="p-4 md:p-5 overflow-y-auto space-y-5 text-left text-xs leading-relaxed max-h-[60vh] scrollbar-thin">
+                
+                {/* 1. 기본 승리 조건 및 규칙 */}
+                <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                  <h4 className="font-black text-yellow-400 flex items-center gap-1.5 text-xs">
+                    <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+                    1. 게임의 목표와 기본 규칙
+                  </h4>
+                  <ul className="list-disc pl-4 text-slate-300 space-y-1 mt-1.5 text-[11px]">
+                    <li>자신의 카드를 <strong className="text-yellow-400">가장 먼저 모두 내려놓는 플레이어</strong>가 승리합니다.</li>
+                    <li>바닥에 놓인 카드와 <strong className="text-white">같은 색깔</strong>이거나, <strong className="text-white">동일한 값/기능</strong>의 카드를 번갈아가며 낼 수 있습니다.</li>
+                    <li>낼 수 있는 카드는 내 화면 하단에서 <strong className="text-yellow-400 border border-yellow-500/50 bg-yellow-500/10 px-1.5 rounded">노란색 테두리</strong>로 환하게 빛나니 초보자도 헷갈릴 염려가 없어요!</li>
+                    <li>낼 카드가 전혀 없을 때는 중앙의 <strong className="text-white">DRAW DECK(카드 더미)</strong>을 터치해서 1장 가져오고 차례를 넘깁니다.</li>
+                  </ul>
+                </div>
+
+                {/* 2. 특수 카드 백과사전 */}
+                <div>
+                  <h4 className="font-black text-indigo-400 flex items-center gap-1.5 text-xs">
+                    <Info className="w-3.5 h-3.5 text-indigo-400" />
+                    2. 특수 카드 소개 (초중요 장치)
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">바닥에 이 카드가 놓여지면 즉시 특별한 효과가 발동됩니다!</p>
+                  
+                  <div className="mt-2.5 space-y-2">
+                    {/* Skip */}
+                    <div className="flex gap-2.5 items-start p-2 bg-slate-950/40 rounded-lg border border-slate-800/40">
+                      <div className="px-2 py-1 h-fit text-[10px] font-black rounded bg-red-600 text-white min-w-[54px] text-center">관점 (Skip)</div>
+                      <p className="text-[11px] text-slate-300 leading-tight"><strong>상대방 건너뛰기:</strong> 서로 다른 관점을 충분히 경청하고 배려하기 위해 다음 플레이어는 차례를 1회 쉬어갑니다.</p>
+                    </div>
+
+                    {/* Reverse */}
+                    <div className="flex gap-2.5 items-start p-2 bg-slate-950/40 rounded-lg border border-slate-800/40">
+                      <div className="px-2 py-1 h-fit text-[10px] font-black rounded bg-blue-600 text-white min-w-[54px] text-center">변화 (Reverse)</div>
+                      <p className="text-[11px] text-slate-300 leading-tight"><strong>진행 방향 반전:</strong> 상황이 완전히 정반대로 변화합니다. 카드 흐름의 방향(시계 ↔ 반시계)을 뒤바꿉니다.</p>
+                    </div>
+
+                    {/* DrawTwo */}
+                    <div className="flex gap-2.5 items-start p-2 bg-slate-950/40 rounded-lg border border-slate-800/40">
+                      <div className="px-2 py-1 h-fit text-[10px] font-black rounded bg-yellow-500 text-slate-950 min-w-[54px] text-center">인과관계 (+2)</div>
+                      <p className="text-[11px] text-slate-300 leading-tight"><strong>두 장 주기:</strong> 행동과 실천의 인과관계! 나의 행동(원인)으로 인해 다음 상대방은 무덤에서 무조건 2장의 카드를 뽑고 차례를 강제 패스합니다.</p>
+                    </div>
+
+                    {/* Wild */}
+                    <div className="flex gap-2.5 items-start p-2 bg-slate-950/40 rounded-lg border border-slate-800/40">
+                      <div className="px-2 py-1 h-fit text-[10px] font-black rounded bg-gradient-to-r from-teal-500 to-green-600 text-white min-w-[54px] text-center">형태·관계 (Wild)</div>
+                      <p className="text-[11px] text-slate-300 leading-tight"><strong>원하는 색상 선언:</strong> 모양과 형태를 관찰하며 자신이 놓길 원하는 테마 색상(빨강, 파랑, 노랑, 초록 중 하나)을 자유롭게 지정할 수 있는 만능 조커 카드입니다.</p>
+                    </div>
+
+                    {/* WildDrawFour */}
+                    <div className="flex gap-2.5 items-start p-2 bg-slate-950/40 rounded-lg border border-slate-800/40">
+                      <div className="px-2 py-1 h-fit text-[10px] font-black rounded bg-gradient-to-r from-purple-600 to-pink-600 text-white min-w-[54px] text-center">기능·책임 (+4)</div>
+                      <p className="text-[11px] text-slate-300 leading-tight"><strong>색상 선언 + 네 장 권고:</strong> 최고의 전술적 카드! 내가 원하는 색상으로 게임판의 컬러를 변경하고, 동시에 상대방에게 4장의 드로우 책임을 지워 다음 사람을 방해하는 최강의 카드입니다.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. IB 학습자상 소개 카드 */}
+                <div className="bg-slate-950/30 p-3 rounded-xl border border-slate-800/50">
+                  <h4 className="font-black text-emerald-400 flex items-center gap-1.5 text-xs">
+                    <Heart className="w-3.5 h-3.5 text-emerald-400" />
+                    3. 숫자에 매칭된 IB 학습자상 (0~9)
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">숫자 카드들에는 글로벌 미래 인재로 성장하는 데 필요한 10가지 가치가 매칭되어 있어요:</p>
+                  <div className="grid grid-cols-2 gap-1 px-1 mt-2 text-[10.5px] text-slate-300">
+                    <div><strong>0:</strong> 탐구하는 사람</div>
+                    <div><strong>1:</strong> 지식이 많은 사람</div>
+                    <div><strong>2:</strong> 생각하는 사람</div>
+                    <div><strong>3:</strong> 소통하는 사람</div>
+                    <div><strong>4:</strong> 원칙을 지키는 사람</div>
+                    <div><strong>5:</strong> 열린 마음을 가진 사람</div>
+                    <div><strong>6:</strong> 배려하는 사람</div>
+                    <div><strong>7:</strong> 도전하는 사람</div>
+                    <div><strong>8:</strong> 균형 잡힌 사람</div>
+                    <div><strong>9:</strong> 성찰하는 사람</div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* 닫기 버튼 */}
+              <div className="p-3 bg-slate-950 border-t border-slate-800/50 flex justify-end">
+                <button
+                  onClick={() => setShowGuide(false)}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-4 py-1.5 rounded-lg text-xs active:scale-95 transition-transform cursor-pointer"
+                >
+                  확인 완료! 게임하기
+                </button>
               </div>
             </motion.div>
           </motion.div>
