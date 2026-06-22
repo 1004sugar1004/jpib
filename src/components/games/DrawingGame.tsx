@@ -76,19 +76,19 @@ const DIFF_SETTINGS = {
   easy: {
     name: "하 (쉬움)",
     time: 20,
-    leniency: "EXPIRED_LENIENCY: Be extremely lenient, generous, and warm. Even a partial outline, very rough scribble, or minimal simple shape that represents the concept should be accepted. Give the benefit of the doubt as much as possible to ensure younger students succeed easily.",
+    leniency: "EXPIRED_LENIENCY: Be extremely lenient, generous, and warm. Any simple outline, very rough scribble, or minimal simple shape that represents the concept even slightly must be accepted. Give the benefit of the doubt completely to ensure user success.",
     desc: "여유로운 20초 제한시간과 아주 너그러운 보너스 판정!"
   },
   medium: {
     name: "중 (보통)",
     time: 10,
-    leniency: "STANDARD_LENIENCY: Be friendly and lenient towards simple, child-like sketches, basic outlines, or symbolic representations, but reject completely empty canvases or totally unrelated squiggles.",
+    leniency: "STANDARD_LENIENCY: Be highly friendly, generous, and encouraging. Accept basic outlines, rough symbolic representations, simple child-like sketches, and hand doodles. Only reject completely empty canvases or pure chaotic random dots.",
     desc: "오리지널 10초 드로잉의 스릴과 표준 균형 판정!"
   },
   hard: {
     name: "상 (어려움)",
     time: 7,
-    leniency: "STRICT_LENIENCY: Be very precise and fair. The drawing must clearly capture the essential shape, detailed structure, or core recognized design of the object. Simple line scribbles or mismatched objects must be rejected.",
+    leniency: "RELAXED_STRICT_LENIENCY: Be very encouraging and fair. Accept clear basic structures and recognized designs of the object. Do not punish raw sketch quality; as long as the core concept is visible, mark as matched.",
     desc: "짜릿한 7초 탈출과 깐깐하고 정확한 정밀 판정!"
   }
 };
@@ -253,8 +253,9 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint/doodle of a "${currentWord}"?
             
             Evaluation Guidelines:
-            - Be friendly and lenient towards simple, child-like sketches, basic outline representations, or standard symbolic representations of "${currentWord}".
-            - However, you MUST be honest and balanced so that the game is fun and challenging: if the drawing consists of completely unrelated random scribbles (such as a simple scribble line, meaningless scratch, or an empty canvas), or is a drawing of something entirely different, you MUST set "matched": false and do NOT include "${currentWord}" in the "guesses" list.
+            - Be EXTREMELY friendly, extremely lenient, and generous towards simple, rushed, child-like sketches, basic skeleton outlines, or standard symbolic representations of "${currentWord}".
+            - Remember: Students only have a few seconds to draw, and it's on a mouse/touchpad interface. Expect messy, bumpy, lopsided, shaky, and highly simplified curves.
+            - Only reject if the drawing consists of completely unrelated random scribbles (such as a simple straight line, meaningless stray scratch, or an empty canvas), or is a drawing of something entirely different. If it shows ANY reasonable attempt or basic shape resembling "${currentWord}", you MUST set "matched": true and guarantee "${currentWord}" is in the "guesses" list.
             
             Here are keyword-specific leniency guidelines to help you:
             - 사과 (Apple): circle with a small stem or leaf on top.
@@ -281,7 +282,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             - 자전거 (Bicycle): two wheels connected by bar frame meshes.
             - 컵 (Cup): curved cup contour (U-shape), mug loop.
             - 전화기 (Phone): rectangle slate screen (smartphone), or telephone handset bone.
-            - 하트 (Heart): classic curved romantic heart contour.
+            - 하트 (Heart): classic curved romantic heart contour or two adjacent lobes merging at a bottom point. Be ABSOLUTELY, EXTRAORDINARILY generous and friendly with heart drawings. Even if it is asymmetrical, lopsided, single-stroke outline, flat on top, bumpy, overlapping, or slightly incomplete, as long as it has a generic heart vibe, you MUST mark "matched": true and put "하트" in the guesses.
             - 손 (Hand): outline of wrist with finger stalks, glove line.
             - 눈 (Eye/Snowman): eyeball almond shape with pupil center, OR snowman stacked circles. Accept both meanings!
             - 발 (Foot): kidney shape sole outline with small bubble toe tips.
@@ -305,7 +306,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             { inlineData: { mimeType: "image/png", data: imageData } }
         ],
         config: {
-          systemInstruction: "You are an intelligent, friendly, yet honest and fair Quick-Draw sketch recognition AI. Your goal is to identify if the student's doodle is a reasonable drawing of the target word. Accept rough, child-like, simple sketches, but do NOT match completely unrelated scribbles, meaningless shapes, or blank drawings. Provide 3 guesses in Korean of what the drawing actually looks like.",
+          systemInstruction: "You are an extremely friendly, helpful, warm, and highly lenient Quick-Draw sketch recognition AI. Your goal is to identify if the student's doodle is a reasonable drawing of the target word. Since users draw under a strict 10-second timer using trackpads or touchscreens, accept very simplified, messy, asymmetrical, child-like, or incomplete sketches. Give them the benefit of the doubt as much as humanly possible! Never be strict. Keep it fun. Provide 3 guesses in Korean of what the drawing actually looks like, always including the target word if matched is true.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
