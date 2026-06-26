@@ -143,6 +143,9 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [rightCorrectId, setRightCorrectId] = useState<string | null>(null);
   const [wrongId, setWrongId] = useState<string | null>(null);
   const [wrongSide, setWrongSide] = useState<'left' | 'right' | null>(null);
+
+  const [leftWrongCount, setLeftWrongCount] = useState<number>(0);
+  const [rightWrongCount, setRightWrongCount] = useState<number>(0);
   
   const [isMuted, setIsMuted] = useState<boolean>(!soundEnabled);
   const [showHelp, setShowHelp] = useState<boolean>(false);
@@ -295,6 +298,8 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     setRightCorrectId(null);
     setWrongId(null);
     setWrongSide(null);
+    setLeftWrongCount(0);
+    setRightWrongCount(0);
 
     const shuffledTerms = shuffleArray<Term>(termsList);
     const center = shuffledTerms.slice(0, 6);
@@ -365,6 +370,9 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     if (!acceptingClicks || !acceptingClicksRef.current) return;
     if (gameMode === 'computer' && side === 'right') return;
 
+    if (side === 'left' && leftWrongCount >= 3) return;
+    if (side === 'right' && rightWrongCount >= 3) return;
+
     const answer = side === 'left' ? leftAnswer : rightAnswer;
 
     if (term.id === answer) {
@@ -395,15 +403,97 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     } else {
       setWrongId(term.id);
       setWrongSide(side);
-      setFeedback("그 용어는 가운데 카드와 겹치지 않습니다. 😢");
-      setFeedbackType('wrong');
       playSound('wrong');
 
+      if (side === 'left') {
+        const nextLeftWrong = leftWrongCount + 1;
+        setLeftWrongCount(nextLeftWrong);
+        
+        if (nextLeftWrong >= 3) {
+          if (gameMode === 'computer') {
+            // In computer mode, if player fails 3 times, computer takes the card!
+            setAcceptingClicks(false);
+            acceptingClicksRef.current = false;
+            clearTimeout(computerTimerRef.current!);
+            
+            const correctTermInCenter = centerCards.find(c => c.id === leftAnswer);
+            
+            setRivalScore(prev => prev + 1);
+            setFeedback(`❌ 3회 오답 초과! 컴퓨터가 카드를 가져갑니다: ${correctTermInCenter?.ko || ''}`);
+            setFeedbackType('wrong');
+            
+            setCardsLeft(prev => {
+              const nextCount = prev - 1;
+              setTimeout(() => {
+                startRound(nextCount, 'computer');
+              }, 2000);
+              return nextCount;
+            });
+            return;
+          } else {
+            // 2-player mode, player 1 is locked. Check if player 2 is also locked.
+            if (rightWrongCount >= 3) {
+              // Both locked! Discard the card.
+              setAcceptingClicks(false);
+              acceptingClicksRef.current = false;
+              setFeedback(`❌ 두 플레이어 모두 3회 오답 초과! 이번 카드는 버려집니다.`);
+              setFeedbackType('wrong');
+              
+              setCardsLeft(prev => {
+                const nextCount = prev - 1;
+                setTimeout(() => {
+                  startRound(nextCount, 'two');
+                }, 2000);
+                return nextCount;
+              });
+              return;
+            } else {
+              setFeedback(`❌ 1번 플레이어 3회 오답 초과로 잠금! 이제 2번 플레이어만 맞힐 수 있습니다.`);
+              setFeedbackType('wrong');
+            }
+          }
+        } else {
+          setFeedback(`틀렸습니다! 😢 (1번 플레이어 기회 ${3 - nextLeftWrong}번 남음)`);
+          setFeedbackType('wrong');
+        }
+      } else {
+        // side === 'right' (Player 2 in 2-player mode)
+        const nextRightWrong = rightWrongCount + 1;
+        setRightWrongCount(nextRightWrong);
+        
+        if (nextRightWrong >= 3) {
+          if (leftWrongCount >= 3) {
+            // Both locked! Discard the card.
+            setAcceptingClicks(false);
+            acceptingClicksRef.current = false;
+            setFeedback(`❌ 두 플레이어 모두 3회 오답 초과! 이번 카드는 버려집니다.`);
+            setFeedbackType('wrong');
+            
+            setCardsLeft(prev => {
+              const nextCount = prev - 1;
+              setTimeout(() => {
+                startRound(nextCount, 'two');
+              }, 2000);
+              return nextCount;
+            });
+            return;
+          } else {
+            setFeedback(`❌ 2번 플레이어 3회 오답 초과로 잠금! 이제 1번 플레이어만 맞힐 수 있습니다.`);
+            setFeedbackType('wrong');
+          }
+        } else {
+          setFeedback(`틀렸습니다! 😢 (2번 플레이어 기회 ${3 - nextRightWrong}번 남음)`);
+          setFeedbackType('wrong');
+        }
+      }
+
       setTimeout(() => {
-        setWrongId(null);
-        setWrongSide(null);
-        setFeedback("다시 같은 용어를 눈으로 쫒아봅시다!");
-        setFeedbackType('normal');
+        if (acceptingClicksRef.current) {
+          setWrongId(null);
+          setWrongSide(null);
+          setFeedback("다시 같은 용어를 눈으로 쫒아봅시다!");
+          setFeedbackType('normal');
+        }
       }, 1200);
     }
   };
@@ -781,6 +871,16 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 <span className="text-[11px] sm:text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-emerald-500 border border-emerald-400 rounded-lg px-2 py-0.5 mt-0.5 shadow-md w-full text-center">
                   획득: {playerScore}장
                 </span>
+                <div className="flex gap-1 items-center justify-center mt-1 text-[10px] font-black text-white">
+                  <span>기회:</span>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <span key={`p1-life-${i}`} className="text-xs">
+                        {i < (3 - leftWrongCount) ? '❤️' : '🖤'}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
               {renderCard(leftCards, 'left', 2)}
             </div>
@@ -818,6 +918,18 @@ export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                 <span className="text-[11px] sm:text-xs font-black text-white bg-gradient-to-r from-rose-600 to-rose-500 border border-rose-400 rounded-lg px-2 py-0.5 mt-0.5 shadow-md w-full text-center">
                   획득: {rivalScore}장
                 </span>
+                {gameMode !== 'computer' && (
+                  <div className="flex gap-1 items-center justify-center mt-1 text-[10px] font-black text-white">
+                    <span>기회:</span>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <span key={`p2-life-${i}`} className="text-xs">
+                          {i < (3 - rightWrongCount) ? '❤️' : '🖤'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className={gameMode === 'computer' ? 'opacity-70 pointer-events-none filter saturate-50' : ''}>
                 {renderCard(rightCards, 'right', 4)}

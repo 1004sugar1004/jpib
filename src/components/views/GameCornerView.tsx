@@ -70,7 +70,7 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
     { id: 'rhythm', name: 'IB 리듬 트레이닝', icon: Trophy, color: 'bg-yellow-500', unlockXp: 0, description: '박자에 맞춰 화살표를 눌러보세요!', bgImage: 'https://i.imgur.com/rLktNhW.png' },
     { id: 'drawing', name: '10초 드로잉', icon: Pencil, color: 'bg-indigo-600', unlockXp: 0, description: 'AI가 당신의 그림을 맞힐 수 있을까요?', bgImage: 'https://i.imgur.com/lyCqTY1.png' },
     { id: 'halligalli', name: 'IB 할리갈리', icon: Bell, color: 'bg-emerald-600', unlockXp: 0, description: '과일 개수의 합이 정확히 5개가 될 때 벨을 울리세요!', bgImage: 'https://i.imgur.com/xe54lqW.png' },
-    { id: 'jenga', name: 'IB 젠가', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않도록 블록을 조심히 빼내 쌓으세요!', bgImage: 'https://i.imgur.com/0wF00pI.png' },
+    { id: 'jenga', name: 'IB 젠가 (1P/2P)', icon: Layers, color: 'bg-orange-600', unlockXp: 0, description: '타워가 무너지지 않게 블록을 조심히 빼내 쌓으세요! (1인 및 한 패드 2인 대결 완벽 지원)', bgImage: 'https://i.imgur.com/0wF00pI.png' },
     { id: 'ninja', name: 'IB 손날 닌자', icon: Sword, color: 'bg-cyan-500', unlockXp: 0, description: '화면으로 솟구치는 네온 과일을 검지 손날 광선검으로 쪼개 자르세요!', bgImage: 'https://i.imgur.com/b2PpuDw.png' },
     { id: 'uno', name: 'IB 우노', icon: Layers, color: 'bg-rose-500', unlockXp: 0, description: '탑재 완료! 우리들만의 즐거운 신비 탐험 카드 게임!', bgImage: 'https://i.imgur.com/EJAPDgp.png' },
     { id: 'dobble', name: 'IB 도블', icon: Sparkles, color: 'bg-amber-500', unlockXp: 0, description: '권*훈 학생 기획! 눈보다 손이 활발해야 하는 스릴만점 카드 매칭!', bgImage: dobbleImage },

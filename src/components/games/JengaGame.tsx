@@ -1298,7 +1298,7 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               </Button>
               <Button 
                 onClick={() => initGamePlay('multi')}
-                className="flex-1 py-3 text-xs font-black bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-650 hover:to-cyan-705 text-white rounded-xl shadow-lg border-b-4 border-cyan-800 cursor-pointer"
+                className="flex-1 py-3 text-xs font-black bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white rounded-xl shadow-lg border-b-4 border-cyan-800 cursor-pointer"
               >
                 2인 대결 (한 패드) 👥
               </Button>
