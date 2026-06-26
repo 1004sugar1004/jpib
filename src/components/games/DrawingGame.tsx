@@ -75,21 +75,21 @@ const API_INTERVAL = 2000;
 const DIFF_SETTINGS = {
   easy: {
     name: "하 (쉬움)",
-    time: 20,
+    time: 30,
     leniency: "EXPIRED_LENIENCY: Be extremely lenient, generous, and warm. Any simple outline, very rough scribble, or minimal simple shape that represents the concept even slightly must be accepted. Give the benefit of the doubt completely to ensure user success.",
-    desc: "여유로운 20초 제한시간과 아주 너그러운 보너스 판정!"
+    desc: "여유로운 30초 제한시간과 아주 너그러운 보너스 판정!"
   },
   medium: {
     name: "중 (보통)",
-    time: 10,
+    time: 20,
     leniency: "STANDARD_LENIENCY: Be highly friendly, generous, and encouraging. Accept basic outlines, rough symbolic representations, simple child-like sketches, and hand doodles. Only reject completely empty canvases or pure chaotic random dots.",
     desc: "오리지널 10초 드로잉의 스릴과 표준 균형 판정!"
   },
   hard: {
     name: "상 (어려움)",
-    time: 7,
+    time: 12,
     leniency: "RELAXED_STRICT_LENIENCY: Be very encouraging and fair. Accept clear basic structures and recognized designs of the object. Do not punish raw sketch quality; as long as the core concept is visible, mark as matched.",
-    desc: "짜릿한 7초 탈출과 깐깐하고 정확한 정밀 판정!"
+    desc: "짜릿한 12초 탈출과 깐깐하고 정확한 정밀 판정!"
   }
 };
 
@@ -100,16 +100,19 @@ function pickWords() {
 
 export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [phase, setPhase] = useState<"intro" | "countdown" | "drawing" | "roundResult" | "ibQuiz" | "final">("intro");
-  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("easy");
   const [words, setWords] = useState(pickWords());
   const [round, setRound] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(30);
   const [countdown, setCountdown] = useState(3);
   const [aiGuesses, setAiGuesses] = useState<string[]>([]);
   const [matched, setMatched] = useState(false);
   const [roundResults, setRoundResults] = useState<any[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [aiThinking, setAiThinking] = useState(false);
+  
+  const [brushColor, setBrushColor] = useState<string>('#18181b');
+  const [brushWidth, setBrushWidth] = useState<number>(12);
   
   const [ibQuiz, setIbQuiz] = useState<any>(null);
   const [quizFeedback, setQuizFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -178,8 +181,8 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         ctx.moveTo(lastPos.current.x, lastPos.current.y);
     }
     ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = "#18181b"; // High contrast charcoal black for maximum Gemini Vision recognition accuracy
-    ctx.lineWidth = 12; // Extra bold lines (12px) to make drawings highly visible to Gemini Vision
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushWidth;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
@@ -249,8 +252,10 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
         model: "gemini-3.5-flash",
         contents: [
             { text: `The user is trying to draw: "${currentWord}" in an interactive sketch-guessing game with a ${drawTime}-second time limit, with difficulty level ${difficulty.toUpperCase()}. (Grading policy: ${DIFF_SETTINGS[difficulty].leniency})
-            Evaluate this sketch drawn in dark charcoal ink on a solid white background.
+            Evaluate this sketch drawn in black or colored lines on a solid white background.
             Does it reasonably represent the core features, symbolic shape, or even a rough abstract hint/doodle of a "${currentWord}"?
+            
+            Be EXTREMELY generous, friendly, and warm. Students only have a few seconds to draw, and it's on a mouse/touchpad interface. Expect messy, bumpy, lopsided, shaky, and highly simplified curves. Even a rudimentary symbol or minimalist line outline should count as a match. If there is even a remote visual trace or symbolic effort that hints at "${currentWord}", you MUST mark "matched": true and put "${currentWord}" in the "guesses".
             
             Evaluation Guidelines:
             - Be EXTREMELY friendly, extremely lenient, and generous towards simple, rushed, child-like sketches, basic skeleton outlines, or standard symbolic representations of "${currentWord}".
@@ -501,7 +506,7 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
               <h1 className="text-2xl md:text-4xl font-black text-gray-900 mb-1 tracking-tighter">
                 10초 드로잉!
               </h1>
-              <p className="text-sm md:text-base text-gray-500 font-bold mb-4 leading-tight">AI가 10초 안에 여러분의 그림을<br/>맞힐 수 있을까요?</p>
+              <p className="text-sm md:text-base text-gray-500 font-bold mb-4 leading-tight">AI가 제한시간 안에 여러분의 그림을<br/>맞힐 수 있을까요?</p>
               {/* 난이도 선택 섹션 */}
               <div className="w-[18rem] md:w-[22rem] bg-gray-50/80 p-2.5 rounded-2xl border border-gray-150 flex flex-col gap-2 mb-6 shadow-inner">
                 <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest text-center">원하는 난이도를 선택해 보세요!</span>
@@ -593,6 +598,60 @@ export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
                     className={cn("h-full rounded-full transition-all duration-1000 ease-linear", timerColorClass)}
                     style={{ width: `${timerPct}%` }}
                   />
+                </div>
+
+                {/* 🎨 색상 및 두께 선택 툴바 */}
+                <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-indigo-100 mb-2.5 shadow-sm gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black text-indigo-950">🎨 색상:</span>
+                    <div className="flex gap-1.5">
+                      {[
+                        { name: "검정", hex: "#18181b", bg: "bg-[#18181b]" },
+                        { name: "빨강", hex: "#ef4444", bg: "bg-red-500" },
+                        { name: "파랑", hex: "#3b82f6", bg: "bg-blue-500" },
+                        { name: "초록", hex: "#10b981", bg: "bg-emerald-500" },
+                        { name: "주황", hex: "#f97316", bg: "bg-orange-500" },
+                        { name: "보라", hex: "#8b5cf6", bg: "bg-violet-500" },
+                        { name: "핑크", hex: "#ec4899", bg: "bg-pink-500" },
+                      ].map((c) => (
+                        <button
+                          key={c.hex}
+                          type="button"
+                          onClick={() => setBrushColor(c.hex)}
+                          className={cn(
+                            "w-6 h-6 rounded-full cursor-pointer transition-all hover:scale-110 active:scale-95 border-2",
+                            c.bg,
+                            brushColor === c.hex ? "border-indigo-600 ring-2 ring-indigo-300 scale-110" : "border-white shadow-sm"
+                          )}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-black text-gray-500">두께:</span>
+                    <div className="flex gap-1">
+                      {[
+                        { size: 6, label: "얇게" },
+                        { size: 12, label: "보통" },
+                        { size: 18, label: "굵게" },
+                      ].map((t) => (
+                        <button
+                          key={t.size}
+                          type="button"
+                          onClick={() => setBrushWidth(t.size)}
+                          className={cn(
+                            "px-2 py-0.5 rounded-lg text-[10px] font-black border transition-all cursor-pointer",
+                            brushWidth === t.size
+                              ? "bg-indigo-600 text-white border-transparent shadow-sm"
+                              : "bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200"
+                          )}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="relative rounded-2xl overflow-hidden shadow-lg border-4 border-white bg-white aspect-[4/3] group">

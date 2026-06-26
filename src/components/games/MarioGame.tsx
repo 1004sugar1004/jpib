@@ -312,20 +312,31 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     };
   }, []);
 
+  const handleJump = () => {
+    if (gameStateRef.current !== 'PLAYING' || showQuizRef.current) return;
+    if (!isJumpingRef.current) {
+      velocityYRef.current = 15;
+      isJumpingRef.current = true;
+      playSound('jump');
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent browser default scroll for game keys (Arrow keys, Spacebar) in iframes
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) || [' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+      }
       keysPressed.current.add(e.code);
       if (gameStateRef.current !== 'PLAYING' || showQuizRef.current) return;
-      if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !isJumpingRef.current) {
-        velocityYRef.current = 15;
-        isJumpingRef.current = true;
-        playSound('jump');
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        handleJump();
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed.current.delete(e.code);
     };
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
     window.addEventListener('keyup', handleKeyUp);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -642,6 +653,57 @@ export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
           ))}
         </div>
       </div>
+
+      {/* 🎮 Touch/Mouse On-Screen Controls */}
+      {gameState === 'PLAYING' && !showQuiz && (
+        <>
+          {/* Invisible Overlay for easy clicking/tapping to jump anywhere in the sky/scenery */}
+          <div 
+            className="absolute inset-0 z-0 cursor-pointer"
+            onClick={handleJump}
+            title="화면을 클릭하면 점프합니다!"
+          />
+
+          {/* Left/Right movement buttons (Bottom Left) */}
+          <div className="absolute bottom-4 left-4 z-20 flex gap-2 pointer-events-auto">
+            <button
+              onMouseDown={() => keysPressed.current.add('ArrowLeft')}
+              onMouseUp={() => keysPressed.current.delete('ArrowLeft')}
+              onMouseLeave={() => keysPressed.current.delete('ArrowLeft')}
+              onTouchStart={(e) => { e.preventDefault(); keysPressed.current.add('ArrowLeft'); }}
+              onTouchEnd={(e) => { e.preventDefault(); keysPressed.current.delete('ArrowLeft'); }}
+              className="w-12 h-12 bg-black/60 active:bg-black/80 rounded-full border border-white/40 flex items-center justify-center text-white text-xl font-black shadow-lg cursor-pointer transition-transform active:scale-90"
+              title="왼쪽 이동"
+            >
+              ◀
+            </button>
+            <button
+              onMouseDown={() => keysPressed.current.add('ArrowRight')}
+              onMouseUp={() => keysPressed.current.delete('ArrowRight')}
+              onMouseLeave={() => keysPressed.current.delete('ArrowRight')}
+              onTouchStart={(e) => { e.preventDefault(); keysPressed.current.add('ArrowRight'); }}
+              onTouchEnd={(e) => { e.preventDefault(); keysPressed.current.delete('ArrowRight'); }}
+              className="w-12 h-12 bg-black/60 active:bg-black/80 rounded-full border border-white/40 flex items-center justify-center text-white text-xl font-black shadow-lg cursor-pointer transition-transform active:scale-90"
+              title="오른쪽 이동"
+            >
+              ▶
+            </button>
+          </div>
+
+          {/* Large Retro Jump Button (Bottom Right) */}
+          <div className="absolute bottom-4 right-4 z-20 pointer-events-auto">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleJump(); }}
+              onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleJump(); }}
+              className="w-16 h-16 bg-red-600 active:bg-red-800 rounded-full border-4 border-white flex flex-col items-center justify-center text-white font-black shadow-2xl cursor-pointer transition-transform active:scale-95 animate-bounce"
+              style={{ boxShadow: '0 6px 12px rgba(220, 38, 38, 0.4)' }}
+            >
+              <span className="text-xs leading-none">JUMP</span>
+              <span className="text-[8px] opacity-85 leading-none mt-1">점프</span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

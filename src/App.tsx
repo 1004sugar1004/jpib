@@ -35,6 +35,7 @@ import { MusicQuizView } from './components/views/MusicQuizView';
 import { BingoGameView } from './components/views/BingoGameView';
 import { CertificateView } from './components/views/CertificateView';
 import { PlanView } from './components/views/PlanView';
+import { ConceptForestView } from './components/views/ConceptForestView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
 import { AnnouncementPopup } from './components/ui/AnnouncementPopup';
@@ -100,7 +101,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -960,7 +961,7 @@ export default function App() {
 
   // Navigation Guard
   useEffect(() => {
-    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games'];
+    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games', 'concept-forest'];
     const isProtected = protectedViews.includes(view);
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1013,7 +1014,7 @@ export default function App() {
   };
 
   const handleProtectedViewChange = (newView: typeof view, initialStudyTab?: number) => {
-    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games'];
+    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games', 'concept-forest'];
     const dontShowUntil = localStorage.getItem('dontShowExitConfirmUntil');
     const isMuted = dontShowUntil && new Date().getTime() < parseInt(dontShowUntil);
 
@@ -1201,6 +1202,13 @@ export default function App() {
             )}
             {view === 'bingo' && (
               <BingoGameView 
+                setView={handleProtectedViewChange}
+                onEarnXP={handleEarnXP}
+                soundEnabled={soundEnabled}
+              />
+            )}
+            {view === 'concept-forest' && (
+              <ConceptForestView 
                 setView={handleProtectedViewChange}
                 onEarnXP={handleEarnXP}
                 soundEnabled={soundEnabled}
