@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trophy, Trees, Flame, Calendar, ChevronRight, Medal, Camera, Sparkles, Award, Pin } from 'lucide-react';
+import { X, Trophy, Trees, Flame, Calendar, ChevronRight, Medal, Camera, Sparkles, Award, Pin, Globe } from 'lucide-react';
 import { Button } from './Button';
 
 export const AnnouncementPopup = () => {
@@ -69,6 +69,22 @@ export const AnnouncementPopup = () => {
               
               <div className="space-y-3 text-gray-600 font-medium leading-relaxed max-h-[52vh] overflow-y-auto px-1 custom-scrollbar">
                 
+                {/* 📌 언제 어디서나 간편하게 접속할 수 있는 단축 주소 안내 */}
+                <div className="bg-sky-50/90 p-3 rounded-2xl border border-sky-100 text-left">
+                  <div className="flex items-start gap-2">
+                    <Globe className="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-[11px] font-black text-sky-800 mb-0.5 flex items-center gap-1">🌐 언제 어디서나 간편 접속 단축 주소!</h4>
+                      <p className="text-[10px] text-sky-950 font-bold leading-normal">
+                        주소창에 한글로 <span className="text-indigo-600 underline font-black text-[11px]">증평아이비</span>를 치고 뒤에 <span className="text-indigo-600 font-black text-[11px]">.qaa.kr</span>을 입력하여 접속하세요!
+                      </p>
+                      <p className="text-[9px] text-indigo-700 font-black mt-1 bg-white/70 px-1.5 py-0.5 rounded border border-indigo-100 inline-block">
+                        👉 증평아이비.qaa.kr
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 1. 개인 랭킹 TOP 3 */}
                 <div className="bg-amber-50/70 p-3 rounded-2xl border border-amber-100/60 text-left">
                   <h4 className="text-[11px] font-black text-amber-800 mb-1.5 flex items-center gap-1">

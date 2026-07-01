@@ -153,7 +153,7 @@ export const CertificateView = ({ profile, isGuest, onUpdateProfile, onClose }: 
     setCapturedImage(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 320, height: 320, facingMode: 'user' },
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
         audio: false
       });
       setCameraStream(stream);
@@ -665,6 +665,7 @@ export const CertificateView = ({ profile, isGuest, onUpdateProfile, onClose }: 
                         ref={videoRef} 
                         className="w-full h-full object-cover scale-x-[-1]" 
                         playsInline 
+                        autoPlay
                         muted 
                       />
                       {/* Oval mask helper */}
