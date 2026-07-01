@@ -76,7 +76,7 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
       onMouseLeave={handleMouseLeave}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleMouseLeave}
-      className="min-h-screen w-full bg-slate-950 text-white overflow-hidden relative flex flex-col items-center justify-center p-4 select-none"
+      className="min-h-screen w-full bg-slate-950 text-white overflow-y-auto overflow-x-hidden relative flex flex-col items-center p-4 py-8 sm:py-6 select-none"
     >
       {/* Immersive Glowing Orbs in Background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -93,23 +93,33 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
         // Decide placement:
         // If tracking: they orbit the mouse cursor
         // If not tracking: they float in random but stable positions on screen
+        const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+        const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+        
+        const isSmallScreen = windowWidth < 640 || windowHeight < 640;
+        const radiusX = isSmallScreen ? 130 : 280;
+        const radiusY = isSmallScreen ? 100 : 200;
+        const orbitRadius = isSmallScreen ? 80 : 160;
+
         const angleRad = ((index / CONCEPTS.length) * 2 * Math.PI) + (orbitAngle * Math.PI / 180);
-        const radius = 160; // radius of orbit around mouse
 
         const targetX = isTracking
-          ? mousePos.x + Math.cos(angleRad) * radius
-          : (typeof window !== 'undefined' ? window.innerWidth / 2 : 500) + Math.cos((index / CONCEPTS.length) * 2 * Math.PI + (orbitAngle * 0.1 * Math.PI / 180)) * 280;
+          ? mousePos.x + Math.cos(angleRad) * orbitRadius
+          : (windowWidth / 2) + Math.cos((index / CONCEPTS.length) * 2 * Math.PI + (orbitAngle * 0.1 * Math.PI / 180)) * radiusX;
 
         const targetY = isTracking
-          ? mousePos.y + Math.sin(angleRad) * radius
-          : (typeof window !== 'undefined' ? window.innerHeight / 2 : 400) + Math.sin((index / CONCEPTS.length) * 2 * Math.PI + (orbitAngle * 0.1 * Math.PI / 180)) * 200;
+          ? mousePos.y + Math.sin(angleRad) * orbitRadius
+          : (windowHeight / 2) + Math.sin((index / CONCEPTS.length) * 2 * Math.PI + (orbitAngle * 0.1 * Math.PI / 180)) * radiusY;
+
+        const cardWidth = isSmallScreen ? 144 : 192; // 36 or 48 in tailwind
+        const cardHeight = isSmallScreen ? 64 : 90;
 
         return (
           <motion.div
             key={concept.id}
             animate={{
-              x: targetX - 100, // half of width (200px)
-              y: targetY - 45,  // half of height (90px)
+              x: targetX - cardWidth / 2,
+              y: targetY - cardHeight / 2,
             }}
             transition={{
               type: "spring",
@@ -122,24 +132,24 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
               left: 0,
               top: 0,
             }}
-            className="w-48 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl flex items-center gap-2.5 cursor-grab active:cursor-grabbing hover:bg-white/10 hover:border-white/20 hover:shadow-indigo-500/10 transition-colors z-20"
+            className="w-36 sm:w-48 p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl flex items-center gap-2 sm:gap-2.5 cursor-grab active:cursor-grabbing hover:bg-white/10 hover:border-white/20 hover:shadow-indigo-500/10 transition-colors z-20"
           >
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${concept.color} flex items-center justify-center text-lg shrink-0 shadow-md shadow-black/20`}>
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${concept.color} flex items-center justify-center text-sm sm:text-lg shrink-0 shadow-md shadow-black/20`}>
               {concept.emoji}
             </div>
             <div className="min-w-0">
-              <h3 className="text-xs font-extrabold text-white truncate">{concept.name}</h3>
-              <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{concept.desc}</p>
+              <h3 className="text-[10px] sm:text-xs font-extrabold text-white truncate">{concept.name}</h3>
+              <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium truncate mt-0.5">{concept.desc}</p>
             </div>
           </motion.div>
         );
       })}
 
       {/* Center Welcome Hub */}
-      <div className="relative z-30 flex flex-col items-center justify-center max-w-xl text-center px-6">
+      <div className="relative z-30 flex flex-col items-center justify-center max-w-xl text-center px-4 sm:px-6 my-auto">
         
         {/* Double Concentric Spinning Text Path */}
-        <div className="relative w-72 h-72 flex items-center justify-center mb-8 pointer-events-none select-none">
+        <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 flex items-center justify-center mb-4 sm:mb-6 md:mb-8 pointer-events-none select-none">
           
           {/* Outer ring: Spinning clockwise */}
           <motion.div
@@ -165,7 +175,7 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
           <motion.div
             animate={{ rotate: -360 }}
             transition={{ ease: "linear", duration: 18, repeat: Infinity }}
-            className="absolute w-56 h-56"
+            className="absolute w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56"
           >
             <svg viewBox="0 0 240 240" className="w-full h-full">
               <path
@@ -183,13 +193,14 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
 
           {/* Central Logo Orb */}
           <motion.div 
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="w-32 h-32 rounded-full bg-gradient-to-tr from-indigo-600/30 via-purple-600/20 to-blue-600/40 border border-white/20 shadow-[0_0_50px_rgba(99,102,241,0.25)] flex items-center justify-center p-1 backdrop-blur-sm z-30"
+            onClick={onEnter}
+            whileHover={{ scale: 1.1, boxShadow: "0 0 60px rgba(99,102,241,0.5)" }}
+            whileTap={{ scale: 0.95 }}
+            className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-indigo-600/40 via-purple-600/30 to-blue-600/50 border border-white/30 shadow-[0_0_50px_rgba(99,102,241,0.3)] flex items-center justify-center p-1 backdrop-blur-sm z-30 pointer-events-auto cursor-pointer transition-shadow"
           >
-            <div className="w-full h-full rounded-full bg-slate-950 flex flex-col items-center justify-center text-center">
-              <span className="text-3xl">🚀</span>
-              <span className="text-[10px] font-black tracking-widest text-indigo-300 uppercase mt-1">IB TOUR</span>
+            <div className="w-full h-full rounded-full bg-slate-950 flex flex-col items-center justify-center text-center hover:bg-slate-900 transition-colors">
+              <span className="text-xl sm:text-2xl md:text-3xl animate-bounce">🚀</span>
+              <span className="text-[8px] sm:text-[10px] font-black tracking-widest text-indigo-300 uppercase mt-0.5 sm:mt-1">IB TOUR</span>
             </div>
           </motion.div>
         </div>
@@ -199,18 +210,18 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="space-y-3"
+          className="space-y-2 sm:space-y-3"
         >
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-extrabold text-indigo-300 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] sm:text-xs font-extrabold text-indigo-300 shadow-sm">
+            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 animate-pulse" />
             <span>생각을 키우는 IB 탐험 스페이스</span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-indigo-300">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-indigo-300">
             증평 IB 탐험대
           </h1>
           
-          <p className="text-slate-400 font-medium text-sm md:text-base max-w-md mx-auto leading-relaxed">
+          <p className="text-slate-400 font-medium text-xs sm:text-sm md:text-base max-w-md mx-auto leading-relaxed">
             마우스나 손가락을 대면 핵심 개념 카드들이 춤추며 반응해요! <br />
             재미있는 게임과 퀴즈로 가득한 IB 탐구 여행을 시작해보세요.
           </p>
@@ -221,17 +232,17 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
-          className="mt-8 relative z-40"
+          className="mt-4 sm:mt-6 md:mt-8 relative z-40"
         >
           <Button
             onClick={onEnter}
-            className="px-8 py-5 text-lg font-black rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_45px_rgba(99,102,241,0.5)] transition-all transform hover:scale-[1.03] active:scale-[0.98] border border-indigo-400/20 flex items-center gap-2 group cursor-pointer"
+            className="px-6 py-4 sm:px-8 sm:py-5 text-sm sm:text-lg font-black rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:shadow-[0_0_40px_rgba(99,102,241,0.45)] transition-all transform hover:scale-[1.03] active:scale-[0.98] border border-indigo-400/20 flex items-center gap-2 group cursor-pointer"
           >
             <span>탐험 시작하기</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
           </Button>
           
-          <span className="text-[10px] text-slate-500 font-extrabold block mt-3 uppercase tracking-wider">
+          <span className="text-[8px] sm:text-[10px] text-slate-500 font-extrabold block mt-2 sm:mt-3 uppercase tracking-wider">
             ★ click to enter the quantum knowledge map ★
           </span>
         </motion.div>
