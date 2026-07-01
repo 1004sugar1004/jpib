@@ -107,6 +107,18 @@ export const IBBoardView = ({ user, profile, isGuest, onEarnXP, onClose }: IBBoa
       alert('게스트 계정은 IB 보드에 글을 작성할 수 없습니다. 로그인해 주세요!');
       return;
     }
+    
+    // Check once a day limit for non-teachers
+    const isTeacher = user?.email === '1004sugar1004@gmail.com';
+    if (profile && !isTeacher) {
+      const todayStr = new Date().toDateString();
+      const hasPostedToday = posts.some(p => p.userId === profile.uid && new Date(p.createdAt).toDateString() === todayStr);
+      if (hasPostedToday) {
+        alert('보드 글쓰기는 하루에 한 번만 가능합니다! 내일 다시 멋진 생각을 나누어 주세요. 🌟\n\n※ 장난으로 글을 작성하면 선생님과의 면담이 있으니 진지하게 작성해 주세요!');
+        return;
+      }
+    }
+
     setActiveTopicForNewPost(topicId);
     setContent('');
     setSelectedColor(POST_COLORS[Math.floor(Math.random() * POST_COLORS.length)].name);
@@ -124,6 +136,16 @@ export const IBBoardView = ({ user, profile, isGuest, onEarnXP, onClose }: IBBoa
     if (content.trim().length < 10) {
       setErrorMessage('정성스러운 소감 작성을 위해 최소 10자 이상 입력해 주세요!');
       return;
+    }
+
+    const isTeacher = user?.email === '1004sugar1004@gmail.com';
+    if (!isTeacher) {
+      const todayStr = new Date().toDateString();
+      const hasPostedToday = posts.some(p => p.userId === profile.uid && new Date(p.createdAt).toDateString() === todayStr);
+      if (hasPostedToday) {
+        setErrorMessage('보드 글쓰기는 하루에 한 번만 가능합니다! 내일 다시 참여해 주세요.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -380,9 +402,21 @@ export const IBBoardView = ({ user, profile, isGuest, onEarnXP, onClose }: IBBoa
                   {activeTopicForNewPost === 1 ? '좋아하는 학습자상 글쓰기' : '탐구하고 싶은 주제 글쓰기'}
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 font-bold mb-6">
+              <p className="text-xs text-slate-500 font-bold mb-4">
                 친구들과 나누고 싶은 나의 멋진 생각을 작성해 주세요! (+30 XP)
               </p>
+
+              {/* Prank Warning Notice */}
+              <div className="mb-5 p-3.5 bg-rose-50 border border-rose-100 rounded-2xl text-[11px] font-bold text-rose-800 leading-relaxed flex items-start gap-2.5 shadow-sm">
+                <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-extrabold text-rose-950">⚠️ 탐험대 중요 안내 사항</p>
+                  <p className="mt-0.5 text-slate-600 font-semibold">보드 글쓰기는 <span className="text-indigo-600 font-extrabold underline decoration-indigo-200">하루에 한 번</span>만 참여 가능합니다.</p>
+                  <p className="text-rose-600 font-black mt-1 bg-white/60 py-1 px-2 rounded-lg border border-rose-200/40 inline-block">
+                    🚨 장난이나 무성의한 글을 쓸 경우 선생님과의 특별 면담이 예정되어 있습니다!
+                  </p>
+                </div>
+              </div>
 
               {errorMessage && (
                 <div className="mb-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-extrabold flex items-center gap-2">
