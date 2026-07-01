@@ -15,15 +15,25 @@ async function startServer() {
   app.use(express.json({ limit: "20mb" }));
   app.use(express.urlencoded({ limit: "20mb", extended: true }));
 
-  // Initialize Gemini client server-side
-  const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    httpOptions: {
-      headers: {
-        "User-Agent": "aistudio-build",
+  // Lazy-loaded Gemini client server-side helper
+  let aiClient: GoogleGenAI | null = null;
+  function getAiClient() {
+    if (!aiClient) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("API 키(GEMINI_API_KEY) 설정이 누락되었습니다. AI Studio Settings > Secrets에서 GEMINI_API_KEY를 등록해 주세요.");
       }
+      aiClient = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          }
+        }
+      });
     }
-  });
+    return aiClient;
+  }
 
   // Caricature Generation Endpoint
   app.post("/api/caricature", async (req: any, res: any) => {
@@ -37,11 +47,12 @@ async function startServer() {
       console.log("Caricature generation requested for profile:", learnerProfile);
       console.log("Received image size (chars):", image.length);
 
-      if (!process.env.GEMINI_API_KEY) {
-        console.error("GEMINI_API_KEY is not defined in the environment variables!");
-        return res.status(500).json({ 
-          error: "API 키 설정이 누락되었습니다. AI Studio Settings > Secrets에서 GEMINI_API_KEY를 등록해 주세요." 
-        });
+      let ai;
+      try {
+        ai = getAiClient();
+      } catch (keyErr: any) {
+        console.error(keyErr.message);
+        return res.status(500).json({ error: keyErr.message });
       }
 
       // Prepare image for Gemini (dynamically extract mimeType if present)
