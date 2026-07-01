@@ -1228,6 +1228,8 @@ export default function App() {
             {view === 'certificate' && (
               <CertificateView 
                 profile={profile} 
+                isGuest={isGuest}
+                onUpdateProfile={(updatedProfile) => setProfile(updatedProfile)}
                 onClose={() => handleProtectedViewChange('home')} 
               />
             )}

@@ -14,6 +14,7 @@ export interface UserProfile {
   gameTickets?: number;
   highScore?: number;
   photoURL?: string;
+  caricatureSvg?: string;
   // New fields for anti-abusing and engagement
   dailyXP?: number;
   dailyScore?: number;

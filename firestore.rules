@@ -98,5 +98,9 @@ service cloud.firestore {
     match /atl/{userId} {
       allow read, write: if isOwner(userId);
     }
+
+    match /caricatureUsage/{docId} {
+      allow read, write: if true;
+    }
   }
 }
