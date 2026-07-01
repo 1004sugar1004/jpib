@@ -175,13 +175,20 @@ export const RankingView = ({ setView, rankings }: RankingViewProps) => {
                   </div>
                   
                   <div className="relative shrink-0">
-                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shadow-sm overflow-hidden">
-                      <img 
-                        src={level.img} 
-                        alt={rank.name} 
-                        className="w-10 h-10 object-contain" 
-                        referrerPolicy="no-referrer"
-                      />
+                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shadow-sm overflow-hidden p-1">
+                      {rank.photoURL === 'caricature' && rank.caricatureSvg ? (
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: rank.caricatureSvg }} 
+                          className="w-10 h-10 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                        />
+                      ) : (
+                        <img 
+                          src={level.img} 
+                          alt={rank.name} 
+                          className="w-10 h-10 object-contain" 
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
                     </div>
                     <div className={cn(
                       "absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7px] font-black shadow-sm border border-white whitespace-nowrap z-10",

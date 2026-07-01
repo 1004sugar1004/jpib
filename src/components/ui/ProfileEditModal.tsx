@@ -22,6 +22,7 @@ export const ProfileEditModal = ({ show, onClose, profile, onUpdate }: ProfileEd
   const [name, setName] = useState(profile?.name || '');
   const [grade, setGrade] = useState(extractNumber(profile?.grade) || '1');
   const [className, setClassName] = useState(extractNumber(profile?.class) || '1');
+  const [photoURL, setPhotoURL] = useState(profile?.photoURL || '');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +33,7 @@ export const ProfileEditModal = ({ show, onClose, profile, onUpdate }: ProfileEd
         name,
         grade: `${grade}학년`,
         class: `${className}반`,
+        photoURL,
       });
       onClose();
     } catch (error) {
@@ -121,6 +123,43 @@ export const ProfileEditModal = ({ show, onClose, profile, onUpdate }: ProfileEd
                     </div>
                   </div>
                 </div>
+
+                {profile?.caricatureSvg && (
+                  <div className="space-y-2.5 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                    <label className="text-xs font-black text-indigo-900 uppercase tracking-widest ml-1 block">
+                      대표 프로필 이미지 설정
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPhotoURL('')}
+                        className={`p-3 rounded-xl border-2 font-black text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          photoURL !== 'caricature'
+                            ? 'border-indigo-600 bg-white text-indigo-700 shadow-md'
+                            : 'border-gray-200 bg-gray-50/50 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="text-2xl">🎖️</span>
+                        <span>기본 등급 캐릭터</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoURL('caricature')}
+                        className={`p-3 rounded-xl border-2 font-black text-xs flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          photoURL === 'caricature'
+                            ? 'border-indigo-600 bg-white text-indigo-700 shadow-md'
+                            : 'border-gray-200 bg-gray-50/50 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: profile.caricatureSvg }}
+                          className="w-8 h-8 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                        />
+                        <span>AI 캐리커쳐</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   type="submit"

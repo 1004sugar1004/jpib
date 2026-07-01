@@ -542,14 +542,51 @@ export const CertificateView = ({ profile, isGuest, onUpdateProfile, onClose }: 
             <div className="space-y-3">
               {/* Display toggle button if caricature is available */}
               {profile?.caricatureSvg && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3 border-gray-200"
-                  icon={showCaricature ? EyeOff : Eye}
-                  onClick={() => setShowCaricature(!showCaricature)}
-                >
-                  {showCaricature ? '기본 등급 이미지로 전환' : '자격증에 캐리커쳐 표시'}
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-3 border-gray-200 text-xs font-bold"
+                    icon={showCaricature ? EyeOff : Eye}
+                    onClick={() => setShowCaricature(!showCaricature)}
+                  >
+                    {showCaricature ? '기본 등급 이미지로 전환' : '자격증에 캐리커쳐 표시'}
+                  </Button>
+
+                  <Button
+                    variant={profile.photoURL === 'caricature' ? 'secondary' : 'primary'}
+                    className={cn(
+                      "w-full justify-start gap-3 text-xs font-black",
+                      profile.photoURL === 'caricature'
+                        ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
+                        : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md"
+                    )}
+                    icon={profile.photoURL === 'caricature' ? Check : Sparkles}
+                    onClick={async () => {
+                      const newPhotoURL = profile.photoURL === 'caricature' ? '' : 'caricature';
+                      if (isGuest) {
+                        const updated = { ...profile, photoURL: newPhotoURL };
+                        if (onUpdateProfile) onUpdateProfile(updated);
+                        alert(newPhotoURL === 'caricature' ? '내 프로필 대표 이미지가 AI 캐리커쳐로 설정되었습니다! 🎉\n홈 화면과 랭킹에서 친구들에게 보여집니다.' : '내 프로필 대표 이미지가 기본 등급 캐릭터로 변경되었습니다.');
+                      } else {
+                        try {
+                          const userRef = doc(db, 'users', profile.uid);
+                          const publicRef = doc(db, 'publicProfiles', profile.uid);
+                          await updateDoc(userRef, { photoURL: newPhotoURL });
+                          await updateDoc(publicRef, { photoURL: newPhotoURL });
+                          
+                          const updated = { ...profile, photoURL: newPhotoURL };
+                          if (onUpdateProfile) onUpdateProfile(updated);
+                          alert(newPhotoURL === 'caricature' ? '내 프로필 대표 이미지가 AI 캐리커쳐로 설정되었습니다! 🎉\n홈 화면과 랭킹에서 친구들에게 보여집니다.' : '내 프로필 대표 이미지가 기본 등급 캐릭터로 변경되었습니다.');
+                        } catch (err) {
+                          console.error('Failed to set representative image:', err);
+                          alert('대표 이미지 설정에 실패했습니다. 다시 시도해 주세요.');
+                        }
+                      }
+                    }}
+                  >
+                    {profile.photoURL === 'caricature' ? '내 프로필 대표 이미지 해제' : '내 프로필 대표 이미지로 설정'}
+                  </Button>
+                </>
               )}
 
               <Button 

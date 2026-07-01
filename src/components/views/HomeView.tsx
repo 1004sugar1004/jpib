@@ -137,8 +137,15 @@ export const HomeView = ({
         
         <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
           <div className="relative group cursor-pointer" onClick={() => setShowEditModal(true)}>
-            <div className={cn("w-24 h-24 rounded-3xl flex items-center justify-center shadow-inner overflow-hidden transition-transform group-hover:scale-105", level.bg)}>
-              <img src={level.img} alt={level.name} className="w-20 h-20 object-contain" referrerPolicy="no-referrer" />
+            <div className={cn("w-24 h-24 rounded-3xl flex items-center justify-center shadow-inner overflow-hidden transition-transform group-hover:scale-105 p-1.5", level.bg)}>
+              {profile?.photoURL === 'caricature' && profile?.caricatureSvg ? (
+                <div 
+                  dangerouslySetInnerHTML={{ __html: profile.caricatureSvg }} 
+                  className="w-20 h-20 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                />
+              ) : (
+                <img src={level.img} alt={level.name} className="w-20 h-20 object-contain" referrerPolicy="no-referrer" />
+              )}
             </div>
             <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-white p-1.5 rounded-full shadow-lg border-2 border-white group-hover:bg-indigo-500 transition-colors">
               <Settings className="w-4 h-4" />
@@ -407,13 +414,20 @@ export const HomeView = ({
                 </div>
                 
                 <div className="relative mb-4">
-                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white flex items-center justify-center">
-                    <img 
-                      src={level.img} 
-                      alt={rank.name}
-                      className="w-20 h-20 object-contain"
-                      referrerPolicy="no-referrer"
-                    />
+                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white flex items-center justify-center p-1.5">
+                    {rank.photoURL === 'caricature' && rank.caricatureSvg ? (
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: rank.caricatureSvg }} 
+                        className="w-20 h-20 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                      />
+                    ) : (
+                      <img 
+                        src={level.img} 
+                        alt={rank.name}
+                        className="w-20 h-20 object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
                   </div>
                   <div className={cn(
                     "absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black shadow-md border-2 border-white whitespace-nowrap z-30",
