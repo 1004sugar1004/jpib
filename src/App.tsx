@@ -1058,7 +1058,7 @@ export default function App() {
         profile={profile} 
       />
 
-      <AnnouncementPopup />
+      {!showIntro && <AnnouncementPopup />}
       
       {/* Exit Confirmation Modal */}
       <AnimatePresence>
