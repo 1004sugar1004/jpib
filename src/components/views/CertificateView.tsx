@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { GoogleGenAI } from '@google/genai';
 import { 
   Trophy, 
   Download, 
@@ -291,43 +292,113 @@ export const CertificateView = ({ profile, isGuest, onUpdateProfile, onClose }: 
       setIsCheckingQuota(false);
       setIsGenerating(true);
 
-      // 3. Make server-side API call
-      const response = await fetch('/api/caricature', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: capturedImage,
-          learnerProfile: selectedProfile
-        })
-      });
+      // 3. Make server-side API call, fallback to client-side if hosted on static services like Netlify
+      let generatedSvg = '';
+      let success = false;
 
-      if (!response.ok) {
-        const text = await response.text();
-        let errorMessage = '캐리커쳐 생성 요청에 실패했습니다.';
-        try {
-          const errorData = JSON.parse(text);
-          errorMessage = errorData.error || errorMessage;
-        } catch (_) {
-          errorMessage = `${response.status} Error: ${text || 'Unknown Server Error'}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      const text = await response.text();
-      let data;
       try {
-        data = JSON.parse(text);
-      } catch (jsonErr) {
-        throw new Error(`서버 응답 파싱 실패 (${response.status}): ${text || 'empty response'}`);
+        const response = await fetch('/api/caricature', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: capturedImage,
+            learnerProfile: selectedProfile
+          })
+        });
+
+        if (response.ok) {
+          const text = await response.text();
+          const data = JSON.parse(text);
+          if (data && data.svg) {
+            generatedSvg = data.svg;
+            success = true;
+          }
+        } else {
+          const text = await response.text();
+          if (response.status !== 404 && !text.includes('Netlify') && !text.includes('Page not found')) {
+            throw new Error(text || 'Unknown Server Error');
+          }
+          console.warn('Backend returned 404/Netlify error. Falling back to client-side Gemini API.');
+        }
+      } catch (err) {
+        console.warn('Backend caricature fetch failed, falling back to client-side Gemini:', err);
       }
 
-      if (!data.svg) {
-        throw new Error('올바른 캐릭터 그래픽이 반환되지 않았습니다.');
-      }
+      if (!success) {
+        try {
+          const apiKey = process.env.GEMINI_API_KEY || ((import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY);
+          if (!apiKey) {
+            throw new Error('API 키(GEMINI_API_KEY) 설정이 누락되었습니다. 넷리파이(Netlify) 환경에서 실행 중이시라면 Netlify 환경변수(Environment Variables)에 GEMINI_API_KEY를 추가해 주세요.');
+          }
 
-      const generatedSvg = data.svg;
+          const clientAi = new GoogleGenAI({ apiKey });
+          
+          let mimeType = 'image/png';
+          let base64Data = capturedImage;
+
+          if (capturedImage.includes(';base64,')) {
+            const parts = capturedImage.split(';base64,');
+            const mimePart = parts[0];
+            if (mimePart.startsWith('data:')) {
+              mimeType = mimePart.substring(5);
+            }
+            base64Data = parts[1];
+          } else if (capturedImage.includes(',')) {
+            base64Data = capturedImage.split(',')[1];
+          }
+
+          const promptText = `Analyze the face, hair style, expression, eyes, clothing, gender, skin tone, and any facial features (e.g., glasses) of the person in this photo.
+Based on this photo, generate a stunning, highly polished, modern vector caricature avatar (SVG format) representing this person.
+The caricature style, clothing, accessories, and atmosphere MUST reflect the following selected IB Learner Profile (학습자상): "${selectedProfile}".
+
+Modify the caricature's pose, elements, and background to perfectly express the essence of:
+- "탐구하는 사람" (Inquirer): Curious eyes, holding a small magnifying glass or having a sparkling lightbulb of ideas floating near the head. Stars and sparkles in the background.
+- "생각하는 사람" (Thinker): Hand gently touching the chin in a thoughtful gesture, small rotating gears or question marks floating elegantly in a thought bubble. Intellectual look.
+- "소통하는 사람" (Communicator): A bright smile, wave gesture, and a speech bubble containing a friendly greeting (like "Hello!" or "IB!"). Social, expressive vibe.
+- "행동하는 사람" (Risk-taker/Actor): Enthusiastic and confident expression, a tiny champion's gold medal or hiking backpack, dynamic stance or wind breeze effects.
+- "지식 있는 사람" (Knowledgeable): Wearing a small graduation/mortarboard cap, a small pile of books in the corner, or glasses with a smart, warm smile.
+- "성찰하는 사람" (Reflective): A serene, calm, happy smiling face. A floating pocket watch, compass, or a peaceful glowing lantern in the background.
+- "배려하는 사람" (Caring): Warm and exceptionally kind eyes, holding a glowing small heart or nurturing a tiny green sprout with both hands. Warm pastel tones.
+
+Technical Guidelines for the SVG:
+1. Return ONLY the raw SVG markup. Do NOT wrap it in any Markdown formatting (no \`\`\`xml, no \`\`\`svg, no \`\`\`).
+2. The SVG MUST be valid XML, using colorful linear/radial gradients, clean circles, smooth curves, and stylized geometric paths. It must look professional, friendly, and cute (cartoon game avatar style).
+3. Set the viewBox to "0 0 400 400".
+4. The avatar must be centered and fill a reasonable portion of the canvas.
+5. Use solid/gradient fill styles, modern rounded borders, and vivid colors. Avoid plain black and white.
+6. The SVG must be entirely self-contained (no external references, no external styles).
+7. Return only the SVG text. No conversation, no introductory words.`;
+
+          const response = await clientAi.models.generateContent({
+            model: 'gemini-3.5-flash',
+            contents: [
+              { text: promptText },
+              { inlineData: { mimeType, data: base64Data } }
+            ]
+          });
+
+          let svgText = response.text || '';
+          if (svgText.includes('```')) {
+            svgText = svgText.replace(/```xml|```svg|```/g, '').trim();
+          }
+
+          const svgStartIndex = svgText.indexOf('<svg');
+          if (svgStartIndex !== -1) {
+            svgText = svgText.substring(svgStartIndex).trim();
+          }
+
+          if (!svgText.includes('<svg') || !svgText.includes('</svg>')) {
+            throw new Error('AI가 유효한 SVG 그래픽을 생성하지 못했습니다. 다시 촬영해 주세요.');
+          }
+
+          generatedSvg = svgText;
+          success = true;
+        } catch (clientErr: any) {
+          throw new Error(`캐리커쳐 생성 실패 (클라이언트 API 오류): ${clientErr.message || clientErr}`);
+        }
+      }
 
       if (isGuest) {
         localStorage.setItem(`guest_caricature_count_${today}`, String(userCount + 1));
