@@ -33,11 +33,31 @@ async function startServer() {
         return res.status(400).json({ error: "이미지 데이터가 필요합니다." });
       }
 
-      // Prepare image for Gemini (remove base64 metadata prefix if present)
-      const base64Data = image.includes(",") ? image.split(",")[1] : image;
+      if (!process.env.GEMINI_API_KEY) {
+        console.error("GEMINI_API_KEY is not defined in the environment variables!");
+        return res.status(500).json({ 
+          error: "API 키 설정이 누락되었습니다. AI Studio Settings > Secrets에서 GEMINI_API_KEY를 등록해 주세요." 
+        });
+      }
+
+      // Prepare image for Gemini (dynamically extract mimeType if present)
+      let mimeType = "image/png";
+      let base64Data = image;
+
+      if (image.includes(";base64,")) {
+        const parts = image.split(";base64,");
+        const mimePart = parts[0];
+        if (mimePart.startsWith("data:")) {
+          mimeType = mimePart.substring(5); // e.g. "image/jpeg" or "image/png"
+        }
+        base64Data = parts[1];
+      } else if (image.includes(",")) {
+        base64Data = image.split(",")[1];
+      }
+
       const imagePart = {
         inlineData: {
-          mimeType: "image/png",
+          mimeType: mimeType,
           data: base64Data,
         }
       };
@@ -68,7 +88,7 @@ Technical Guidelines for the SVG:
 
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
-        contents: { parts: [imagePart, promptPart] }
+        contents: [imagePart, promptPart]
       });
 
       let svgText = response.text || "";

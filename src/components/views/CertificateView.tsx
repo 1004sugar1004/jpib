@@ -304,11 +304,25 @@ export const CertificateView = ({ profile, isGuest, onUpdateProfile, onClose }: 
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '캐리커쳐 생성 요청에 실패했습니다.');
+        const text = await response.text();
+        let errorMessage = '캐리커쳐 생성 요청에 실패했습니다.';
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorMessage;
+        } catch (_) {
+          errorMessage = `${response.status} Error: ${text || 'Unknown Server Error'}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (jsonErr) {
+        throw new Error(`서버 응답 파싱 실패 (${response.status}): ${text || 'empty response'}`);
+      }
+
       if (!data.svg) {
         throw new Error('올바른 캐릭터 그래픽이 반환되지 않았습니다.');
       }
