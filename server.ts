@@ -30,8 +30,12 @@ async function startServer() {
     try {
       const { image, learnerProfile } = req.body;
       if (!image) {
+        console.error("Caricature request error: No image provided");
         return res.status(400).json({ error: "이미지 데이터가 필요합니다." });
       }
+
+      console.log("Caricature generation requested for profile:", learnerProfile);
+      console.log("Received image size (chars):", image.length);
 
       if (!process.env.GEMINI_API_KEY) {
         console.error("GEMINI_API_KEY is not defined in the environment variables!");
@@ -51,19 +55,15 @@ async function startServer() {
           mimeType = mimePart.substring(5); // e.g. "image/jpeg" or "image/png"
         }
         base64Data = parts[1];
+        console.log("Detected base64 prefix. Extracted mimeType:", mimeType);
       } else if (image.includes(",")) {
         base64Data = image.split(",")[1];
+        console.log("Detected simple comma separator in image data.");
       }
 
-      const imagePart = {
-        inlineData: {
-          mimeType: mimeType,
-          data: base64Data,
-        }
-      };
+      console.log("Base64 data length:", base64Data.length);
 
-      const promptPart = {
-        text: `Analyze the face, hair style, expression, eyes, clothing, gender, skin tone, and any facial features (e.g., glasses) of the person in this photo.
+      const promptText = `Analyze the face, hair style, expression, eyes, clothing, gender, skin tone, and any facial features (e.g., glasses) of the person in this photo.
 Based on this photo, generate a stunning, highly polished, modern vector caricature avatar (SVG format) representing this person.
 The caricature style, clothing, accessories, and atmosphere MUST reflect the following selected IB Learner Profile (학습자상): "${learnerProfile}".
 
@@ -83,15 +83,19 @@ Technical Guidelines for the SVG:
 4. The avatar must be centered and fill a reasonable portion of the canvas.
 5. Use solid/gradient fill styles, modern rounded borders, and vivid colors. Avoid plain black and white.
 6. The SVG must be entirely self-contained (no external references, no external styles).
-7. Return only the SVG text. No conversation, no introductory words.`
-      };
+7. Return only the SVG text. No conversation, no introductory words.`;
 
+      console.log("Calling Gemini 3.5 Flash...");
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
-        contents: [imagePart, promptPart]
+        contents: [
+          { text: promptText },
+          { inlineData: { mimeType: mimeType, data: base64Data } }
+        ]
       });
 
       let svgText = response.text || "";
+      console.log("Gemini response received. Text length:", svgText.length);
       
       // Clean up code block markers if the model returns them
       if (svgText.includes("```")) {
@@ -103,10 +107,21 @@ Technical Guidelines for the SVG:
         svgText = svgText.substring(svgStartIndex).trim();
       }
 
+      if (!svgText.includes("<svg") || !svgText.includes("</svg>")) {
+        console.error("Invalid SVG generated. Sample:", svgText.substring(0, 200));
+        return res.status(500).json({ 
+          error: "AI가 유효한 SVG 그래픽을 생성하지 못했습니다. 다시 한 번 촬영하거나 다른 이미지를 업로드해 주세요.",
+          rawText: svgText.substring(0, 500)
+        });
+      }
+
+      console.log("Successfully validated generated SVG.");
       res.json({ svg: svgText });
     } catch (error: any) {
       console.error("Caricature generation server error:", error);
-      res.status(500).json({ error: error.message || "캐리커쳐 생성에 실패했습니다." });
+      res.status(500).json({ 
+        error: `서버 오류가 발생했습니다: ${error.message || "캐리커쳐 생성에 실패했습니다."}` 
+      });
     }
   });
 
