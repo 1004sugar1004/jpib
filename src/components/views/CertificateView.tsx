@@ -137,6 +137,16 @@ export const CertificateView = ({ profile, isGuest, onUpdateProfile, onClose }: 
     }
   };
 
+  // Set video stream to video element when active and stream is available
+  useEffect(() => {
+    if (isCameraActive && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch(err => {
+        console.error("Error playing video:", err);
+      });
+    }
+  }, [isCameraActive, cameraStream]);
+
   // Start HTML5 Camera Stream
   const handleStartCamera = async () => {
     setErrorMessage(null);
@@ -146,10 +156,6 @@ export const CertificateView = ({ profile, isGuest, onUpdateProfile, onClose }: 
         video: { width: 320, height: 320, facingMode: 'user' },
         audio: false
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
       setCameraStream(stream);
       setIsCameraActive(true);
     } catch (err) {
