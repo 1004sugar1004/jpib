@@ -34,8 +34,11 @@ import { GameCornerView } from './components/views/GameCornerView';
 import { MusicQuizView } from './components/views/MusicQuizView';
 import { BingoGameView } from './components/views/BingoGameView';
 import { CertificateView } from './components/views/CertificateView';
+import { CertificateGalleryView } from './components/views/CertificateGalleryView';
+import { IBBoardView } from './components/views/IBBoardView';
 import { PlanView } from './components/views/PlanView';
 import { ConceptForestView } from './components/views/ConceptForestView';
+import { IntroView } from './components/views/IntroView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
 import { AnnouncementPopup } from './components/ui/AnnouncementPopup';
@@ -97,11 +100,12 @@ const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
 ];
 
 export default function App() {
+  const [showIntro, setShowIntro] = useState(true);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest' | 'certificate-gallery' | 'ib-board'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -1124,6 +1128,10 @@ export default function App() {
             <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
             <p className="text-gray-500 font-bold animate-pulse">탐험대 상태 확인 중...</p>
           </motion.div>
+        ) : showIntro ? (
+          <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50">
+            <IntroView onEnter={() => setShowIntro(false)} />
+          </motion.div>
         ) : !user && !isGuest ? (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <LoginView 
@@ -1231,6 +1239,24 @@ export default function App() {
                 isGuest={isGuest}
                 onUpdateProfile={(updatedProfile) => setProfile(updatedProfile)}
                 onClose={() => handleProtectedViewChange('home')} 
+              />
+            )}
+            {view === 'certificate-gallery' && (
+              <CertificateGalleryView 
+                user={user}
+                profile={profile}
+                isGuest={isGuest}
+                onEarnXP={handleEarnXP}
+                onClose={() => handleProtectedViewChange('home')}
+              />
+            )}
+            {view === 'ib-board' && (
+              <IBBoardView 
+                user={user}
+                profile={profile}
+                isGuest={isGuest}
+                onEarnXP={handleEarnXP}
+                onClose={() => handleProtectedViewChange('home')}
               />
             )}
             {view === 'plan' && (

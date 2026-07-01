@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trophy, Trees, Flame, Calendar, ChevronRight, Medal } from 'lucide-react';
+import { X, Trophy, Trees, Flame, Calendar, ChevronRight, Medal, Camera, Sparkles, Award, Pin } from 'lucide-react';
 import { Button } from './Button';
 
 export const AnnouncementPopup = () => {
@@ -138,6 +138,49 @@ export const AnnouncementPopup = () => {
                       </p>
                       <p className="text-[9px] text-emerald-700 font-semibold mt-0.5">
                         재미있는 개념 퀴즈를 맞추며 나무를 키우고 보너스 XP도 대량 획득하세요! 개념탐구 열심히 해봅시다! 🌱
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. AI 캐리커쳐 & 자격증 자랑 코너 오픈 */}
+                <div className="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100/60 text-left">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-[11px] font-black text-indigo-800 mb-0.5">📸 AI 캐리커쳐 & 자격증 자랑 코너 오픈!</h4>
+                      <p className="text-[10px] text-indigo-950 font-bold leading-normal">
+                        자격증 코너에서 내 얼굴 사진을 직접 찍거나 파일로 업로드하면 <span className="text-indigo-600">나만의 멋진 IB 학습자상 맞춤 AI 캐리커쳐</span> 자격증이 탄생합니다!
+                      </p>
+                      <p className="text-[9px] text-indigo-700 font-bold mt-1">
+                        ⚠️ 안정적인 서비스를 위해 <span className="text-rose-600">하루 개인 생성 3회, 시스템 총 50회 제한</span>이 적용됩니다!
+                      </p>
+                      <p className="text-[10px] text-purple-900 font-extrabold mt-1.5 bg-purple-50 p-1.5 rounded-lg border border-purple-100">
+                        🎖️ [자격증 자랑 코너] 발급된 자격증 이미지를 저장한 뒤, 자랑 코너에 업로드하여 다른 친구들과 나누면 <span className="text-pink-600">즉시 보너스 50 XP (50포인트)</span>를 지급합니다! 🎁✨
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 6. 실시간 IB 보드 (패들렛) 오픈 */}
+                <div className="bg-orange-50/70 p-3 rounded-2xl border border-orange-100/60 text-left">
+                  <div className="flex items-start gap-2">
+                    <Pin className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5 fill-orange-500/20" />
+                    <div>
+                      <h4 className="text-[11px] font-black text-orange-800 mb-0.5">📌 실시간 IB 보드 (패들렛) 코너 오픈!</h4>
+                      <p className="text-[10px] text-slate-800 font-bold leading-normal">
+                        우리 학교 친구들과 함께 이야기를 나누는 <span className="text-orange-600">실시간 소통 패들렛 보드</span>가 열렸습니다!
+                      </p>
+                      <div className="mt-1 space-y-1 bg-white/60 p-2 rounded-xl border border-orange-100/40">
+                        <p className="text-[9.5px] text-slate-700 font-bold">
+                          💡 <span className="text-orange-600">1번 주제:</span> 내가 가장 좋아하는 학습자상과 이유 쓰기
+                        </p>
+                        <p className="text-[9.5px] text-slate-700 font-bold">
+                          💡 <span className="text-indigo-600">2번 주제:</span> 내가 깊이 탐구하고 싶은 탐구 주제와 이유 쓰기
+                        </p>
+                      </div>
+                      <p className="text-[10px] text-orange-950 font-extrabold mt-1.5 leading-normal">
+                        ✏️ 생각 포스팅 시 <span className="text-indigo-600">즉시 +30 XP</span>가 지급되며, 학년과 반 정보가 표시됩니다. 정성들여 생각을 나누어 준 탐험가를 선정해 <span className="text-pink-600">깜짝 선물🎁</span>을 드립니다! 
                       </p>
                     </div>
                   </div>

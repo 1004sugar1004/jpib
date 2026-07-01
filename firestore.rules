@@ -102,5 +102,13 @@ service cloud.firestore {
     match /caricatureUsage/{docId} {
       allow read, write: if true;
     }
+
+    match /sharedCertificates/{docId} {
+      allow read, write: if true;
+    }
+
+    match /ibBoardPosts/{docId} {
+      allow read, write: if true;
+    }
   }
 }

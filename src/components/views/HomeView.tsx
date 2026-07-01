@@ -27,7 +27,11 @@ import {
   Megaphone,
   X,
   Gift,
-  Trees
+  Trees,
+  Pin,
+  Camera,
+  Award,
+  MessageSquare
 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { ibReflectionQuestions } from '../../content';
@@ -40,7 +44,7 @@ interface HomeViewProps {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest', initialStudyTab?: number) => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest' | 'certificate-gallery' | 'ib-board', initialStudyTab?: number) => void;
   rankings: UserProfile[];
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
@@ -519,6 +523,87 @@ export const HomeView = ({
         </div>
       </motion.div>
 
+      {/* NEW SECTION: AI Caricature & IB Board Collaborative Notice */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-indigo-900 via-slate-900 to-purple-950 text-white rounded-[40px] p-8 md:p-10 shadow-2xl border border-indigo-500/20 relative overflow-hidden"
+        id="homeview-promotional-announcements"
+      >
+        {/* Decorative ambient blobs */}
+        <div className="absolute -right-20 -top-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div className="space-y-4 max-w-3xl">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-xs font-black text-indigo-300 uppercase tracking-widest animate-pulse">
+                <Sparkles className="w-3.5 h-3.5" />
+                Special New Corner Open!
+              </span>
+              <h3 className="text-3xl md:text-4xl font-black tracking-tight leading-tight">
+                📸 나만의 AI 캐리커쳐 자격증 발급 & IB 보드 코너 오픈!
+              </h3>
+              <p className="text-slate-300 font-semibold text-sm md:text-base leading-relaxed">
+                탐험가 여러분! 이제 자격증 코너에서 내 얼굴 사진을 직접 카메라로 찍거나 업로드하여 <span className="text-amber-400 font-black">세상에 단 하나뿐인 AI 캐리커쳐 자격증</span>을 즉시 발급받으실 수 있습니다!
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-4 shrink-0">
+              <Button
+                onClick={() => setView('certificate')}
+                className="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-sm rounded-2xl shadow-lg border-none"
+              >
+                📸 자격증 캐리커쳐 만들기
+              </Button>
+              <Button
+                onClick={() => setView('ib-board')}
+                className="px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black text-sm rounded-2xl shadow-lg border-none"
+              >
+                📌 IB 패들렛 글쓰기
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10 pt-8 border-t border-white/10">
+            {/* Feature 1 */}
+            <div className="bg-white/5 backdrop-blur-sm p-5 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-4 font-black">
+                <Camera className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-black mb-1.5 text-white">1. 카메라로 내사진 찰칵!</h4>
+              <p className="text-slate-400 text-xs font-semibold leading-normal">
+                자격증 코너에서 카메라로 얼굴을 촬영해 나만의 학습자 캐리커쳐를 만들어 보세요! 
+                <span className="text-rose-400 block font-bold mt-1">⚠️ 안정적 생성을 위해 개인 하루 3회, 전체 50회 양만 한정 생성됩니다!</span>
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="bg-white/5 backdrop-blur-sm p-5 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400 mb-4 font-black">
+                <Award className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-black mb-1.5 text-white">2. 자격증 자랑 코너 (+50 XP)</h4>
+              <p className="text-slate-400 text-xs font-semibold leading-normal">
+                완성된 자격증 이미지를 내 기기에 저장한 후, <strong>자랑 코너에 업로드하여 공유</strong>해 주세요! 등록하는 모든 탐험가에게 <strong>즉시 50 XP 포인트</strong>를 드립니다! 🎁✨
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-white/5 backdrop-blur-sm p-5 rounded-3xl border border-white/5 hover:border-white/10 transition-colors">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 mb-4 font-black">
+                <Pin className="w-5 h-5 fill-amber-400/30 text-amber-400" />
+              </div>
+              <h4 className="text-base font-black mb-1.5 text-white">3. IB 패들렛 소통 보드 (+30 XP)</h4>
+              <p className="text-slate-400 text-xs font-semibold leading-normal">
+                내가 가장 좋아하는 IB 학습자상과 이유, 혹은 탐구하고 싶은 탐구 주제와 이유를 패들렛 보드에 작성해 보세요! 
+                <strong> 정성 가득 잘 쓴 사람에게는 아주 특별한 선물</strong>을 드립니다! 🎁
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* XP Guide Card - Information Section */}
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
@@ -938,6 +1023,52 @@ export const HomeView = ({
             <p className="text-gray-500 text-sm font-medium mb-2">나만의 탐험가 자격증을 받아보세요!</p>
             <div className="mt-6 flex items-center gap-1 text-indigo-600 font-bold text-sm">
               발급하기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('certificate-gallery')}
+          className="group"
+          id="homeview-card-certificate-gallery"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-purple-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-purple-50/30">
+            <div className="w-20 h-20 bg-purple-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-purple-100 overflow-hidden p-3 text-purple-600">
+              <Sparkles className="w-12 h-12" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">자격증 자랑 코너</h3>
+            <p className="text-gray-500 text-sm font-medium mb-2">내 자격증을 올리고 칭찬도 주고 받아요!</p>
+            <div className="flex items-center gap-1 px-3 py-1 bg-purple-50 rounded-full text-[10px] font-black text-purple-600 border border-purple-100">
+              <Sparkles className="w-3 h-3" />
+              업로드 시 +50 XP 획득!
+            </div>
+            <div className="mt-6 flex items-center gap-1 text-purple-600 font-bold text-sm">
+              자랑하러 가기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('ib-board')}
+          className="group"
+          id="homeview-card-ib-board"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-orange-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-orange-50/30">
+            <div className="w-20 h-20 bg-orange-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-orange-100 overflow-hidden p-3 text-orange-600">
+              <Pin className="w-12 h-12 fill-orange-500 text-orange-600" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">IB 보드 (패들렛)</h3>
+            <p className="text-gray-500 text-sm font-medium mb-2">가장 좋아하는 학습자상과 탐구하고 싶은 주제 나누기!</p>
+            <div className="flex items-center gap-1 px-3 py-1 bg-orange-50 rounded-full text-[10px] font-black text-orange-600 border border-orange-100">
+              <Sparkles className="w-3 h-3 text-orange-500" />
+              등록 시 +30 XP & 우수글 특별선물!
+            </div>
+            <div className="mt-6 flex items-center gap-1 text-orange-600 font-bold text-sm">
+              패들렛 보러 가기 <ChevronRight className="w-4 h-4" />
             </div>
           </Card>
         </motion.div>

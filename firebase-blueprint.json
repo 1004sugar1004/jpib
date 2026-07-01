@@ -71,6 +71,40 @@
         "timestamp": { "type": "integer" }
       },
       "required": ["uid", "content", "timestamp"]
+    },
+    "ibBoardPosts": {
+      "title": "IB Board Post",
+      "description": "Posts created by users on the IB inquiry board.",
+      "type": "object",
+      "properties": {
+        "topicId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "gradeClass": { "type": "string" },
+        "avatarSvg": { "type": "string" },
+        "content": { "type": "string" },
+        "bgColor": { "type": "string" },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["topicId", "userId", "content", "createdAt"]
+    },
+    "sharedCertificates": {
+      "title": "Shared Certificate",
+      "description": "Certificates or images shared to the public gallery.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "gradeClass": { "type": "string" },
+        "avatarSvg": { "type": "string" },
+        "caricatureSvg": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["userId", "caption", "createdAt"]
     }
   },
   "firestore": {
@@ -97,6 +131,14 @@
     "/atl/{userId}": {
       "schema": "object",
       "description": "User ATL skill data."
+    },
+    "/ibBoardPosts/{docId}": {
+      "schema": "ibBoardPosts",
+      "description": "IB Board inquiry post entries."
+    },
+    "/sharedCertificates/{docId}": {
+      "schema": "sharedCertificates",
+      "description": "User-shared certificates gallery entries."
     }
   }
 }
