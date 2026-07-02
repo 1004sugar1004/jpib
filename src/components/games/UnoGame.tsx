@@ -12,7 +12,7 @@ interface UnoGameProps {
 // ==========================================
 const COLORS = ['Red', 'Blue', 'Yellow', 'Green'];
 const LEARNER_PROFILES = [
-  '탐구하는 사람', '지식이 많은 사람', '생각하는 사람', '소통하는 사람', '원칙을 지키는 사람',
+  '탐구하는 사람', '지식이 풍부한 사람', '사고하는 사람', '소통하는 사람', '원칙을 지키는 사람',
   '열린 마음을 가진 사람', '배려하는 사람', '도전하는 사람', '균형 잡힌 사람', '성찰하는 사람'
 ];
 
@@ -665,8 +665,8 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
                   <p className="text-[10px] text-slate-400 mt-0.5">숫자 카드들에는 글로벌 미래 인재로 성장하는 데 필요한 10가지 가치가 매칭되어 있어요:</p>
                   <div className="grid grid-cols-2 gap-1 px-1 mt-2 text-[10.5px] text-slate-300">
                     <div><strong>0:</strong> 탐구하는 사람</div>
-                    <div><strong>1:</strong> 지식이 많은 사람</div>
-                    <div><strong>2:</strong> 생각하는 사람</div>
+                    <div><strong>1:</strong> 지식이 풍부한 사람</div>
+                    <div><strong>2:</strong> 사고하는 사람</div>
                     <div><strong>3:</strong> 소통하는 사람</div>
                     <div><strong>4:</strong> 원칙을 지키는 사람</div>
                     <div><strong>5:</strong> 열린 마음을 가진 사람</div>

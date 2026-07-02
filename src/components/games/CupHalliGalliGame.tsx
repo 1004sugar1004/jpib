@@ -99,7 +99,7 @@ const CARDS_POOL: CupCard[] = [
   { id: '6', pattern: ['blue', 'red', 'yellow', 'black', 'green'], direction: 'vertical', themeWord: '지식이 풍부한 사람', themeDesc: '다양한 탐구를 넘어서 개념적 지식과 지역사회의 문제를 엮어 생각합니다.' },
   { id: '7', pattern: ['red', 'black', 'blue', 'green', 'yellow'], direction: 'horizontal', themeWord: '소통하는 사람', themeDesc: '정보와 의견을 다양한 언어와 수단으로 자신감 있고 창의적으로 표현해요.' },
   { id: '8', pattern: ['black', 'yellow', 'green', 'blue', 'red'], direction: 'vertical', themeWord: '균형 잡힌 사람', themeDesc: '지적, 신체적, 조화로운 성장을 통해 삶의 균형을 올바르게 맞춰갑니다.' },
-  { id: '9', pattern: ['green', 'blue', 'red', 'yellow', 'black'], direction: 'horizontal', themeWord: '생각하는 사람', themeDesc: '복잡한 문제도 주저하지 않고 비판적이고 창의적인 사색으로 다가갑니다.' },
+  { id: '9', pattern: ['green', 'blue', 'red', 'yellow', 'black'], direction: 'horizontal', themeWord: '사고하는 사람', themeDesc: '복잡한 문제도 주저하지 않고 비판적이고 창의적인 사색으로 다가갑니다.' },
   { id: '10', pattern: ['yellow', 'red', 'blue', 'black', 'green'], direction: 'vertical', themeWord: '탐구하는 사람', themeDesc: '배움에 대한 적극적인 호기심을 지니고 일평생 질문을 던지는 사람입니다.' },
   { id: '11', pattern: ['blue', 'green', 'yellow', 'red', 'black'], direction: 'horizontal', themeWord: '글로벌 마인드', themeDesc: '나와 타인이 서로 다를 수 있음을 인정하며 세계 평화에 기여합니다.' },
   { id: '12', pattern: ['red', 'yellow', 'green', 'blue', 'black'], direction: 'vertical', themeWord: '개념적 이해', themeDesc: '단순 지식 암기를 뛰어넘어 여러 교과에 스며 있는 원리를 깊이 꿰뚫어봅니다.' }

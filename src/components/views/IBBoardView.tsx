@@ -92,56 +92,7 @@ export const IBBoardView = ({ user, profile, isGuest, onEarnXP, onClose }: IBBoa
       });
       setPosts(postsData);
     } catch (err) {
-      console.error('Error fetching IB board posts, loading fallbacks:', err);
-      // Beautiful fallbacks representing student reflections
-      const today = Date.now();
-      const fallbackPosts: BoardPost[] = [
-        {
-          id: 'fb_board_1',
-          topicId: 1,
-          userId: 'stud_1',
-          userName: '지식가득 탐험대',
-          gradeClass: '5학년 2반',
-          content: '저는 "지식이 많은 사람(Knowledgeable)"이 좋습니다! 이번 학기에 IB 탐구 과정을 거치면서 모르는 것을 깊이 배워가는 즐거움을 확실히 알게 되었기 때문입니다.',
-          bgColor: 'yellow',
-          likes: ['stud_2', 'stud_3'],
-          createdAt: today - 1800000
-        },
-        {
-          id: 'fb_board_2',
-          topicId: 2,
-          userId: 'stud_2',
-          userName: '지구 사랑 대원',
-          gradeClass: '5학년 3반',
-          content: '저는 기후 변화로 인한 극지방 생태계 변화와 북극곰들의 생존 방식에 대해 깊이 있게 탐구해보고 성찰해보고 싶습니다. 지구 환경을 지키고 싶어요!',
-          bgColor: 'blue',
-          likes: ['stud_1'],
-          createdAt: today - 3600000
-        },
-        {
-          id: 'fb_board_3',
-          topicId: 1,
-          userId: 'stud_3',
-          userName: '배려왕 민준',
-          gradeClass: '5학년 1반',
-          content: '"열린 마음(Open-minded)"을 가진 탐구자가 되고 싶습니다. 친구들의 발표와 다양한 의견을 경청하고 다름을 존중하는 것이 최고의 탐구 기본기라고 생각합니다.',
-          bgColor: 'pink',
-          likes: ['stud_1', 'stud_2', 'stud_4'],
-          createdAt: today - 7200000
-        },
-        {
-          id: 'fb_board_4',
-          topicId: 2,
-          userId: 'stud_4',
-          userName: '코딩 천재 도현',
-          gradeClass: '5학년 4반',
-          content: '미래 사회의 인공지능 윤리와 로봇 기술이 우리 초등학생 생활에 미치는 영향에 대해 성찰하고, AI와 친구가 될 수 있을지 탐구해보고 싶어요.',
-          bgColor: 'green',
-          likes: ['stud_3'],
-          createdAt: today - 14400000
-        }
-      ];
-      setPosts(fallbackPosts);
+      console.error('Error fetching IB board posts:', err);
     } finally {
       setIsLoading(false);
     }

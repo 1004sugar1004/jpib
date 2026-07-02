@@ -509,31 +509,6 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
       // Update timing and physics
       timeRef.current += 16;
 
-      // Precompute trig & camera states once per frame for massive rendering optimization
-      const ca = Math.cos(cameraAngle);
-      const sa = Math.sin(cameraAngle);
-      const floatVal = Math.sin(timeRef.current * 0.0008) * 5;
-      const center = getScreenCenter();
-      const camX = cameraPosRef.current.x;
-      const camY = cameraPosRef.current.y;
-
-      const fastIsoProject = (x: number, y: number, z: number = 0) => {
-        const worldX = x - camX;
-        const worldY = y - camY;
-        const rotX = worldX * ca - worldY * sa;
-        const rotY = worldX * sa + worldY * ca;
-        return {
-          x: center.x + (rotX - rotY) * (TILE_W / 2),
-          y: center.y + (rotX + rotY) * (TILE_H / 2) - z + floatVal,
-        };
-      };
-
-      const fastIsoDepth = (wx: number, wy: number) => {
-        const dx = wx - camX;
-        const dy = wy - camY;
-        return dx * sa + dy * ca + dx * ca - dy * sa;
-      };
-
       const speed = 0.05;
       let dx = 0;
       let dy = 0;
@@ -562,6 +537,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
       ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
       // Render World Under Camera scale
+      const center = getScreenCenter();
       ctx.save();
       ctx.translate(center.x, center.y);
       ctx.scale(zoom, zoom);
@@ -571,7 +547,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
       const tiles = [];
       for (let ty = 0; ty < WORLD_H; ty++) {
         for (let tx = 0; tx < WORLD_W; tx++) {
-          tiles.push({ x: tx, y: ty, depth: fastIsoDepth(tx + 0.5, ty + 0.5) });
+          tiles.push({ x: tx, y: ty, depth: isoDepth(tx + 0.5, ty + 0.5) });
         }
       }
       tiles.sort((a, b) => a.depth - b.depth);
@@ -580,7 +556,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
         const checker = (x + y) % 2 === 0;
         
         // Draw Isometric diamond tile
-        const p = fastIsoProject(x, y);
+        const p = isoProject(x, y);
         const left = { x: p.x - TILE_W / 2, y: p.y + TILE_H / 2 };
         const right = { x: p.x + TILE_W / 2, y: p.y + TILE_H / 2 };
         const bottom = { x: p.x, y: p.y + TILE_H };
@@ -603,15 +579,20 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
         ctx.closePath();
         ctx.fill();
 
-        // Tile upper color - flat color is highly performant and modern
+        // Tile upper color
         const fill = path ? "#e8cf9f" : checker ? "#8fd174" : "#7fc66b";
+        const gradient = ctx.createLinearGradient(p.x, p.y - 2, p.x, bottom.y + 2);
+        gradient.addColorStop(0, fill.startsWith("#") ? shadeHex(fill, 8) : fill);
+        gradient.addColorStop(0.5, fill);
+        gradient.addColorStop(1, fill.startsWith("#") ? shadeHex(fill, -16) : fill);
+
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(right.x, right.y);
         ctx.lineTo(bottom.x, bottom.y);
         ctx.lineTo(left.x, left.y);
         ctx.closePath();
-        ctx.fillStyle = fill;
+        ctx.fillStyle = gradient;
         ctx.fill();
         ctx.strokeStyle = "rgba(40, 80, 50, 0.12)";
         ctx.lineWidth = 1;
@@ -619,7 +600,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
 
         // Grass details
         if (!path) {
-          const detailP = fastIsoProject(x + 0.15, y + 0.15, 0.05);
+          const detailP = isoProject(x + 0.15, y + 0.15, 0.05);
           const detailCount = ((x * 7 + y * 11) % 3) + 2;
           ctx.strokeStyle = "rgba(84, 108, 61, 0.22)";
           ctx.lineWidth = 1;
@@ -639,9 +620,9 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
       // Decorations (Trees, rocks, ponds, etc.)
       DECORATIONS.forEach((dec) => {
         drawables.push({
-          depth: fastIsoDepth(dec.x + 0.5, dec.y + 0.5) + 0.4,
+          depth: isoDepth(dec.x + 0.5, dec.y + 0.5) + 0.4,
           draw: () => {
-            const p = fastIsoProject(dec.x + 0.5, dec.y + 0.5);
+            const p = isoProject(dec.x + 0.5, dec.y + 0.5);
             
             if (dec.type === "tree") {
               // Fade trees out if the player walks behind them
@@ -806,9 +787,9 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
       // Stations / Quiz Corners
       quizzes.forEach((quiz) => {
         drawables.push({
-          depth: fastIsoDepth(quiz.x + 0.5, quiz.y + 0.5) + 0.7,
+          depth: isoDepth(quiz.x + 0.5, quiz.y + 0.5) + 0.7,
           draw: () => {
-            const p = fastIsoProject(quiz.x + 0.5, quiz.y + 0.5);
+            const p = isoProject(quiz.x + 0.5, quiz.y + 0.5);
             const done = solvedSet.has(quiz.id);
             const pulse = Math.sin(timeRef.current * 0.0025 + quiz.x + quiz.y) * 0.5 + 0.5;
             const bobY = Math.sin(timeRef.current * 0.0018 + quiz.x * 1.3) * 4;
@@ -868,10 +849,10 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
 
       // Player Drawable
       drawables.push({
-        depth: fastIsoDepth(playerPosRef.current.x, playerPosRef.current.y) + 0.9,
+        depth: isoDepth(playerPosRef.current.x, playerPosRef.current.y) + 0.9,
         draw: () => {
           const bob = Math.sin(timeRef.current * 0.012) * 2;
-          const p = fastIsoProject(playerPosRef.current.x, playerPosRef.current.y, 18 + bob);
+          const p = isoProject(playerPosRef.current.x, playerPosRef.current.y, 18 + bob);
           
           // Draw Shadow
           ctx.fillStyle = "rgba(0,0,0,0.22)";

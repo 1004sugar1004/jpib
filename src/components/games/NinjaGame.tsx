@@ -30,7 +30,7 @@ interface IBTerm {
 const ibTerms: IBTerm[] = [
   { id: 1, type: "profile", kr: "탐구하는 사람", en: "Inquirers", desc: "호기심을 넓히며 배움을 주도하는 탐구자" },
   { id: 2, type: "profile", kr: "지식이 풍부한 사람", en: "Knowledgeable", desc: "학문 전반에 걸쳐 유익한 지식을 탐색하는 지식인" },
-  { id: 3, type: "profile", kr: "생각하는 사람", en: "Thinkers", desc: "이성적이고 창의적으로 복잡한 문제를 해결하려 노력" },
+  { id: 3, type: "profile", kr: "사고하는 사람", en: "Thinkers", desc: "이성적이고 창의적으로 복잡한 문제를 해결하려 노력" },
   { id: 4, type: "profile", kr: "소통하는 사람", en: "Communicators", desc: "여러 나라 언어와 다양한 방법으로 자신 있게 생각 전파" },
   { id: 5, type: "profile", kr: "원칙을 지키는 사람", en: "Principled", desc: "공정하고 도덕적이며 정직하게 세상을 대하는 시민" },
   { id: 6, type: "profile", kr: "열린 마음을 가진 사람", en: "Open-minded", desc: "타인의 문화와 가치를 포용하고 다름을 이해" },

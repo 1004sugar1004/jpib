@@ -26,7 +26,7 @@ const TERMS: JengaTerm[] = [
   // IB 학습자상 (Learner Profile)
   { term: "Inquirer (탐구하는 사람)",       cat: "학습자상", desc: "호기심을 가지고 스스로 배움을 계획하며, 세상에 대해 활발히 질문하고 지식을 넓혀가는 사람입니다." },
   { term: "Knowledgeable (지식이 풍부한 사람)",  cat: "학습자상", desc: "중요한 개념과 지식을 깊이 있게 탐구하여, 지역사회와 전 세계의 다양한 문제에 대해 잘 아는 사람입니다." },
-  { term: "Thinker (생각하는 사람)",        cat: "학습자상", desc: "복잡한 문제를 해결하기 위해 비판적이고 창의적으로 생각하며, 합리적이고 윤리적인 결정을 내리는 사람입니다." },
+  { term: "Thinker (사고하는 사람)",        cat: "학습자상", desc: "복잡한 문제를 해결하기 위해 비판적이고 창의적으로 생각하며, 합리적이고 윤리적인 결정을 내리는 사람입니다." },
   { term: "Communicator (소통하는 사람)",   cat: "학습자상", desc: "둘 이상의 언어와 다양한 매체를 활용하여 상대방을 존중하며 자기를 명확하고 창의적으로 표현하는 사람입니다." },
   { term: "Principled (원칙을 지키는 사람)",     cat: "학습자상", desc: "정직함과 공정함을 바탕으로 행동하며, 자신의 행동 책임과 타인의 권리를 존중하는 법을 아는 사람입니다." },
   { term: "Open-minded (열린 마음을 가진 사람)",    cat: "학습자상", desc: "자신의 문화와 역사를 소중히 여기면서도, 타인의 다양한 관점과 문화적 가치를 열린 마음으로 받아들이는 사람입니다." },
@@ -78,7 +78,6 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   }, [currentPlayer]);
 
   const [leanIndex, setLeanIndex] = useState(0);
-  const leanIndexRef = useRef<number>(0);
   const [wobbleOffset, setWobbleOffset] = useState(0);
   const [message, setMessage] = useState('가운데나 좌우 블록을 살짝 탭해 빼내세요!');
   const [showHelp, setShowHelp] = useState(false);
@@ -281,7 +280,6 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     levelRef.current = 1;
 
     setLeanIndex(0);
-    leanIndexRef.current = 0;
     setWobbleOffset(0);
     setMessage('행운을 빕니다! 타워가 쓰러지지 않게 블록을 빼내세요.');
 
@@ -843,16 +841,15 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       }
 
       const diff = difficultyRef.current;
-      let multiplier = 12.0; // default normal (was 8.0)
+      let multiplier = 8.0; // default normal
       if (diff === 'easy') {
-        multiplier = 4.5; // low sensitivity (was 3.2)
+        multiplier = 3.2; // low sensitivity
       } else if (diff === 'hard') {
-        multiplier = 26.5; // high sensitivity (was 14.5) - much more dynamic and hard!
+        multiplier = 14.5; // high sensitivity
       }
 
       const calculatedLean = Math.max(-100, Math.min(100, totalOffset * multiplier));
       setLeanIndex(calculatedLean);
-      leanIndexRef.current = calculatedLean;
 
       if (Math.abs(calculatedLean) > 95) {
         triggerCollapseLocal();
@@ -965,31 +962,6 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             setTimeout(() => setWobbleOffset(0), 180);
             playSound('correct');
           }
-        }
-
-        // Apply progressive 3D tilting and micro-shaking to active blocks on the tower
-        if (!b.userData.removed && !b.userData.gravityActive && !b.userData.dropping) {
-          const hRatio = b.userData.row / ROWS;
-          const leanRatio = leanIndexRef.current / 100; // -1 to 1
-
-          // Progressive tilt amount along world X axis
-          const maxTiltX = leanRatio * 0.65; // increased tilt peak for higher drama
-          
-          // Physical micro-shaking/vibration calculation based on instability and difficulty
-          let shake = 0;
-          if (Math.abs(leanIndexRef.current) > 15) {
-            const isHard = difficultyRef.current === 'hard';
-            const frequency = isHard ? 0.09 : 0.05;
-            const shakeAmp = (Math.abs(leanIndexRef.current) - 15) / 85; // normalized 0 to 1
-            const maxShakeDisplacement = isHard ? 0.38 : 0.14; // hard mode shakes much more violently
-            shake = Math.sin(now * frequency) * shakeAmp * maxShakeDisplacement;
-          }
-
-          // Shifting horizontal position
-          b.position.x = b.userData.ox + (maxTiltX + shake) * hRatio;
-          
-          // Rotate Z to visually bend the tower
-          b.rotation.z = -(maxTiltX + shake) * hRatio * 0.22;
         }
 
         // Drop scattering blocks for visual drama!
