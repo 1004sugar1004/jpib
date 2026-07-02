@@ -78,6 +78,7 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   }, [currentPlayer]);
 
   const [leanIndex, setLeanIndex] = useState(0);
+  const leanIndexRef = useRef<number>(0);
   const [wobbleOffset, setWobbleOffset] = useState(0);
   const [message, setMessage] = useState('가운데나 좌우 블록을 살짝 탭해 빼내세요!');
   const [showHelp, setShowHelp] = useState(false);
@@ -280,6 +281,7 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
     levelRef.current = 1;
 
     setLeanIndex(0);
+    leanIndexRef.current = 0;
     setWobbleOffset(0);
     setMessage('행운을 빕니다! 타워가 쓰러지지 않게 블록을 빼내세요.');
 
@@ -841,15 +843,16 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
       }
 
       const diff = difficultyRef.current;
-      let multiplier = 8.0; // default normal
+      let multiplier = 12.0; // default normal (was 8.0)
       if (diff === 'easy') {
-        multiplier = 3.2; // low sensitivity
+        multiplier = 4.5; // low sensitivity (was 3.2)
       } else if (diff === 'hard') {
-        multiplier = 14.5; // high sensitivity
+        multiplier = 26.5; // high sensitivity (was 14.5) - much more dynamic and hard!
       }
 
       const calculatedLean = Math.max(-100, Math.min(100, totalOffset * multiplier));
       setLeanIndex(calculatedLean);
+      leanIndexRef.current = calculatedLean;
 
       if (Math.abs(calculatedLean) > 95) {
         triggerCollapseLocal();
@@ -962,6 +965,31 @@ export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
             setTimeout(() => setWobbleOffset(0), 180);
             playSound('correct');
           }
+        }
+
+        // Apply progressive 3D tilting and micro-shaking to active blocks on the tower
+        if (!b.userData.removed && !b.userData.gravityActive && !b.userData.dropping) {
+          const hRatio = b.userData.row / ROWS;
+          const leanRatio = leanIndexRef.current / 100; // -1 to 1
+
+          // Progressive tilt amount along world X axis
+          const maxTiltX = leanRatio * 0.65; // increased tilt peak for higher drama
+          
+          // Physical micro-shaking/vibration calculation based on instability and difficulty
+          let shake = 0;
+          if (Math.abs(leanIndexRef.current) > 15) {
+            const isHard = difficultyRef.current === 'hard';
+            const frequency = isHard ? 0.09 : 0.05;
+            const shakeAmp = (Math.abs(leanIndexRef.current) - 15) / 85; // normalized 0 to 1
+            const maxShakeDisplacement = isHard ? 0.38 : 0.14; // hard mode shakes much more violently
+            shake = Math.sin(now * frequency) * shakeAmp * maxShakeDisplacement;
+          }
+
+          // Shifting horizontal position
+          b.position.x = b.userData.ox + (maxTiltX + shake) * hRatio;
+          
+          // Rotate Z to visually bend the tower
+          b.rotation.z = -(maxTiltX + shake) * hRatio * 0.22;
         }
 
         // Drop scattering blocks for visual drama!

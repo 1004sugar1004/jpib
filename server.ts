@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -133,6 +134,19 @@ Technical Guidelines for the SVG:
       res.status(500).json({ 
         error: `서버 오류가 발생했습니다: ${error.message || "캐리커쳐 생성에 실패했습니다."}` 
       });
+    }
+  });
+
+  // Temporary endpoint to collect and dump feedback
+  app.post("/api/collect-feedback", (req: any, res: any) => {
+    try {
+      const { feedbacks } = req.body;
+      fs.writeFileSync("feedback_temp.json", JSON.stringify(feedbacks, null, 2), "utf8");
+      console.log("Successfully collected feedback and saved to feedback_temp.json!");
+      res.json({ status: "success" });
+    } catch (err: any) {
+      console.error("Error saving collected feedback:", err);
+      res.status(500).json({ error: err.message });
     }
   });
 

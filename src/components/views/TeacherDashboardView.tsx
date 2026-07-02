@@ -67,6 +67,15 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
       })) as Feedback[];
       setFeedbacks(newFeedbacks);
       if (activeTab === 'feedback') setLoading(false);
+
+      // Sync fetched feedback to backend JSON dump
+      if (newFeedbacks.length > 0) {
+        fetch('/api/collect-feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedbacks: newFeedbacks })
+        }).catch(err => console.error("Error sending feedback sync:", err));
+      }
     });
 
     return () => {
