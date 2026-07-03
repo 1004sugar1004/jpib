@@ -1143,6 +1143,37 @@ export const HomeView = ({
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   
+                  {/* JUNE RANKING BUG RECOVERY NOTICE */}
+                  <div className="p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-2xl border-2 border-amber-300 shadow-sm flex items-start gap-3 col-span-1 md:col-span-2">
+                    <span className="text-xl shrink-0 animate-pulse">🏆</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold text-amber-950 mb-1 flex flex-wrap items-center gap-1.5 text-sm">
+                        <span>[긴급 복구] 6월 최종 학급 랭킹 집계 오류 정상화 안내</span>
+                        <span className="bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded font-black tracking-widest">CLEAR</span>
+                      </p>
+                      <p className="text-gray-700 font-bold leading-relaxed mb-1.5">
+                        6월 30일 밤 당당히 1등을 달리고 있던 <strong className="text-indigo-600 font-black">4학년 1반</strong>이, 7월 1일 월말 전환 과정에서 일부 학생들의 점수가 초기화/누락되어 잠시 순위가 어긋나 보이는 현상이 발생했었습니다.
+                      </p>
+                      <p className="text-gray-600 font-medium leading-relaxed mb-2.5">
+                        7월 첫 로그인을 하면서 6월 점수가 July 데이터로 갱신될 때 이전 점수가 합산에서 제외되던 집계 시스템의 치명적인 버그를 완벽하게 탐지 및 수정하였습니다.
+                      </p>
+                      <div className="bg-white/80 p-3 rounded-xl border border-amber-200 shadow-sm">
+                        <p className="font-black text-amber-900 text-xs mb-1.5">🥇 6월 최종 학급 랭킹 (완벽 복구 결과)</p>
+                        <div className="space-y-1 font-bold text-gray-700 text-xs">
+                          <p className="text-indigo-600 font-black flex items-center gap-1">
+                            <span>✨ 1위: 4학년 1반</span>
+                            <span className="text-indigo-500 text-[10px] bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100 font-black">200,988점 - 최종 1등 확정! 👑</span>
+                          </p>
+                          <p>🥈 2위: 3학년 3반 (142,997점)</p>
+                          <p>🥉 3위: 4학년 5반 (90,038점)</p>
+                          <p className="text-gray-400 font-semibold text-[10px] mt-1 pt-1 border-t border-gray-100">
+                            • 4위: 4학년 6반 (71,230점) / 5위: 4학년 7반 (63,220점)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm flex items-start gap-3">
                     <span className="text-lg">🛠️</span>
                     <div className="text-xs">

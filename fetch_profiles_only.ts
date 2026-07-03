@@ -30,15 +30,7 @@ async function main() {
     } else if (p.lastActiveMonth === '2026-07') {
       // For those who already logged in during July, we can use their total score minus their current monthlyScore
       // because total score is cumulative, and monthlyScore is July score.
-      // Wait, is score cumulative? Yes, score is cumulative XP.
-      // So June cumulative score is: score - monthlyScore (which is July score).
-      // Let's verify if total score is cumulative! Yes, score represents total XP.
-      // If we subtract the July monthlyScore from their total score, does it give June cumulative score?
-      // Actually, if we just want their June monthly score:
-      // If they were active before, their June score was their monthly score before July.
-      // But since we don't have that directly, subtracting July score from total score is a good estimate,
-      // or we can just use monthlyScore if they are still '2026-06'.
-      juneScore = p.monthlyScore || 0; // fallback
+      juneScore = (p.score || 0) - (p.monthlyScore || 0);
     } else {
       juneScore = p.monthlyScore || 0;
     }
