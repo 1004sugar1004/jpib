@@ -108,23 +108,29 @@ export const AnnouncementPopup = () => {
 
                 {/* 2. 학급 랭킹 TOP 3 */}
                 <div className="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100/60 text-left">
-                  <h4 className="text-[11px] font-black text-indigo-800 mb-1.5 flex items-center gap-1">
-                    🏫 6월 학급 랭킹 TOP 3
-                  </h4>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <h4 className="text-[11px] font-black text-indigo-800 flex items-center gap-1">
+                      🏫 6월 학급 랭킹 TOP 3 (오류 복구 완료)
+                    </h4>
+                    <span className="bg-amber-500 text-white text-[8px] px-1 py-0.2 rounded font-black">RECOVERED</span>
+                  </div>
                   <div className="space-y-1 text-xs text-gray-700 font-bold">
-                    <div className="flex justify-between items-center bg-white/65 px-2 py-1 rounded-lg">
-                      <span className="flex items-center gap-1">🥇 <span className="text-indigo-700 font-extrabold">1위</span> 3학년 3반</span>
-                      <span className="text-indigo-600">142,997 XP</span>
+                    <div className="flex justify-between items-center bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
+                      <span className="flex items-center gap-1">🥇 <span className="text-indigo-700 font-extrabold">1위</span> 4학년 1반 👑</span>
+                      <span className="text-indigo-600 font-black">200,988 XP</span>
                     </div>
                     <div className="flex justify-between items-center bg-white/65 px-2 py-1 rounded-lg">
-                      <span className="flex items-center gap-1">🥈 <span className="text-indigo-600 font-extrabold">2위</span> 4학년 5반</span>
-                      <span className="text-indigo-500">119,075 XP</span>
+                      <span className="flex items-center gap-1">🥈 <span className="text-gray-600 font-extrabold">2위</span> 3학년 3반</span>
+                      <span className="text-gray-500">142,997 XP</span>
                     </div>
                     <div className="flex justify-between items-center bg-white/65 px-2 py-1 rounded-lg">
-                      <span className="flex items-center gap-1">🥉 <span className="text-indigo-800 font-extrabold">3위</span> 4학년 1반</span>
-                      <span className="text-indigo-600">100,832 XP</span>
+                      <span className="flex items-center gap-1">🥉 <span className="text-amber-800 font-extrabold">3위</span> 4학년 5반</span>
+                      <span className="text-amber-700">90,038 XP</span>
                     </div>
                   </div>
+                  <p className="text-[9px] text-gray-400 mt-1 font-semibold leading-relaxed">
+                    * 7월 전환 시 발생했던 4학년 1반 학생들의 6월 점수 누락 오류가 완벽 복구되었습니다.
+                  </p>
                 </div>
 
                 {/* 3. 7월 랭킹 초기화 안내 */}

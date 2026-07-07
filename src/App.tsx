@@ -53,7 +53,7 @@ const DAILY_XP_LIMIT = 1500;
 
 const QUESTS_POOL: Record<string, Omit<DailyQuest, 'progress' | 'completed'>[]> = {
   study: [
-    { id: 'study_1', title: 'IB 지식 탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 한 번씩 읽으세요.', type: 'study', target: 34, xpReward: 150, ticketReward: 2 },
+    { id: 'study_1', title: 'IB 지식 탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(40개)을 한 번씩 읽으세요.', type: 'study', target: 40, xpReward: 150, ticketReward: 2 },
     { id: 'study_2', title: '지식 탐험 키워드 5개 성찰하기', description: '지식 탐험에서 키워드를 5개 읽어 개념을 성찰하세요.', type: 'study', target: 5, xpReward: 50, ticketReward: 1 },
     { id: 'study_3', title: '지식 탐험 집중 학습 12회 완료', description: '탐색 항목을 클릭하여 12회 이상 학습을 확인하세요.', type: 'study', target: 12, xpReward: 80, ticketReward: 2 },
     { id: 'study_4', title: '초성 퀴즈 1회 정답 도전', description: '지식 탐험의 초성 퀴즈를 1회 맞추어 보세요.', type: 'study', target: 1, xpReward: 50, ticketReward: 1 },
@@ -94,7 +94,7 @@ export function getRandomDailyQuests(): DailyQuest[] {
 }
 
 const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
-  { id: 'q1', title: '지식탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(34개)을 읽고 확인하세요. (보상: 150XP + 티켓 2장)', type: 'study', target: 34, progress: 0, completed: false, xpReward: 150, ticketReward: 2 },
+  { id: 'q1', title: '지식탐험 모든 키워드 완독', description: '지식 탐험의 모든 항목(40개)을 읽고 확인하세요. (보상: 150XP + 티켓 2장)', type: 'study', target: 40, progress: 0, completed: false, xpReward: 150, ticketReward: 2 },
   { id: 'q2', title: '플래시카드 10개 학습', description: '플래시카드를 10번 뒤집어 학습하세요. (보상: 30XP + 티켓 2장)', type: 'flashcards', target: 10, progress: 0, completed: false, xpReward: 30, ticketReward: 2 },
   { id: 'q3', title: '메모리 게임 1회 승리', description: '메모리 게임을 한 판 완료하세요. (보상: 40XP + 티켓 2장)', type: 'memory', target: 1, progress: 0, completed: false, xpReward: 40, ticketReward: 2 },
 ];

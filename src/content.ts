@@ -309,6 +309,69 @@ export const ibATL: IBContent[] = [
   }
 ];
 
+export const ibAction: IBContent[] = [
+  {
+    title: "선택과 실천 (Lifestyle Choices)",
+    description: "개인의 일상적이고 습관적인 선택을 통해 긍정적인 변화를 만드는 행동입니다.",
+    image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800",
+    details: [
+      "일회용 컵 대신 개인 텀블러와 친환경 장바구니를 자발적으로 사용한다.",
+      "안 쓰는 플러그를 뽑고, 쓰레기 분리배출을 솔선수범하여 실천한다.",
+      "건강을 위해 가까운 거리는 걷거나 자전거를 이용한다."
+    ]
+  },
+  {
+    title: "적극적 참여 (Participation)",
+    description: "공동체의 일원으로서 자발적으로 활동이나 행사, 모임에 동참하는 행동입니다.",
+    image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800",
+    details: [
+      "학교 급식 잔반 줄이기 모임이나 교내 환경 동아리에 주도적으로 참여한다.",
+      "학급 자치 회의에서 적극적으로 대안을 제시하고 구성원들과 협업한다.",
+      "지역 사회의 축제나 자원 봉사 활동에 지속적으로 시간과 정성을 보탠다."
+    ]
+  },
+  {
+    title: "목소리 내기 (Advocacy)",
+    description: "사회의 중요한 가치나 사람들을 위해 의견을 표명하고 홍보하는 옹호 행동입니다.",
+    image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=800",
+    details: [
+      "기후 변화의 심각성을 알리는 인포그래픽 포스터를 그려 복도에 게시한다.",
+      "학교폭력 예방을 위한 가두 캠페인을 기획하고 학급 친구들의 동참을 권유한다.",
+      "디지털 윤리 수칙을 직접 정의하여 SNS나 단톡방에 카드뉴스로 배포한다."
+    ]
+  },
+  {
+    title: "사회적 기업가 정신 (Social Entrepreneurship)",
+    description: "창의적이고 혁신적인 방식으로 사회 문제를 해결하려는 비즈니스적 행동입니다.",
+    image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=800",
+    details: [
+      "기부금을 마련하기 위해 가정에서 안 쓰는 장난감 바자회를 개최한다.",
+      "공정 무역(Fair Trade)의 취지를 알리고 이를 지원하는 학급 카페를 연다.",
+      "폐현수막을 모아 에코백으로 업사이클링하는 아이디어를 전파한다."
+    ]
+  },
+  {
+    title: "사회 정의 구현 (Social Justice)",
+    description: "사회의 구조적이고 고질적인 불평등이나 부조리를 해결하기 위한 공정한 실천입니다.",
+    image: "https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&q=80&w=800",
+    details: [
+      "휠체어 전용 램프가 설치되지 않은 공공기관에 개선 건의 편지를 쓴다.",
+      "우리 반에서 은연중에 쓰이는 차별적 단어나 소외되는 친구가 없는지 수시로 살핀다.",
+      "모든 사람이 공정한 기회를 누려야 함을 교내 신문 투고를 통해 역설한다."
+    ]
+  },
+  {
+    title: "지속가능발전목표 (UN SDGs)",
+    description: "인류의 지속 가능한 미래를 위해 전 세계가 함께 달성해야 할 17개의 약속입니다.",
+    image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800",
+    details: [
+      "기후 변화에 대응하고 생물 다양성(해양/육상 생태계)을 보존하려 노력한다.",
+      "모든 이에게 공평하고 훌륭한 교육 기회와 깨끗한 물, 위생 환경이 주어짐을 지지한다.",
+      "지구촌의 빈곤을 해결하고 건강한 삶(웰빙)을 누리는 환경을 조성하기 위해 실천한다."
+    ]
+  }
+];
+
 export const ibReflectionQuestions = [
   "이번 탐구에서 가장 흥미로웠던 점은 무엇인가요?",
   "탐구 과정에서 새롭게 알게 된 사실은 무엇인가요?",

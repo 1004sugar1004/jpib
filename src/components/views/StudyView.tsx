@@ -27,7 +27,8 @@ import {
   Link,
   Search,
   Box,
-  Star
+  Star,
+  Activity
 } from 'lucide-react';
 import { 
   ibLearnerProfile, 
@@ -35,6 +36,7 @@ import {
   ibKeyConcepts, 
   ibInquiryCycle, 
   ibATL, 
+  ibAction,
   ibReflectionQuestions 
 } from '../../content';
 
@@ -113,8 +115,9 @@ const tabs = [
   { id: 2, label: "핵심 개념", icon: AlertCircle, color: "bg-amber-500" },
   { id: 3, label: "탐구 사이클", icon: RefreshCcw, color: "bg-blue-500" },
   { id: 4, label: "ATL 기능", icon: GraduationCap, color: "bg-purple-500" },
-  { id: 5, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
-  { id: 6, label: "초성 퀴즈", icon: Lightbulb, color: "bg-cyan-500" },
+  { id: 5, label: "실천과 행동", icon: Activity, color: "bg-orange-500" },
+  { id: 6, label: "성찰 일지", icon: BookOpen, color: "bg-rose-500" },
+  { id: 7, label: "초성 퀴즈", icon: Lightbulb, color: "bg-cyan-500" },
 ];
 
 interface ConsonantQuestion {
@@ -274,10 +277,10 @@ export const StudyView = ({
 
   const tabCompletionStatus = useMemo(() => {
     return tabs.map(tab => {
-      if (tab.id === 6) {
+      if (tab.id === 7) {
         return consonantIdx > 0 || consonantFeedback === 'correct';
       }
-      if (tab.id === 5) {
+      if (tab.id === 6) {
         const answers = randomQuestions.map(q => reflectionData[q] || '');
         return answers.every(a => {
           const trimmed = a.trim();
@@ -293,6 +296,7 @@ export const StudyView = ({
         case 2: items = ibKeyConcepts; prefix = 'concept'; break;
         case 3: items = ibInquiryCycle; prefix = 'inquiry'; break;
         case 4: items = ibATL; prefix = 'atl'; break;
+        case 5: items = ibAction; prefix = 'action'; break;
       }
       
       if (items.length === 0) return false;
@@ -301,7 +305,7 @@ export const StudyView = ({
   }, [completedItems, reflectionData, randomQuestions]);
 
   const allPreviousTabsCompleted = useMemo(() => {
-    return tabCompletionStatus.slice(0, 5).every(status => status === true);
+    return tabCompletionStatus.slice(0, 6).every(status => status === true);
   }, [tabCompletionStatus]);
 
   const handleTabChange = (tabId: number) => {
@@ -327,6 +331,7 @@ export const StudyView = ({
       case 2: return { data: ibKeyConcepts, prefix: 'concept' };
       case 3: return { data: ibInquiryCycle, prefix: 'inquiry' };
       case 4: return { data: ibATL, prefix: 'atl' };
+      case 5: return { data: ibAction, prefix: 'action' };
       default: return { data: [], prefix: '' };
     }
   };
@@ -406,10 +411,10 @@ export const StudyView = ({
         </div>
       </header>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {tabs.map((tab, idx) => {
           const isCompleted = tabCompletionStatus[idx];
-          const isLocked = tab.id === 5 && !allPreviousTabsCompleted;
+          const isLocked = tab.id === 6 && !allPreviousTabsCompleted;
           
           return (
             <motion.button
@@ -474,7 +479,7 @@ export const StudyView = ({
           transition={{ duration: 0.3 }}
           className="space-y-8"
         >
-          {activeTab < 5 ? (
+          {activeTab < 6 ? (
             <div className="space-y-8">
               <div className="bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-white/20 shadow-inner">
                 <div className="flex items-center justify-between mb-4 px-2">
@@ -636,7 +641,7 @@ export const StudyView = ({
                 </div>
               </div>
             </div>
-          ) : activeTab === 5 ? (
+          ) : activeTab === 6 ? (
             <div className="space-y-8">
               <div className="bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-white/20 shadow-inner">
                 <div className="flex items-center justify-between mb-4 px-2">
