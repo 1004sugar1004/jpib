@@ -133,6 +133,11 @@ export const TeacherNotePopup = ({ profile, onClose, forceOpenList = false }: Te
   const [readNoteIds, setReadNoteIds] = useState<string[]>([]);
   const [viewingAll, setViewingAll] = useState(forceOpenList);
 
+  // Sync forceOpenList prop with viewingAll state
+  useEffect(() => {
+    setViewingAll(forceOpenList);
+  }, [forceOpenList]);
+
   // 1. Load custom teacher notes from Firestore and merge with pre-seeded
   useEffect(() => {
     const q = query(collection(db, 'teacherNotes'));
@@ -221,7 +226,7 @@ export const TeacherNotePopup = ({ profile, onClose, forceOpenList = false }: Te
 
   const currentNote = activeNotes[currentNoteIdx];
 
-  if (activeNotes.length === 0) return null;
+  if (activeNotes.length === 0 && !viewingAll) return null;
 
   // Render the "View All Notes" list screen
   if (viewingAll) {
@@ -253,49 +258,56 @@ export const TeacherNotePopup = ({ profile, onClose, forceOpenList = false }: Te
           </div>
 
           <div className="space-y-4 flex-1 overflow-y-auto pr-1">
-            {activeNotes.map((note, idx) => {
-              const isRead = note.id ? readNoteIds.includes(note.id) : false;
-              return (
-                <div 
-                  key={note.id || idx}
-                  className={`p-5 rounded-3xl border transition-all ${
-                    isRead 
-                      ? 'bg-gray-50/80 border-gray-150 text-gray-600' 
-                      : 'bg-rose-50/50 border-rose-100 text-gray-900 shadow-md shadow-rose-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="flex items-center gap-1.5 text-xs font-black text-rose-600">
-                      <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
-                      {note.senderName}
-                    </span>
-                    <span className="text-[10px] text-gray-400 font-bold">
-                      {isRead ? (
-                        <span className="text-emerald-600 flex items-center gap-1">
-                          <Check className="w-3 h-3" /> 읽음 확인
-                        </span>
-                      ) : (
-                        <span className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[9px] animate-pulse">새 편지!</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="bg-yellow-50/40 p-4 rounded-2xl border border-yellow-100/50 font-medium text-sm leading-relaxed whitespace-pre-wrap font-sans text-gray-800">
-                    {note.content}
-                  </div>
-                  {!isRead && note.id && (
-                    <div className="mt-3 flex justify-end">
-                      <Button
-                        size="sm"
-                        onClick={() => handleMarkAsRead(note.id!)}
-                        className="bg-rose-500 hover:bg-rose-600 text-white font-black text-xs px-4 py-2 rounded-xl flex items-center gap-1 shadow-sm"
-                      >
-                        <Check className="w-3.5 h-3.5" /> 확인했어요!
-                      </Button>
+            {activeNotes.length === 0 ? (
+              <div className="text-center py-12 text-gray-400 font-bold text-sm bg-rose-50/20 rounded-3xl border border-dashed border-rose-100 p-6">
+                아직 선생님께 받은 편지가 없어요. 💌<br />
+                열심히 활동해서 멋진 편지를 받아보세요!
+              </div>
+            ) : (
+              activeNotes.map((note, idx) => {
+                const isRead = note.id ? readNoteIds.includes(note.id) : false;
+                return (
+                  <div 
+                    key={note.id || idx}
+                    className={`p-5 rounded-3xl border transition-all ${
+                      isRead 
+                        ? 'bg-gray-50/80 border-gray-150 text-gray-600' 
+                        : 'bg-rose-50/50 border-rose-100 text-gray-900 shadow-md shadow-rose-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="flex items-center gap-1.5 text-xs font-black text-rose-600">
+                        <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                        {note.senderName}
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-bold">
+                        {isRead ? (
+                          <span className="text-emerald-600 flex items-center gap-1">
+                            <Check className="w-3 h-3" /> 읽음 확인
+                          </span>
+                        ) : (
+                          <span className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[9px] animate-pulse">새 편지!</span>
+                        )}
+                      </span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    <div className="bg-yellow-50/40 p-4 rounded-2xl border border-yellow-100/50 font-medium text-sm leading-relaxed whitespace-pre-wrap font-sans text-gray-800">
+                      {note.content}
+                    </div>
+                    {!isRead && note.id && (
+                      <div className="mt-3 flex justify-end">
+                        <Button
+                          size="sm"
+                          onClick={() => handleMarkAsRead(note.id!)}
+                          className="bg-rose-500 hover:bg-rose-600 text-white font-black text-xs px-4 py-2 rounded-xl flex items-center gap-1 shadow-sm"
+                        >
+                          <Check className="w-3.5 h-3.5" /> 확인했어요!
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
 
           <div className="mt-6 text-center shrink-0">
