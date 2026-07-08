@@ -31,6 +31,46 @@ const CHARACTERS = [
   { id: "yul", name: "별빛 율", skin: "#f7caa8", hair: "#6a4fb3", shirt: "#d96f6f", pants: "#f5d66d" },
 ];
 
+const CHARACTER_DETAILS: Record<string, { specialty: string; desc: string; speed: number; wisdom: number; luck: number; quote: string; emoji: string }> = {
+  jun: {
+    specialty: "자연 조율사",
+    desc: "개념의 숲을 보살피는 따뜻한 마음의 파수꾼입니다. 식물들의 소리를 듣고 소통합니다.",
+    quote: "🌱 '자연의 순리 속에 모든 IB 개념의 힌트가 들어있어.'",
+    speed: 3,
+    wisdom: 5,
+    luck: 3,
+    emoji: "🌲"
+  },
+  min: {
+    specialty: "바람의 탐험가",
+    desc: "세상의 숨겨진 미스터리를 추적하는 열정적인 모험가입니다. 발걸음이 가벼워 속도가 아주 빠릅니다.",
+    quote: "🧭 '저 너머에 우리가 아직 발견하지 못한 지혜가 기다려!'",
+    speed: 5,
+    wisdom: 3,
+    luck: 4,
+    emoji: "🧭"
+  },
+  sol: {
+    specialty: "차원 설계자",
+    desc: "기능과 형태를 기하학적으로 분석하길 좋아하는 비범한 발명가입니다. 창의력이 뛰어납니다.",
+    quote: "🔧 '원인과 결과를 설계도로 그리면 답이 보이곤 하지.'",
+    speed: 4,
+    wisdom: 4,
+    luck: 3,
+    emoji: "⚙️"
+  },
+  yul: {
+    specialty: "성운의 수수께끼",
+    desc: "별무리와 대화하며 깨달음을 얻는 신비로운 영성 탐험가입니다. 영감과 행운이 풍부합니다.",
+    quote: "✨ '별들의 관점은 지상을 넘어서 영원을 비추고 있어.'",
+    speed: 3,
+    wisdom: 4,
+    luck: 5,
+    emoji: "🌌"
+  }
+};
+
+
 const QUIZZES_SET1: ForestQuiz[] = [
   {
     id: "form",
@@ -230,6 +270,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
   const [quizStatus, setQuizStatus] = useState<"none" | "correct" | "wrong">("none");
   const [isCleared, setIsCleared] = useState(false);
   const [startTime] = useState(Date.now());
+  const [dashActive, setDashActive] = useState(false);
 
   // Isometric engine states
   const [zoom, setZoom] = useState(1);
@@ -241,12 +282,14 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
   
   const playerPosRef = useRef({ x: 7.5, y: 7.5 });
   const cameraPosRef = useRef({ x: 7.5, y: 7.5 });
+  const petPosRef = useRef({ x: 7.2, y: 7.2 });
   const playerDirectionRef = useRef<"front" | "back" | "left" | "right">("front");
   const playerStateRef = useRef<"idle" | "thinking" | "success">("idle");
   const keysPressedRef = useRef<Set<string>>(new Set());
   const timeRef = useRef(0);
   const particlesRef = useRef<any[]>([]);
   const sparklesRef = useRef<any[]>([]);
+  const leavesRef = useRef<any[]>([]);
 
   // Sound synthesis
   const playSound = (type: 'correct' | 'wrong' | 'win' | 'click' | 'step') => {
@@ -353,6 +396,22 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
         size: 1.2 + Math.random() * 2.2,
         ambient: true,
         phase: Math.random() * Math.PI * 2,
+      });
+    }
+
+    // Spawn ambient wind-blown forest leaves
+    for (let i = 0; i < 18; i++) {
+      leavesRef.current.push({
+        x: Math.random() * 800,
+        y: Math.random() * 600,
+        angle: Math.random() * Math.PI * 2,
+        speedX: 0.3 + Math.random() * 0.7,
+        speedY: 0.5 + Math.random() * 1.0,
+        swingRange: 1.2 + Math.random() * 1.8,
+        swingSpeed: 0.015 + Math.random() * 0.025,
+        swingPhase: Math.random() * Math.PI * 2,
+        size: 5 + Math.random() * 5,
+        color: ["#10b981", "#34d399", "#059669", "#f59e0b", "#fbbf24"][Math.floor(Math.random() * 5)]
       });
     }
   }, []);
@@ -509,7 +568,8 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
       // Update timing and physics
       timeRef.current += 16;
 
-      const speed = 0.05;
+      const isDashing = keysPressedRef.current.has("shift") || dashActive;
+      const speed = isDashing ? 0.09 : 0.05;
       let dx = 0;
       let dy = 0;
       if (keysPressedRef.current.has("arrowup") || keysPressedRef.current.has("w")) dy -= 1;
@@ -523,11 +583,33 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
         playerPosRef.current.x = Math.min(WORLD_W - 0.8, Math.max(0.8, playerPosRef.current.x + rd.x * speed));
         playerPosRef.current.y = Math.min(WORLD_H - 0.8, Math.max(0.8, playerPosRef.current.y + rd.y * speed));
         
+        // Spawn trailing running particles
+        if (Math.random() < (isDashing ? 0.6 : 0.25)) {
+          const pScreen = isoProject(playerPosRef.current.x, playerPosRef.current.y);
+          sparklesRef.current.push({
+            x: pScreen.x + (Math.random() - 0.5) * 16,
+            y: pScreen.y + 36 + (Math.random() - 0.5) * 8,
+            vx: -rd.x * 2 + (Math.random() - 0.5) * 0.5,
+            vy: -rd.y * 1 + (Math.random() - 0.5) * 0.5 - 0.6,
+            life: 0.7,
+            decay: 0.04 + Math.random() * 0.03,
+            size: isDashing ? 3 + Math.random() * 3 : 1.5 + Math.random() * 1.5,
+            color: isDashing ? "#38bdf8" : "#94a3b8"
+          });
+        }
+
         // Play soft step sound occasionally
         if (timeRef.current % 320 === 0) {
           playSound('step');
         }
       }
+
+      // Spirit companion follow movement
+      const targetPetX = playerPosRef.current.x - 0.45;
+      const targetPetY = playerPosRef.current.y - 0.45;
+      petPosRef.current.x += (targetPetX - petPosRef.current.x) * 0.05;
+      petPosRef.current.y += (targetPetY - petPosRef.current.y) * 0.05;
+
 
       // Smooth camera follow
       cameraPosRef.current.x += (playerPosRef.current.x - cameraPosRef.current.x) * 0.08;
@@ -784,7 +866,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
         });
       });
 
-      // Stations / Quiz Corners
+      // Stations / Quiz Shrines (Upgraded visually)
       quizzes.forEach((quiz) => {
         drawables.push({
           depth: isoDepth(quiz.x + 0.5, quiz.y + 0.5) + 0.7,
@@ -792,59 +874,145 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
             const p = isoProject(quiz.x + 0.5, quiz.y + 0.5);
             const done = solvedSet.has(quiz.id);
             const pulse = Math.sin(timeRef.current * 0.0025 + quiz.x + quiz.y) * 0.5 + 0.5;
-            const bobY = Math.sin(timeRef.current * 0.0018 + quiz.x * 1.3) * 4;
+            const bobY = Math.sin(timeRef.current * 0.0018 + quiz.x * 1.3) * 4.5;
 
-            // Highlight ring/glow
+            // Base ground glow
             if (done) {
-              ctx.shadowColor = `rgba(242, 184, 75, ${0.5 + pulse * 0.3})`;
-              ctx.shadowBlur = 24 + pulse * 14;
+              ctx.shadowColor = `rgba(245, 158, 11, ${0.4 + pulse * 0.25})`;
+              ctx.shadowBlur = 18 + pulse * 12;
             } else {
-              ctx.shadowColor = `${quiz.color}66`;
+              ctx.shadowColor = `${quiz.color}55`;
               ctx.shadowBlur = 10 + pulse * 8;
             }
 
-            // Shadow
-            ctx.fillStyle = "rgba(0,0,0,0.22)";
+            // Pedestal Shadow
+            ctx.fillStyle = "rgba(10, 24, 15, 0.26)";
             ctx.beginPath();
-            ctx.ellipse(p.x, p.y + 22 - bobY * 0.4, 36 - bobY * 0.5, 13, 0, 0, Math.PI * 2);
+            ctx.ellipse(p.x, p.y + 20, 26, 11, 0, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.shadowColor = "transparent";
             ctx.shadowBlur = 0;
 
-            const by = p.y - 52 + bobY;
-
-            // Main box
-            const grad = ctx.createLinearGradient(p.x - 29, by, p.x + 29, by + 56);
-            grad.addColorStop(0, done ? "#ffe87a" : shadeHex(quiz.color, 25));
-            grad.addColorStop(1, done ? "#e8b84a" : shadeHex(quiz.color, -18));
-            ctx.fillStyle = grad;
+            // 1. Draw solid stone pedestal base (ancient fantasy feel)
+            ctx.fillStyle = "#334155"; // Deep slate
             ctx.beginPath();
-            ctx.roundRect(p.x - 29, by, 58, 56, 10);
+            ctx.roundRect(p.x - 14, p.y - 2, 28, 20, 4);
+            ctx.fill();
+            
+            // Stone details / highlight
+            ctx.fillStyle = "#475569";
+            ctx.beginPath();
+            ctx.roundRect(p.x - 12, p.y + 1, 24, 16, 3);
             ctx.fill();
 
-            // Ring/glow overlay for finished corners
-            if (done) {
-              ctx.strokeStyle = `rgba(255, 220, 60, ${0.85 + pulse * 0.15})`;
-              ctx.lineWidth = 2.5;
+            // Pedestal crown plate
+            ctx.fillStyle = "#64748b";
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y - 1, 14, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Draw Floating magical 3D faceted crystal
+            const crystalY = p.y - 34 + bobY;
+            const crystalH = 24;
+            const crystalW = 10;
+            const crystalColor = done ? "#facc15" : quiz.color;
+
+            ctx.save();
+            ctx.shadowColor = crystalColor;
+            ctx.shadowBlur = done ? 16 + pulse * 10 : 10 + pulse * 6;
+
+            // Crystal Left facet
+            ctx.fillStyle = crystalColor;
+            ctx.beginPath();
+            ctx.moveTo(p.x, crystalY - crystalH / 2);
+            ctx.lineTo(p.x - crystalW, crystalY);
+            ctx.lineTo(p.x, crystalY + crystalH / 2);
+            ctx.closePath();
+            ctx.fill();
+
+            // Crystal Right facet (lighter highlight for 3D depth)
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.beginPath();
+            ctx.moveTo(p.x, crystalY - crystalH / 2);
+            ctx.lineTo(p.x + crystalW, crystalY);
+            ctx.lineTo(p.x, crystalY + crystalH / 2);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+
+            // 3. Draw expanding light energy ring around uncompleted Shrines
+            if (!done) {
+              const ringRadius = 14 + pulse * 14;
+              ctx.strokeStyle = quiz.color;
+              ctx.lineWidth = 1.5;
+              ctx.globalAlpha = 1.0 - pulse;
               ctx.beginPath();
-              ctx.roundRect(p.x - 29, by, 58, 56, 10);
+              ctx.ellipse(p.x, p.y + 10, ringRadius, ringRadius * 0.45, 0, 0, Math.PI * 2);
               ctx.stroke();
+              ctx.globalAlpha = 1.0;
             }
 
-            // Text / Label inside box
-            ctx.fillStyle = "#ffffff";
-            ctx.font = `900 ${done ? "12" : "14"}px 'Inter', sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(done ? "✓ 완료" : quiz.icon, p.x, by + 28);
+            // 4. Draw continuous rising golden stardust trail for Completed Shrines
+            if (done && Math.random() < 0.16) {
+              sparklesRef.current.push({
+                x: p.x + (Math.random() - 0.5) * 16,
+                y: p.y - 10 - Math.random() * 45,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: -1.0 - Math.random() * 1.2,
+                life: 0.9,
+                decay: 0.02 + Math.random() * 0.02,
+                size: 2 + Math.random() * 2.5,
+                color: "#facc15"
+              });
+            }
 
-            // Label below station
-            ctx.fillStyle = "#1e293b";
-            ctx.font = "800 11px 'Inter', sans-serif";
-            ctx.fillText(quiz.host, p.x, p.y + 22);
+            // Hovering Text label above crystal
+            ctx.fillStyle = done ? "#fbbf24" : "#ffffff";
+            ctx.font = "900 12px 'Inter', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(done ? "★" : quiz.icon, p.x, crystalY - 18);
+
+            // Host label below Pedestal
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = "800 10px 'Inter', sans-serif";
+            ctx.fillText(quiz.host, p.x, p.y + 30);
           }
         });
+      });
+
+      // Companion Spirit/Firefly Guardian (Bobbing and floating)
+      drawables.push({
+        depth: isoDepth(petPosRef.current.x, petPosRef.current.y) + 0.94,
+        draw: () => {
+          const petFloatY = Math.sin(timeRef.current * 0.0035) * 5;
+          const p = isoProject(petPosRef.current.x, petPosRef.current.y, 42); // floats higher
+          const pulse = Math.sin(timeRef.current * 0.015) * 0.25 + 0.75;
+
+          ctx.save();
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 14 + pulse * 10;
+          ctx.fillStyle = `rgba(186, 230, 253, ${0.85 + pulse * 0.15})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y + petFloatY, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Small companion magical trail
+          if (Math.random() < 0.25) {
+            sparklesRef.current.push({
+              x: p.x + (Math.random() - 0.5) * 6,
+              y: p.y + petFloatY + (Math.random() - 0.5) * 6,
+              vx: (Math.random() - 0.5) * 0.4,
+              vy: 0.1 + Math.random() * 0.4,
+              life: 0.7,
+              decay: 0.05,
+              size: 1.2 + Math.random() * 1.5,
+              color: "#60a5fa"
+            });
+          }
+          ctx.restore();
+        }
       });
 
       // Player Drawable
@@ -858,6 +1026,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
           ctx.fillStyle = "rgba(0,0,0,0.22)";
           ctx.beginPath();
           ctx.ellipse(p.x, p.y + 54, 26, 10, 0, 0, Math.PI * 2);
+
           ctx.fill();
 
           // Procedural high DPI character drawing
@@ -1017,7 +1186,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
           s.y += s.vy;
           s.life -= s.decay;
           ctx.globalAlpha = Math.max(0, s.life);
-          ctx.fillStyle = "#fde047";
+          ctx.fillStyle = s.color || "#fde047";
           const sz = Math.max(0.01, s.size * s.life);
           ctx.beginPath();
           ctx.arc(s.x, s.y, sz, 0, Math.PI * 2);
@@ -1025,6 +1194,79 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
         }
         ctx.globalAlpha = 1.0;
       });
+
+      // 3. Falling Forest Leaves (Wind-blown drift animation)
+      leavesRef.current.forEach((leaf) => {
+        leaf.swingPhase += leaf.swingSpeed;
+        leaf.x += leaf.speedX + Math.sin(leaf.swingPhase) * leaf.swingRange * 0.2;
+        leaf.y += leaf.speedY;
+        leaf.angle += 0.008;
+
+        // Reset off-screen leaf
+        if (leaf.y > h + 15) {
+          leaf.y = -15;
+          leaf.x = Math.random() * w;
+        }
+        if (leaf.x > w + 15) {
+          leaf.x = -15;
+        }
+
+        ctx.save();
+        ctx.translate(leaf.x, leaf.y);
+        ctx.rotate(leaf.angle);
+        ctx.fillStyle = leaf.color;
+        ctx.globalAlpha = 0.65;
+        
+        // Render beautiful soft organic leaf shape
+        ctx.beginPath();
+        ctx.ellipse(0, 0, leaf.size, leaf.size * 0.48, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-leaf.size, 0);
+        ctx.lineTo(leaf.size, 0);
+        ctx.stroke();
+        
+        ctx.restore();
+      });
+      ctx.globalAlpha = 1.0;
+
+      // 4. Volumetric God Rays (Forest canopy light rays)
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      for (let i = 0; i < 3; i++) {
+        const rayTime = timeRef.current * 0.00035 + i * 2.1;
+        const width = 75 + Math.sin(rayTime) * 25;
+        const startX = -120 + i * 260 + Math.sin(rayTime * 0.45) * 70;
+        
+        const grad = ctx.createLinearGradient(startX, -40, startX + 380, h + 40);
+        grad.addColorStop(0, "rgba(255, 253, 215, 0.15)");
+        grad.addColorStop(0.5, "rgba(255, 251, 195, 0.055)");
+        grad.addColorStop(1, "rgba(255, 251, 195, 0)");
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(startX - width / 2, -40);
+        ctx.lineTo(startX + width / 2, -40);
+        ctx.lineTo(startX + width / 2 + 350, h + 40);
+        ctx.lineTo(startX - width / 2 + 350, h + 40);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // 5. Cinematic Vignette (Locks the composition together)
+      const vignetteGrad = ctx.createRadialGradient(
+        w / 2, h / 2, w / 3,
+        w / 2, h / 2, Math.hypot(w, h) / 2
+      );
+      vignetteGrad.addColorStop(0, "rgba(0,0,0,0)");
+      vignetteGrad.addColorStop(1, "rgba(9, 23, 15, 0.32)");
+      ctx.fillStyle = vignetteGrad;
+      ctx.fillRect(0, 0, w, h);
+
 
       animFrameId = requestAnimationFrame(render);
     };
@@ -1179,6 +1421,25 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
             )}
           </div>
 
+          {/* Dash Mode Toggle Button (Mobile & Desktop friendly) */}
+          <div className="absolute right-4 top-4">
+            <button
+              onClick={() => {
+                playSound('click');
+                setDashActive(!dashActive);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black border transition-all flex items-center gap-1.5 cursor-pointer shadow-xl backdrop-blur-md ${
+                dashActive 
+                  ? "bg-sky-500/90 text-white border-sky-400 animate-pulse shadow-sky-500/25" 
+                  : "bg-emerald-950/80 text-emerald-300 border-emerald-500/20 hover:bg-emerald-900/60"
+              }`}
+            >
+              <span>🏃</span>
+              <span>숲 질주 {dashActive ? "ON" : "OFF"}</span>
+            </button>
+          </div>
+
+
           {/* Isometric Controls Toolbar */}
           <div className="absolute left-4 top-4 flex flex-col gap-2">
             
@@ -1276,26 +1537,43 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
         {/* Right Sidebar: Character & Concept Tracker */}
         <div className="lg:col-span-4 flex flex-col justify-between gap-4 h-full">
           
-          {/* Active Player Card with avatar select tabs */}
-          <div className="p-4 bg-emerald-950/40 rounded-3xl border border-emerald-500/10 flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              {/* Cute mini circular preview drawing */}
+          {/* Active Player RPG Card */}
+          <div className="p-5 bg-gradient-to-b from-[#112a1b] to-[#0c1f13] rounded-3xl border border-emerald-500/20 shadow-xl flex flex-col gap-4 relative overflow-hidden">
+            {/* Ambient subtle glow */}
+            <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20" style={{ backgroundColor: selectedCharacter.shirt }} />
+            
+            <div className="flex gap-4">
+              {/* Animated Avatar Box */}
               <div 
-                className="w-11 h-11 rounded-full border-2 border-emerald-400 shadow-lg flex items-center justify-center overflow-hidden bg-emerald-900"
+                className="w-16 h-16 rounded-2xl border-2 shadow-lg flex flex-col items-center justify-center relative overflow-hidden shrink-0"
                 style={{ 
-                  boxShadow: `0 4px 12px ${selectedCharacter.shirt}33`
+                  borderColor: selectedCharacter.shirt,
+                  boxShadow: `0 8px 16px ${selectedCharacter.shirt}25`,
+                  background: `linear-gradient(135deg, #102a1b, ${selectedCharacter.shirt}40)`
                 }}
               >
-                <div className="text-xl">🎒</div>
+                <span className="text-3xl select-none">{CHARACTER_DETAILS[selectedCharacter.id]?.emoji || "🎒"}</span>
+                <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-extrabold text-center text-white/95 py-0.5 uppercase tracking-widest leading-none">
+                  LV.1
+                </span>
               </div>
-              <div>
-                <h3 className="text-sm font-black text-emerald-100">{selectedCharacter.name}</h3>
-                <p className="text-[10px] text-emerald-400 font-bold">마을 친구들에게 가서 퀴즈를 맞추세요!</p>
+
+              {/* Character Identity & RPG Stats */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-sm font-black text-white">{selectedCharacter.name}</h3>
+                  <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 uppercase tracking-wide">
+                    {CHARACTER_DETAILS[selectedCharacter.id]?.specialty}
+                  </span>
+                </div>
+                <p className="text-[10px] text-emerald-400 font-medium mt-1 leading-relaxed line-clamp-2">
+                  {CHARACTER_DETAILS[selectedCharacter.id]?.desc}
+                </p>
               </div>
             </div>
 
-            {/* Character Selector Grid */}
-            <div className="grid grid-cols-4 gap-1.5 bg-emerald-950/80 p-1.5 rounded-2xl border border-emerald-900">
+            {/* Character Selection Grid */}
+            <div className="grid grid-cols-4 gap-1.5 bg-[#07130b] p-1 rounded-2xl border border-emerald-950">
               {CHARACTERS.map((char) => (
                 <button
                   key={char.id}
@@ -1303,15 +1581,44 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
                     playSound('click');
                     setSelectedCharacter(char);
                   }}
-                  className={`py-1 rounded-xl text-[10px] font-black transition-all cursor-pointer ${
+                  className={`py-1.5 rounded-xl text-[10px] font-black transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
                     selectedCharacter.id === char.id 
-                      ? "bg-emerald-500 text-emerald-950 font-black shadow-md shadow-emerald-500/20" 
-                      : "text-emerald-400 hover:text-white"
+                      ? "bg-gradient-to-b from-emerald-400 to-emerald-500 text-emerald-950 font-black shadow-md shadow-emerald-500/20 scale-105" 
+                      : "text-emerald-400 hover:text-white hover:bg-emerald-950/40"
                   }`}
                 >
-                  {char.name.split(" ")[1]}
+                  <span className="text-xs">{CHARACTER_DETAILS[char.id]?.emoji}</span>
+                  <span className="text-[9px]">{char.name.split(" ")[1]}</span>
                 </button>
               ))}
+            </div>
+
+            {/* RPG Character Attributes */}
+            <div className="space-y-1.5 bg-[#07130b]/60 p-3 rounded-2xl border border-emerald-950/50 text-[10px] font-bold text-emerald-300">
+              <div className="flex items-center justify-between">
+                <span>🏃 탐험 속도:</span>
+                <span className="text-amber-400">
+                  {"✦".repeat(CHARACTER_DETAILS[selectedCharacter.id]?.speed || 3)}
+                  {"✧".repeat(5 - (CHARACTER_DETAILS[selectedCharacter.id]?.speed || 3))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>🧠 개념 직관:</span>
+                <span className="text-teal-400">
+                  {"✦".repeat(CHARACTER_DETAILS[selectedCharacter.id]?.wisdom || 4)}
+                  {"✧".repeat(5 - (CHARACTER_DETAILS[selectedCharacter.id]?.wisdom || 4))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>🍀 탐구 행운:</span>
+                <span className="text-indigo-400">
+                  {"✦".repeat(CHARACTER_DETAILS[selectedCharacter.id]?.luck || 3)}
+                  {"✧".repeat(5 - (CHARACTER_DETAILS[selectedCharacter.id]?.luck || 3))}
+                </span>
+              </div>
+              <div className="text-[9px] text-gray-400 italic text-center mt-2 pt-2 border-t border-emerald-950/50">
+                {CHARACTER_DETAILS[selectedCharacter.id]?.quote}
+              </div>
             </div>
           </div>
 
@@ -1338,7 +1645,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
                   >
                     <div className="flex items-center gap-2.5">
                       <div 
-                        className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shadow-sm"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shadow-sm animate-fade-in"
                         style={{ 
                           background: isDone ? '#fbbf24' : quiz.color,
                           color: isDone ? '#1e293b' : '#ffffff'
@@ -1385,6 +1692,7 @@ export const ConceptForestView = ({ setView, onEarnXP, soundEnabled }: ConceptFo
             </button>
           </div>
         </div>
+
       </div>
 
       {/* QUIZ DIALOG / MODAL */}

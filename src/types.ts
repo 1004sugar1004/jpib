@@ -59,3 +59,15 @@ export interface Feedback {
   content: string;
   timestamp: number;
 }
+
+export interface TeacherNote {
+  id?: string;
+  senderName: string; // e.g., "김혜진 선생님"
+  targetName: string; // e.g., "윤성빈"
+  targetGrade: string; // e.g., "4학년" or "4"
+  targetClass: string; // e.g., "4반" or "4"
+  content: string;
+  timestamp: number;
+  readBy?: string[]; // uids of students who marked it as read
+}
+

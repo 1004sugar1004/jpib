@@ -14,11 +14,14 @@ import {
   AlertTriangle,
   CheckCircle2,
   RefreshCcw,
-  Trash2
+  Trash2,
+  Send,
+  MessageSquare,
+  Check
 } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writeBatch, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writeBatch, doc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { ActivityLog, Feedback } from '../../types';
+import { ActivityLog, Feedback, TeacherNote } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface TeacherDashboardViewProps {
@@ -28,8 +31,9 @@ interface TeacherDashboardViewProps {
 export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [notes, setNotes] = useState<TeacherNote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'logs' | 'feedback'>('logs');
+  const [activeTab, setActiveTab] = useState<'logs' | 'feedback' | 'notes'>('logs');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [isResetting, setIsResetting] = useState(false);
@@ -37,6 +41,21 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
   const [feedbackToDelete, setFeedbackToDelete] = useState<Feedback | null>(null);
   const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
   const [deleteFeedbackError, setDeleteFeedbackError] = useState<string | null>(null);
+
+  // Send Note modal states
+  const [showSendNoteModal, setShowSendNoteModal] = useState(false);
+  const [replyingToFeedback, setReplyingToFeedback] = useState<Feedback | null>(null);
+  const [newNoteGrade, setNewNoteGrade] = useState('');
+  const [newNoteClass, setNewNoteClass] = useState('');
+  const [newNoteName, setNewNoteName] = useState('');
+  const [newNoteContent, setNewNoteContent] = useState('');
+  const [isSendingNote, setIsSendingNote] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
+  
+  // Note delete states
+  const [noteToDelete, setNoteToDelete] = useState<TeacherNote | null>(null);
+  const [isDeletingNote, setIsDeletingNote] = useState(false);
+  const [deleteNoteError, setDeleteNoteError] = useState<string | null>(null);
 
   useEffect(() => {
     const logsQuery = query(
@@ -49,6 +68,12 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
       collection(db, 'feedback'),
       orderBy('timestamp', 'desc'),
       limit(1000)
+    );
+
+    const notesQuery = query(
+      collection(db, 'teacherNotes'),
+      orderBy('timestamp', 'desc'),
+      limit(500)
     );
 
     const unsubLogs = onSnapshot(logsQuery, (snapshot) => {
@@ -78,9 +103,19 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
       }
     });
 
+    const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
+      const newNotes = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as TeacherNote[];
+      setNotes(newNotes);
+      if (activeTab === 'notes') setLoading(false);
+    });
+
     return () => {
       unsubLogs();
       unsubFeedback();
+      unsubNotes();
     };
   }, [activeTab]);
 
@@ -186,6 +221,79 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
     }
   };
 
+  const handleSendNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNoteGrade.trim() || !newNoteClass.trim() || !newNoteName.trim() || !newNoteContent.trim()) {
+      setNoteError('모든 빈칸을 입력해주세요.');
+      return;
+    }
+
+    setIsSendingNote(true);
+    setNoteError(null);
+
+    try {
+      const noteData = {
+        senderName: '김혜진 선생님',
+        targetGrade: newNoteGrade.trim(),
+        targetClass: newNoteClass.trim(),
+        targetName: newNoteName.trim(),
+        content: newNoteContent.trim(),
+        timestamp: Date.now(),
+        readBy: []
+      };
+
+      await addDoc(collection(db, 'teacherNotes'), noteData);
+      
+      // Reset form states
+      setNewNoteGrade('');
+      setNewNoteClass('');
+      setNewNoteName('');
+      setNewNoteContent('');
+      setShowSendNoteModal(false);
+      setReplyingToFeedback(null);
+    } catch (err: any) {
+      console.error("Error sending note:", err);
+      const errMessage = err instanceof Error ? err.message : String(err);
+      if (errMessage.includes("permission-denied") || errMessage.includes("insufficient permissions")) {
+        setNoteError("쪽지 전송 권한이 없습니다. 교사 계정으로 로그인하셨는지 확인해 주세요.");
+      } else {
+        setNoteError(`쪽지 전송 실패: ${errMessage}`);
+      }
+      try {
+        handleFirestoreError(err, OperationType.CREATE, 'teacherNotes');
+      } catch (e) {
+        // Suppress
+      }
+    } finally {
+      setIsSendingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async () => {
+    if (!noteToDelete?.id) return;
+    setIsDeletingNote(true);
+    setDeleteNoteError(null);
+    try {
+      await deleteDoc(doc(db, 'teacherNotes', noteToDelete.id));
+      setNoteToDelete(null);
+    } catch (err: any) {
+      console.error("Error deleting note:", err);
+      const errMessage = err instanceof Error ? err.message : String(err);
+      if (errMessage.includes("permission-denied") || errMessage.includes("insufficient permissions")) {
+        setDeleteNoteError("삭제 권한이 없습니다. 교사 계정으로 로그인하셨는지 확인해 주세요.");
+      } else {
+        setDeleteNoteError(`삭제 실패: ${errMessage}`);
+      }
+      try {
+        handleFirestoreError(err, OperationType.DELETE, `teacherNotes/${noteToDelete.id}`);
+      } catch (e) {
+        // Suppress
+      }
+    } finally {
+      setIsDeletingNote(false);
+    }
+  };
+
   const formatDate = (timestamp: any) => {
     if (!timestamp) return '';
     const date = timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp);
@@ -244,6 +352,15 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
               )}
             >
               의견함 ({feedbacks.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('notes')}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-black transition-all",
+                activeTab === 'notes' ? "bg-white text-rose-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              💌 보낸 쪽지함 ({notes.length})
             </button>
           </div>
 
@@ -492,7 +609,98 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                         <p className="text-sm text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
                           {fb.content}
                         </p>
+                        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setReplyingToFeedback(fb);
+                              setNewNoteGrade(fb.grade);
+                              setNewNoteClass(fb.class);
+                              setNewNoteName(fb.userName);
+                              setNewNoteContent('');
+                              setShowSendNoteModal(true);
+                            }}
+                            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-indigo-100"
+                          >
+                            <Send className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>이 학생에게 답장 쪽지 쓰기</span>
+                          </Button>
+                        </div>
                       </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'notes' && (
+              <div className="p-6 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-black text-lg text-gray-900">💌 김혜진 선생님의 보낸 쪽지함</h3>
+                    <p className="text-xs text-gray-400 font-bold mt-0.5">학생들에게 보낸 피드백과 사랑의 쪽지들을 관리하고 확인합니다.</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setReplyingToFeedback(null);
+                      setNewNoteGrade('');
+                      setNewNoteClass('');
+                      setNewNoteName('');
+                      setNewNoteContent('');
+                      setShowSendNoteModal(true);
+                    }}
+                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow border-none cursor-pointer self-start sm:self-auto"
+                  >
+                    <Send className="w-4 h-4 text-white" />
+                    <span>새 쪽지 작성하기</span>
+                  </Button>
+                </div>
+
+                {loading ? (
+                  <div className="py-12 text-center text-gray-400 font-bold">쪽지를 불러오는 중...</div>
+                ) : notes.length === 0 ? (
+                  <div className="py-12 text-center text-gray-400 font-bold border-2 border-dashed border-gray-100 rounded-[2rem] bg-gray-50/50">
+                    보낸 쪽지가 없습니다. 학생들에게 따뜻한 응원의 한마디를 적어보세요!
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {notes.map((note) => (
+                      <div key={note.id} className="p-5 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between animate-fade-in">
+                        <div>
+                          <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-50">
+                            <div>
+                              <span className="text-xs font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full mr-2">TO</span>
+                              <span className="text-sm font-black text-gray-900">{note.targetGrade} {note.targetClass} {note.targetName}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider",
+                                note.readBy && note.readBy.length > 0
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                  : "bg-gray-50 text-gray-400 border border-gray-100"
+                              )}>
+                                {note.readBy && note.readBy.length > 0 ? "읽음 ✓" : "안읽음"}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                onClick={() => setNoteToDelete(note)}
+                                icon={Trash2}
+                                className="w-7 h-7 p-0 text-red-400 hover:text-red-600 rounded-full flex items-center justify-center shrink-0 border border-transparent hover:bg-rose-50"
+                              >
+                                {""}
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-700 font-semibold leading-relaxed whitespace-pre-wrap">
+                            {note.content}
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-gray-50 text-[10px] text-gray-400 font-bold text-right flex items-center justify-between">
+                          <span>보낸이: {note.senderName}</span>
+                          <span>{formatDate(note.timestamp)}</span>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -578,6 +786,148 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                 className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100"
               >
                 {isDeletingFeedback ? "삭제 중..." : "네, 삭제합니다"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {showSendNoteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#fbf9f6] rounded-[2.5rem] p-8 max-w-lg w-full border-4 border-rose-100 shadow-2xl relative text-left"
+          >
+            <h3 className="text-2xl font-black text-gray-900 mb-2 flex items-center gap-2">
+              <span>💌</span>
+              <span>{replyingToFeedback ? "답장 쪽지 보내기" : "새 쪽지 작성하기"}</span>
+            </h3>
+            <p className="text-xs text-gray-400 font-bold mb-6">
+              {replyingToFeedback ? "학생의 의견에 답장 쪽지를 보냅니다. 로그인 시 팝업으로 나타납니다." : "지정한 학년, 반, 이름을 가진 학생에게 쪽지를 보냅니다."}
+            </p>
+
+            <form onSubmit={handleSendNote} className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-extrabold uppercase tracking-wider mb-1">학년</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!!replyingToFeedback}
+                    placeholder="예: 4학년 또는 4"
+                    value={newNoteGrade}
+                    onChange={(e) => setNewNoteGrade(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-rose-500/20 disabled:bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-extrabold uppercase tracking-wider mb-1">반</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!!replyingToFeedback}
+                    placeholder="예: 4반 또는 4"
+                    value={newNoteClass}
+                    onChange={(e) => setNewNoteClass(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-rose-500/20 disabled:bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-extrabold uppercase tracking-wider mb-1">학생 이름</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!!replyingToFeedback}
+                    placeholder="예: 윤성빈"
+                    value={newNoteName}
+                    onChange={(e) => setNewNoteName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-rose-500/20 disabled:bg-gray-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-gray-400 font-extrabold uppercase tracking-wider mb-1">쪽지 내용</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="보낼 응원이나 피드백 메시지를 입력해주세요..."
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/20 leading-relaxed resize-none"
+                />
+              </div>
+
+              {noteError && (
+                <div className="p-4 bg-rose-50 border border-rose-100 text-xs text-rose-700 font-bold rounded-2xl text-center leading-relaxed">
+                  {noteError}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  onClick={() => { setShowSendNoteModal(false); setReplyingToFeedback(null); }}
+                  className="flex-1 py-3 rounded-2xl font-black"
+                  disabled={isSendingNote}
+                >
+                  취소
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={isSendingNote}
+                  className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100 border-none cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5 text-white" />
+                  <span>{isSendingNote ? "보내는 중..." : "쪽지 보내기"}</span>
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {noteToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-[2.5rem] p-8 max-w-md w-full border-4 border-rose-100 shadow-2xl relative text-left"
+          >
+            <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <Trash2 className="w-8 h-8 text-rose-600" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 text-center mb-4">쪽지를 삭제할까요?</h3>
+            <p className="text-gray-500 font-bold text-center mb-3 leading-relaxed">
+              선택한 보낸 쪽지를 삭제하시겠습니까? <br />
+              이 작업은 되돌릴 수 없으며, 학생의 팝업에서도 더 이상 나타나지 않습니다.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-2xl text-left border border-gray-100 text-xs text-gray-600 font-semibold mb-8 max-h-32 overflow-y-auto whitespace-pre-wrap">
+              <strong>TO: {noteToDelete.targetGrade} {noteToDelete.targetClass} {noteToDelete.targetName}</strong><br />
+              {noteToDelete.content}
+            </div>
+            {deleteNoteError && (
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-xs text-rose-700 font-bold rounded-2xl text-center leading-relaxed">
+                {deleteNoteError}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => { setNoteToDelete(null); setDeleteNoteError(null); }}
+                className="flex-1 py-4 rounded-2xl font-black"
+                disabled={isDeletingNote}
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleDeleteNote}
+                disabled={isDeletingNote}
+                className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100"
+              >
+                {isDeletingNote ? "삭제 중..." : "네, 삭제합니다"}
               </Button>
             </div>
           </motion.div>

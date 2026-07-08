@@ -458,6 +458,11 @@ export const HomeView = ({
                 <Button variant="secondary" size="sm" onClick={() => window.dispatchEvent(new CustomEvent('open-announcement', { detail: { tab: 'user_feedback_patches' } }))} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black text-xs py-2 rounded-xl mt-2 flex items-center justify-center gap-1.5 shadow-md">
                   <Megaphone className="w-3.5 h-3.5" /> 의견반영 & 공지
                 </Button>
+                {profile?.uid && profile.uid !== 'guest' && (
+                  <Button variant="secondary" size="sm" onClick={() => window.dispatchEvent(new CustomEvent('open-teacher-notes'))} className="w-full bg-rose-500 hover:bg-rose-600 text-white font-black text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow-md mt-2">
+                    💌 김혜진 선생님의 편지함
+                  </Button>
+                )}
                 <Button variant="secondary" size="sm" onClick={() => setView('plan')} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 shadow-md">
                   <BookOpen className="w-3.5 h-3.5" /> 활용계획서
                 </Button>
@@ -674,7 +679,10 @@ export const HomeView = ({
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 justify-end">
+                {profile?.uid && profile.uid !== 'guest' && (
+                  <Button variant="ghost" onClick={() => window.dispatchEvent(new CustomEvent('open-teacher-notes'))} className="text-rose-200 hover:bg-white/10 text-xs py-1.5 px-3 rounded-xl bg-rose-950/20 border border-rose-800/30">💌 선생님 편지함</Button>
+                )}
                 <Button variant="ghost" onClick={() => setShowEditModal(true)} className="text-white hover:bg-white/10 text-xs py-1.5 px-3 rounded-xl bg-white/5 border border-white/10">정보 수정</Button>
                 <Button variant="ghost" onClick={onLogout} className="text-rose-300 hover:bg-white/10 text-xs py-1.5 px-3 rounded-xl bg-white/5 border border-white/10">로그아웃</Button>
               </div>
@@ -1065,6 +1073,38 @@ export const HomeView = ({
               📌 {sidebarPinned ? "사이드바 접기" : "사이드바 고정 펼치기"}
             </button>
 
+            {/* Real-time Ranking Quick Link */}
+            <button
+              onClick={() => setView('ranking')}
+              className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-black text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer border-none"
+              title="실시간 랭킹 보기"
+            >
+              <span>🏆 랭킹 보기</span>
+            </button>
+
+            {/* Admin Dashboard Trigger */}
+            {(user?.email === '1004sugar1004@gmail.com' || profile?.role === 'teacher') && (
+              <button
+                onClick={() => setView('dashboard')}
+                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer border-none"
+                title="활동로그(관리자 전용)"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>활동로그(관리자)</span>
+              </button>
+            )}
+
+            {/* Teacher Notes Quick Link */}
+            {profile?.uid && profile.uid !== 'guest' && (
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('open-teacher-notes'))}
+                className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 font-black text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer border-none"
+                title="선생님 편지함"
+              >
+                <span>💌 편지함</span>
+              </button>
+            )}
+
             {/* Profile Avatar trigger */}
             <div 
               onClick={() => setShowEditModal(true)}
@@ -1304,6 +1344,139 @@ export const HomeView = ({
                   <h4 className="text-xs font-black text-[#1c2c24]">[소중한 피드백 수렴 완료] 6월 최종 학급 랭킹 및 퀴즈 버그가 전면 해결되었습니다.</h4>
                   <p className="text-[10px] text-gray-400 font-bold mt-1">열심히 퀴즈를 풀고 피드백을 공유해주신 모든 탐험가 학생분들께 감사드립니다!</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Real-time Rankings Section inside Sidebar Layout */}
+            <div className="space-y-6 pt-6">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🏆</span>
+                  <h3 className="text-lg font-black text-[#1c2c24]">{currentMonth}월 실시간 누적 랭킹 TOP 3</h3>
+                </div>
+                <button 
+                  onClick={() => setView('ranking')}
+                  className="text-xs font-black text-[#3c5647] hover:underline cursor-pointer border-none bg-transparent"
+                >
+                  전체 순위 보기 →
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {topMonthlyRankings.map((rank, index) => {
+                  const level = getLevel(rank.score);
+                  return (
+                    <div 
+                      key={rank.uid}
+                      className={cn(
+                        "relative p-5 rounded-[2rem] border-2 flex flex-col items-center text-center bg-white transition-all hover:scale-[1.02]",
+                        index === 0 ? "border-yellow-200 shadow-yellow-50 shadow-md" :
+                        index === 1 ? "border-slate-200" :
+                        "border-orange-200"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute -top-3.5 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shadow-md z-20",
+                        index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
+                      )}>
+                        {index + 1}
+                      </div>
+                      
+                      <div className="relative mb-3 mt-2">
+                        <div className="w-16 h-16 rounded-full border-2 border-white shadow-md overflow-hidden bg-white flex items-center justify-center p-1">
+                          {rank.photoURL === 'caricature' && rank.caricatureSvg ? (
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: rank.caricatureSvg }} 
+                              className="w-12 h-12 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                            />
+                          ) : (
+                            <img 
+                              src={level.img} 
+                              alt={rank.name}
+                              className="w-12 h-12 object-contain"
+                              referrerPolicy="no-referrer"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <h4 className="text-sm font-black text-gray-900">{rank.name}</h4>
+                      <p className="text-gray-400 font-bold text-[10px] mb-2">{formatGradeClass(rank.grade, rank.class, rank.role)}</p>
+                      
+                      <div className="px-3 py-1 bg-[#fbf9f6] rounded-full border border-gray-100">
+                        <span className="text-indigo-600 font-black text-xs">{(rank.monthlyScore || 0).toLocaleString()} XP</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {topMonthlyRankings.length === 0 && (
+                  <div className="col-span-3 py-6 text-center text-gray-400 font-bold italic text-xs">
+                    아직 탐험가가 없습니다. 첫 번째 주인공이 되어보세요!
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Top 3 Classes Section inside Sidebar Layout */}
+            <div className="space-y-6 pt-6">
+              <div className="flex items-center gap-3 px-2">
+                <span className="text-2xl">🏫</span>
+                <h3 className="text-lg font-black text-[#1c2c24]">{currentMonth}월 학급 대항전 TOP 3</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {classRankings.map((cls, index) => {
+                  const avgScore = Math.round(cls.score / cls.count);
+                  const level = getLevel(avgScore);
+                  return (
+                    <div 
+                      key={cls.name}
+                      className={cn(
+                        "relative p-5 rounded-[2rem] border-2 flex flex-col items-center text-center bg-white shadow-sm transition-all hover:scale-[1.02]",
+                        index === 0 ? "border-yellow-400" : "border-[#eceae2]"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-white font-black text-[10px] shadow-sm z-20",
+                        index === 0 ? "bg-yellow-400" : index === 1 ? "bg-slate-400" : "bg-orange-400"
+                      )}>
+                        {index + 1}위
+                      </div>
+                      
+                      <div className="relative mb-3 mt-2">
+                        <div className="w-14 h-14 rounded-xl bg-gray-50 border border-white shadow-inner overflow-hidden flex items-center justify-center">
+                          <img 
+                            src={level.img} 
+                            alt={cls.name}
+                            className="w-10 h-10 object-contain"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      </div>
+                      
+                      <h4 className="text-sm font-black text-gray-900">{cls.name}</h4>
+                      <p className="text-gray-400 font-bold text-[10px] mb-3">참여 학생: {cls.count}명</p>
+                      
+                      <div className="w-full space-y-1.5">
+                        <div className="flex justify-between text-[9px] font-black text-indigo-400 uppercase">
+                          <span>TOTAL SCORE</span>
+                          <span>{cls.score.toLocaleString()} XP</span>
+                        </div>
+                        <div className="h-1.5 bg-indigo-50 rounded-full overflow-hidden">
+                          <div 
+                            style={{ width: `${Math.min((cls.score / (classRankings[0]?.score || 1)) * 100, 100)}%` }} 
+                            className="h-full bg-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {classRankings.length === 0 && (
+                  <div className="col-span-3 py-6 text-center text-gray-400 font-bold italic text-xs">
+                    아직 학급 데이터가 없습니다.
+                  </div>
+                )}
               </div>
             </div>
 

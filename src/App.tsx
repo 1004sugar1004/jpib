@@ -42,6 +42,7 @@ import { IntroView } from './components/views/IntroView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
 import { AnnouncementPopup } from './components/ui/AnnouncementPopup';
+import { TeacherNotePopup } from './components/ui/TeacherNotePopup';
 import { FeedbackForm } from './components/ui/FeedbackForm';
 import { UserProfile, ActivityLog, DailyQuest } from './types';
 import { getLevel } from './lib/utils';
@@ -142,6 +143,18 @@ export default function App() {
   const [studyInitialTab, setStudyInitialTab] = useState<number | undefined>(undefined);
   const [reflectionData, setReflectionData] = useState<Record<string, string>>({});
   const [atlData, setAtlData] = useState<Record<string, number>>({});
+  const [forceOpenNotes, setForceOpenNotes] = useState(false);
+
+  // Listen for open-teacher-notes custom events
+  useEffect(() => {
+    const handleOpenNotes = () => {
+      setForceOpenNotes(true);
+    };
+    window.addEventListener('open-teacher-notes', handleOpenNotes);
+    return () => {
+      window.removeEventListener('open-teacher-notes', handleOpenNotes);
+    };
+  }, []);
 
   const getCurrentMonth = () => {
     const now = new Date();
@@ -264,6 +277,9 @@ export default function App() {
             
             // Reset daily stats if it's a new day
             if (userData.lastXPDate !== today) {
+              const currentMonthStr = getCurrentMonth();
+              const isNewMonth = !userData.lastActiveMonth || userData.lastActiveMonth !== currentMonthStr;
+              
               userData = {
                 ...userData,
                 dailyXP: 0,
@@ -271,15 +287,17 @@ export default function App() {
                 lastXPDate: today,
                 activityCounts: {},
                 dailyQuests: getRandomDailyQuests(),
-                completedStudyItems: [] // Reset study items daily
+                completedStudyItems: [], // Reset study items daily
+                ...(isNewMonth ? { monthlyScore: 0, lastActiveMonth: currentMonthStr } : {})
               };
               await updateDoc(docRef, {
                 dailyXP: 0,
                 dailyScore: 0,
                 lastXPDate: today,
                 activityCounts: {},
-                dailyQuests: getRandomDailyQuests(),
-                completedStudyItems: []
+                dailyQuests: userData.dailyQuests,
+                completedStudyItems: [],
+                ...(isNewMonth ? { monthlyScore: 0, lastActiveMonth: currentMonthStr } : {})
               });
               // Sync reset to public profile with full info to ensure it exists
               await setDoc(doc(db, 'publicProfiles', firebaseUser.uid), {
@@ -289,7 +307,7 @@ export default function App() {
                 class: userData.class,
                 score: userData.score,
                 monthlyScore: userData.monthlyScore || 0,
-                lastActiveMonth: userData.lastActiveMonth || getCurrentMonth(),
+                lastActiveMonth: userData.lastActiveMonth || currentMonthStr,
                 dailyScore: 0,
                 lastXPDate: today,
                 photoURL: userData.photoURL || ""
@@ -1315,6 +1333,15 @@ export default function App() {
       {/* Feedback Form */}
       {view === 'home' && profile && (
         <FeedbackForm profile={profile} />
+      )}
+
+      {/* Teacher Notes Letter Popup */}
+      {profile && (
+        <TeacherNotePopup 
+          profile={profile} 
+          forceOpenList={forceOpenNotes} 
+          onClose={() => setForceOpenNotes(false)} 
+        />
       )}
 
       {/* Footer */}
