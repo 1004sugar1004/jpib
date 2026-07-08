@@ -1302,160 +1302,170 @@ export const HomeView = ({
                 <span className="text-2xl">📢</span>
                 <div>
                   <h4 className="text-xs font-black text-[#1c2c24]">[소중한 피드백 수렴 완료] 6월 최종 학급 랭킹 및 퀴즈 버그가 전면 해결되었습니다.</h4>
-                  <p className="text-[11px] text-gray-500 font-bold">학생 여러분들의 제안에 따라 디자인 체험관에 우측 슬라이드 메뉴가 새롭게 도입되었습니다!</p>
+                  <p className="text-[10px] text-gray-400 font-bold mt-1">열심히 퀴즈를 풀고 피드백을 공유해주신 모든 탐험가 학생분들께 감사드립니다!</p>
                 </div>
               </div>
-              <Button 
-                onClick={() => window.dispatchEvent(new CustomEvent('open-announcement', { detail: { tab: 'user_feedback_patches' } }))}
-                className="bg-white text-xs font-black text-[#1c2c24] border border-[#eceae2] hover:bg-gray-50 py-2.5 px-4 rounded-xl shadow-sm border-none cursor-pointer"
-              >
-                의견반영 공지 읽기
-              </Button>
             </div>
 
           </div>
 
-          {/* Persistent Sidebar on Desktop when pinned */}
+          {/* Persistent Sidebar on Right */}
           {sidebarPinned && (
-            <div className="hidden lg:block lg:col-span-1 bg-white rounded-3xl border border-[#eceae2] shadow-xl p-6 sticky top-4 h-[75vh] min-h-[550px] overflow-y-auto">
+            <div className="hidden lg:block lg:col-span-1 bg-white border border-[#eceae2]/70 rounded-[2rem] p-6 shadow-sm h-fit sticky top-6">
               {renderSidebarDrawerContent(true)}
             </div>
           )}
 
+          {/* Drawer for non-pinned / mobile view */}
+          <AnimatePresence>
+            {!sidebarPinned && sidebarOpen && (
+              <>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.4 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setSidebarOpen(false)}
+                  className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                />
+                <motion.div 
+                  initial={{ x: '100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-100 z-50 p-6 overflow-y-auto"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-black text-sm text-[#1c2c24]">탐험 메이트 & 학급 랭킹</h3>
+                    <button 
+                      onClick={() => setSidebarOpen(false)}
+                      className="text-gray-400 hover:text-gray-600 font-bold cursor-pointer border-none bg-transparent"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {renderSidebarDrawerContent(false)}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+
         </div>
 
-        {/* Dynamic Slide Drawer Overlay (when drawer is open, and not pinned or on mobile) */}
-        <AnimatePresence>
-          {sidebarOpen && (!sidebarPinned || window.innerWidth < 1024) && (
-            <div className="fixed inset-0 z-50 overflow-hidden">
-              
-              {/* Dimmed Blurred Backdrop */}
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setSidebarOpen(false)}
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              />
-
-              {/* Sidebar Panel sliding from Right */}
-              <motion.div 
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 bottom-0 w-full max-w-[420px] bg-white shadow-2xl rounded-l-[2rem] p-6 flex flex-col justify-between overflow-y-auto z-10"
-              >
-                {renderSidebarDrawerContent(false)}
-              </motion.div>
-
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* Full-Screen All Menu Modal Overlay */}
+        {/* Beautiful Dialog All Menu Modal */}
         <AnimatePresence>
           {showAllMenuModal && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 overflow-y-auto bg-[#fbf9f6] flex flex-col min-h-screen p-6 md:p-12"
+              transition={{ duration: 0.15 }}
+              onClick={() => setShowAllMenuModal(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
             >
-              {/* Dimmed Blurred/Gradient Backdrop Pattern */}
-              <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/30 via-transparent to-transparent pointer-events-none" />
-
-              {/* Elegant floating Close Button */}
-              <button
-                onClick={() => setShowAllMenuModal(false)}
-                className="fixed top-6 right-6 md:top-10 md:right-10 z-50 bg-[#1c2c24] hover:bg-[#2e4237] text-white p-3.5 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer border-none flex items-center justify-center"
-                title="닫기"
+              {/* Animated Inner Modal Card */}
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.96, opacity: 0, y: 10 }}
+                transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative bg-[#fbf9f6] w-full max-w-4xl rounded-[1.5rem] md:rounded-[2rem] shadow-2xl border border-gray-100 flex flex-col max-h-[85vh] overflow-hidden"
               >
-                <X className="w-5 h-5" />
-              </button>
+                {/* Floating subtle background gradient pattern */}
+                <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-indigo-50/40 to-transparent pointer-events-none" />
 
-              <div className="flex-1 w-full max-w-7xl mx-auto relative z-10 flex flex-col gap-8 md:gap-10 pb-16">
-                
-                {/* Header Description */}
-                <div className="max-w-3xl space-y-3">
-                  <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3.5 py-1 rounded-full text-xs font-black select-none">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>ALL EXPLORATION ROUTES</span>
+                {/* Modal Header */}
+                <div className="relative z-10 px-5 py-4 md:px-6 md:py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white/50 backdrop-blur-md">
+                  <div className="space-y-0.5">
+                    <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full text-[9px] font-black select-none">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      <span>ALL EXPLORATION ROUTES</span>
+                    </div>
+                    <h2 className="text-lg md:text-xl font-black text-gray-900 tracking-tight">
+                      IB 에디션 전체 탐험 메뉴판
+                    </h2>
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight leading-tight">
-                    IB 에디션 전체 탐험 메뉴판
-                  </h2>
-                  <p className="text-sm text-gray-500 font-bold leading-relaxed">
-                    핵심 가치 마스터부터 두뇌 게임, 창의 놀이 코너, 자랑방, 게시판까지!<br />
-                    아래의 카드들 중 원하는 모험을 클릭해서 탐험을 즉시 시작하세요.
+                  
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setShowAllMenuModal(false)}
+                    className="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600 p-1.5 rounded-full transition-all cursor-pointer border-none flex items-center justify-center shrink-0"
+                    title="닫기"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Scrollable Content Grid */}
+                <div className="relative z-10 flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin space-y-4">
+                  <p className="text-[11px] text-gray-400 font-bold leading-relaxed">
+                    원하는 모험 카드를 클릭하여 즉시 탐험을 시작해보세요!
                   </p>
-                </div>
 
-                {/* 13 Beautiful Card Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {exploreItems.map((item, idx) => {
-                    const getBadgeColor = (badge: string) => {
-                      switch (badge) {
-                        case 'NEW': return 'bg-emerald-500';
-                        case 'HOT': return 'bg-orange-500';
-                        case 'BEST': return 'bg-purple-500';
-                        case 'LIVE': return 'bg-rose-500';
-                        case 'COOL': return 'bg-pink-500';
-                        default: return 'bg-indigo-500';
-                      }
-                    };
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pb-4">
+                    {exploreItems.map((item, idx) => {
+                      const getBadgeColor = (badge: string) => {
+                        switch (badge) {
+                          case 'NEW': return 'bg-emerald-500';
+                          case 'HOT': return 'bg-orange-500';
+                          case 'BEST': return 'bg-purple-500';
+                          case 'LIVE': return 'bg-rose-500';
+                          case 'COOL': return 'bg-pink-500';
+                          default: return 'bg-indigo-500';
+                        }
+                      };
 
-                    return (
-                      <div 
-                        key={idx}
-                        onClick={() => {
-                          item.action();
-                          setShowAllMenuModal(false);
-                        }}
-                        className="relative bg-white border border-gray-100 rounded-[2rem] p-6 shadow-md hover:shadow-xl hover:border-indigo-200 transition-all cursor-pointer group overflow-hidden flex flex-col justify-between h-[190px]"
-                      >
-                        {/* Floating backdrop circle containing the icon, matching the screenshot style */}
-                        <div className="absolute -bottom-3 -right-3 w-20 h-20 rounded-full bg-indigo-50/40 flex items-center justify-center p-3 group-hover:scale-110 transition-transform">
-                          <span className="text-3xl select-none">{item.icon}</span>
-                        </div>
+                      return (
+                        <div 
+                          key={idx}
+                          onClick={() => {
+                            item.action();
+                            setShowAllMenuModal(false);
+                          }}
+                          className="relative bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group overflow-hidden flex flex-col justify-between min-h-[115px]"
+                        >
+                          {/* Floating backdrop circle containing the icon */}
+                          <div className="absolute -bottom-1 -right-1 w-11 h-11 rounded-full bg-indigo-50/40 flex items-center justify-center p-1.5 group-hover:scale-110 transition-transform">
+                            <span className="text-xl select-none">{item.icon}</span>
+                          </div>
 
-                        <div className="relative z-10 pr-6 flex-1 flex flex-col">
-                          {/* Badge & Category Row */}
-                          <div className="flex items-center gap-2 mb-1">
-                            {item.badge && (
-                              <span className={cn(
-                                "inline-block text-white text-[9px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider leading-none",
-                                getBadgeColor(item.badge)
-                              )}>
-                                {item.badge}
-                              </span>
-                            )}
-                            <p className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest leading-none">
-                              {item.category}
+                          <div className="relative z-10 pr-3 flex-1 flex flex-col">
+                            {/* Badge & Category Row */}
+                            <div className="flex items-center gap-1.5 mb-1">
+                              {item.badge && (
+                                <span className={cn(
+                                  "inline-block text-white text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider leading-none",
+                                  getBadgeColor(item.badge)
+                                )}>
+                                  {item.badge}
+                                </span>
+                              )}
+                              <p className="text-[8px] text-gray-400 font-extrabold uppercase tracking-widest leading-none">
+                                {item.category}
+                              </p>
+                            </div>
+
+                            {/* Title */}
+                            <h4 className="text-xs font-black text-gray-800 leading-snug group-hover:text-indigo-600 transition-colors mt-0.5">
+                              {item.name}
+                            </h4>
+                            {/* Description */}
+                            <p className="text-[10px] text-gray-400 font-medium mt-1 leading-normal">
+                              {item.desc}
                             </p>
-                          </div>
 
-                          {/* Title */}
-                          <h4 className="text-lg font-black text-gray-800 leading-snug group-hover:text-indigo-600 transition-colors mt-1">
-                            {item.name}
-                          </h4>
-                          {/* Description */}
-                          <p className="text-xs text-gray-400 font-bold mt-1.5 leading-normal">
-                            {item.desc}
-                          </p>
-
-                          {/* Action Link */}
-                          <div className="text-xs font-black text-[#3c5647] mt-auto flex items-center gap-1 group-hover:text-indigo-600 transition-colors">
-                            <span>{item.actionText}</span>
-                            <span className="text-gray-400 group-hover:text-indigo-500 font-semibold transition-transform group-hover:translate-x-0.5">›</span>
+                            {/* Action Link */}
+                            <div className="text-[9px] font-black text-[#3c5647] mt-auto pt-3 flex items-center gap-0.5 group-hover:text-indigo-600 transition-colors">
+                              <span>{item.actionText}</span>
+                              <span className="text-gray-400 group-hover:text-indigo-500 font-semibold transition-transform group-hover:translate-x-0.5">›</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
