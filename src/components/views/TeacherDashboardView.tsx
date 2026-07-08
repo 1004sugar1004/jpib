@@ -23,6 +23,7 @@ import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writ
 import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { ActivityLog, Feedback, TeacherNote } from '../../types';
 import { cn } from '../../lib/utils';
+import { PRE_SEEDED_NOTES } from '../ui/TeacherNotePopup';
 
 interface TeacherDashboardViewProps {
   setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard') => void;
@@ -83,6 +84,9 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
       })) as ActivityLog[];
       setLogs(newLogs);
       if (activeTab === 'logs') setLoading(false);
+    }, (error) => {
+      console.error("onSnapshot logsQuery error:", error);
+      if (activeTab === 'logs') setLoading(false);
     });
 
     const unsubFeedback = onSnapshot(feedbackQuery, (snapshot) => {
@@ -101,14 +105,53 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
           body: JSON.stringify({ feedbacks: newFeedbacks })
         }).catch(err => console.error("Error sending feedback sync:", err));
       }
+    }, (error) => {
+      console.error("onSnapshot feedbackQuery error:", error);
+      if (activeTab === 'feedback') setLoading(false);
     });
 
     const unsubNotes = onSnapshot(notesQuery, (snapshot) => {
-      const newNotes = snapshot.docs.map(doc => ({
+      const dbNotes = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as TeacherNote[];
-      setNotes(newNotes);
+
+      let deletedPreSeededIds: string[] = [];
+      try {
+        const savedDeleted = localStorage.getItem('deleted_pre_seeded_notes');
+        if (savedDeleted) {
+          deletedPreSeededIds = JSON.parse(savedDeleted);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      // Filter out deleted pre-seeded notes
+      const activePreSeeded = PRE_SEEDED_NOTES.filter(note => note.id && !deletedPreSeededIds.includes(note.id));
+
+      // Combine and sort by timestamp desc
+      const combinedNotes = [...activePreSeeded, ...dbNotes].sort((a, b) => {
+        const timeA = typeof a.timestamp === 'number' ? a.timestamp : 0;
+        const timeB = typeof b.timestamp === 'number' ? b.timestamp : 0;
+        return timeB - timeA;
+      });
+
+      setNotes(combinedNotes);
+      if (activeTab === 'notes') setLoading(false);
+    }, (error) => {
+      console.error("onSnapshot notesQuery error:", error);
+      
+      // Fallback: load only pre-seeded notes if Firestore read is blocked or fails
+      let deletedPreSeededIds: string[] = [];
+      try {
+        const savedDeleted = localStorage.getItem('deleted_pre_seeded_notes');
+        if (savedDeleted) {
+          deletedPreSeededIds = JSON.parse(savedDeleted);
+        }
+      } catch (e) {}
+
+      const activePreSeeded = PRE_SEEDED_NOTES.filter(note => note.id && !deletedPreSeededIds.includes(note.id));
+      setNotes(activePreSeeded);
       if (activeTab === 'notes') setLoading(false);
     });
 
@@ -274,8 +317,21 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
     setIsDeletingNote(true);
     setDeleteNoteError(null);
     try {
-      await deleteDoc(doc(db, 'teacherNotes', noteToDelete.id));
-      setNoteToDelete(null);
+      if (noteToDelete.id.startsWith('note_')) {
+        let deletedIds: string[] = [];
+        try {
+          deletedIds = JSON.parse(localStorage.getItem('deleted_pre_seeded_notes') || '[]');
+        } catch (e) {}
+        deletedIds.push(noteToDelete.id);
+        localStorage.setItem('deleted_pre_seeded_notes', JSON.stringify(deletedIds));
+        
+        // Immediately filter out from UI
+        setNotes(prev => prev.filter(n => n.id !== noteToDelete.id));
+        setNoteToDelete(null);
+      } else {
+        await deleteDoc(doc(db, 'teacherNotes', noteToDelete.id));
+        setNoteToDelete(null);
+      }
     } catch (err: any) {
       console.error("Error deleting note:", err);
       const errMessage = err instanceof Error ? err.message : String(err);
