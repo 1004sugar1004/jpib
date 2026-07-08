@@ -1,0 +1,493 @@
+Fetching profiles...
+Successfully fetched 469 profiles.
+
+=================== RESULT ===================
+__JUNE_RANKINGS_START__
+{
+  "individual": [
+    {
+      "uid": "Zp5Du5gcl0cck4GJdUAUiBuj26T2",
+      "name": "유서준",
+      "grade": "4학년",
+      "class": "4반",
+      "role": "student",
+      "juneScore": 63060,
+      "score": 71180,
+      "monthlyScore": 8120,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "P9YLFwYBCbgdWT0D5qKQtQt54Af1",
+      "name": "김태린 🍎 ",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 60110,
+      "score": 73800,
+      "monthlyScore": 13690,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "iAMt2fR5UagTPnCiVMseR7ide9i1",
+      "name": "도현우",
+      "grade": "4학년",
+      "class": "2반",
+      "role": "student",
+      "juneScore": 56610,
+      "score": 59930,
+      "monthlyScore": 3320,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-03"
+    },
+    {
+      "uid": "vOfRdZ3KNkbBn1bcB2nQaDd3UWc2",
+      "name": "권지훈🤯😱",
+      "grade": "4학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 47006,
+      "score": 47006,
+      "monthlyScore": 0,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-02"
+    },
+    {
+      "uid": "FXqXASOzVgXWm5y4NpqQt6iPU4K2",
+      "name": "ㅤㅤ최진호",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 37420,
+      "score": 42370,
+      "monthlyScore": 4950,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "7cYvBQPIk3Z1T7b2KQ6Av2V272I3",
+      "name": "서아♡",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 36230,
+      "score": 41429,
+      "monthlyScore": 5199,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "CCWuZDsh1pbsArD5EgIYehddOWw1",
+      "name": "김원우",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 33150,
+      "score": 41531,
+      "monthlyScore": 8381,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "XdELdTsg1dSPp0Gk9CSwMCZS1X23",
+      "name": "금다온",
+      "grade": "3학년",
+      "class": "3반",
+      "role": "student",
+      "juneScore": 27379,
+      "score": 27379,
+      "monthlyScore": 0,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "yBTLJjyfqXWp58gfct7TDMB0FLG3",
+      "name": "˚ෆ*₊주현우ʚɞ",
+      "grade": "4학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 27000,
+      "score": 27000,
+      "monthlyScore": 0,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-01"
+    },
+    {
+      "uid": "HfgpVn5OvZW8fQVyyxdTfc8Edbd2",
+      "name": "박서윤 ",
+      "grade": "3학년",
+      "class": "3반",
+      "role": "student",
+      "juneScore": 26841,
+      "score": 28251,
+      "monthlyScore": 1410,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "OH7xTS6Hp8gbADXhMMC2JjphEY93",
+      "name": "이종현",
+      "grade": "4학년",
+      "class": "4반",
+      "role": "student",
+      "juneScore": 26810,
+      "score": 38790,
+      "monthlyScore": 11980,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "IeGfWjVnv8OBXxlcWwR2lcXfvQi2",
+      "name": " 이준서                                                                 ",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 26380,
+      "score": 27920,
+      "monthlyScore": 1540,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "rm4xBNHkXOW5nB4JbzgiIEmQjVy2",
+      "name": "엄시우",
+      "grade": "5학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 26370,
+      "score": 27920,
+      "monthlyScore": 1550,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-01"
+    },
+    {
+      "uid": "FHeSe0WclIN0gZEqK5iUrOkUVxf2",
+      "name": "이해준",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 26220,
+      "score": 31220,
+      "monthlyScore": 5000,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "M81TSsrUAEWTwnnUrMoFJ8XeJaK2",
+      "name": "문예준",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 26000,
+      "score": 29220,
+      "monthlyScore": 3220,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-06"
+    },
+    {
+      "uid": "ImMRnfXg2KUvKH36C0Ilhy1JlSL2",
+      "name": "김채원🎨",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 25566,
+      "score": 26342,
+      "monthlyScore": 776,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "ERdFkY9pYMh5cD4c2V74FJoafr72",
+      "name": "유성준",
+      "grade": "5학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 24330,
+      "score": 26000,
+      "monthlyScore": 1670,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-01"
+    },
+    {
+      "uid": "z8IPHhuZZLcn0Nr8DjGa6B0ILBZ2",
+      "name": "윤성빈차차",
+      "grade": "4학년",
+      "class": "4반",
+      "role": "student",
+      "juneScore": 23310,
+      "score": 36190,
+      "monthlyScore": 12880,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "1elG7jLL17gcAycu5L3Ih3Kk9Hp2",
+      "name": "김규림🍊",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 22840,
+      "score": 25420,
+      "monthlyScore": 2580,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "txRTAbuj99f2sZKfA6XlBNL25jC3",
+      "name": " 서시훈",
+      "grade": "3학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 22170,
+      "score": 26820,
+      "monthlyScore": 4650,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-07"
+    },
+    {
+      "uid": "kgHY80OiEDNBhHUW7fmBArwt8Xj1",
+      "name": "홍원준 ",
+      "grade": "4학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 22150,
+      "score": 32420,
+      "monthlyScore": 10270,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "tfKtJbeBFJPEHEceXsjCep8KTIN2",
+      "name": "강소희",
+      "grade": "3학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 21068,
+      "score": 24368,
+      "monthlyScore": 3300,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-02"
+    },
+    {
+      "uid": "9G40cjuXPYbw6w2o0VjRI4fBdyA3",
+      "name": "깜찍깜찍하고 귀여운 승훈이",
+      "grade": "3학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 20910,
+      "score": 25720,
+      "monthlyScore": 4810,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-07"
+    },
+    {
+      "uid": "LvtaiwyfMUSJaBA14RaBJ1wqJgV2",
+      "name": "이서린 ",
+      "grade": "3학년",
+      "class": "3반",
+      "role": "student",
+      "juneScore": 20700,
+      "score": 23680,
+      "monthlyScore": 20700,
+      "lastActiveMonth": "2026-06",
+      "lastXPDate": "2026-06-30"
+    },
+    {
+      "uid": "VNVbjMOb1SWWBv1ELhL4IcfSwGF2",
+      "name": "박상민",
+      "grade": "5학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 20660,
+      "score": 22210,
+      "monthlyScore": 1550,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-01"
+    },
+    {
+      "uid": "tPOSxVhxvgfkf5Fnx7KzS1ZCkTA3",
+      "name": "안수현",
+      "grade": "5학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 20449,
+      "score": 20449,
+      "monthlyScore": 0,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-02"
+    },
+    {
+      "uid": "lgQfNOSZ0KN444psKFRJUAkOW242",
+      "name": "☠️아이비를 변기에 넣고 내려☠️",
+      "grade": "5학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 20220,
+      "score": 20220,
+      "monthlyScore": 0,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-08"
+    },
+    {
+      "uid": "Fwjm057nQKaPIHMHf3eURSax1Xa2",
+      "name": "김지후",
+      "grade": "3학년",
+      "class": "3반",
+      "role": "student",
+      "juneScore": 20210,
+      "score": 26190,
+      "monthlyScore": 20210,
+      "lastActiveMonth": "2026-06",
+      "lastXPDate": "2026-06-30"
+    },
+    {
+      "uid": "39Ycg4xxnLhTJmzyGBoWyS2Awg73",
+      "name": "이하준",
+      "grade": "3학년",
+      "class": "5반",
+      "role": "student",
+      "juneScore": 19620,
+      "score": 23020,
+      "monthlyScore": 3400,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-02"
+    },
+    {
+      "uid": "tVCbAJQtSagLTtt2h3BrN2UKQbe2",
+      "name": "김하윤",
+      "grade": "3학년",
+      "class": "1반",
+      "role": "student",
+      "juneScore": 18740,
+      "score": 18940,
+      "monthlyScore": 200,
+      "lastActiveMonth": "2026-07",
+      "lastXPDate": "2026-07-07"
+    }
+  ],
+  "classes": [
+    {
+      "name": "4학년 1반",
+      "score": 438623,
+      "count": 24
+    },
+    {
+      "name": "3학년 5반",
+      "score": 270887,
+      "count": 24
+    },
+    {
+      "name": "5학년 5반",
+      "score": 229368,
+      "count": 23
+    },
+    {
+      "name": "3학년 3반",
+      "score": 217104,
+      "count": 21
+    },
+    {
+      "name": "4학년 4반",
+      "score": 193957,
+      "count": 19
+    },
+    {
+      "name": "4학년 5반",
+      "score": 171396,
+      "count": 21
+    },
+    {
+      "name": "4학년 2반",
+      "score": 66875,
+      "count": 5
+    },
+    {
+      "name": "3학년 1반",
+      "score": 64465,
+      "count": 13
+    },
+    {
+      "name": "3학년 4반",
+      "score": 40824,
+      "count": 15
+    },
+    {
+      "name": "6학년 3반",
+      "score": 36953,
+      "count": 19
+    },
+    {
+      "name": "5학년 2반",
+      "score": 36564,
+      "count": 10
+    },
+    {
+      "name": "5학년 1반",
+      "score": 32745,
+      "count": 19
+    },
+    {
+      "name": "6학년 2반",
+      "score": 32253,
+      "count": 17
+    },
+    {
+      "name": "6학년 4반",
+      "score": 24225,
+      "count": 16
+    },
+    {
+      "name": "6학년 6반",
+      "score": 16346,
+      "count": 17
+    },
+    {
+      "name": "5학년 6반",
+      "score": 12304,
+      "count": 13
+    },
+    {
+      "name": "3학년 6반",
+      "score": 10450,
+      "count": 20
+    },
+    {
+      "name": "6학년 1반",
+      "score": 9915,
+      "count": 13
+    },
+    {
+      "name": "3학년 2반",
+      "score": 3590,
+      "count": 4
+    },
+    {
+      "name": "1학년 1반",
+      "score": 2509,
+      "count": 2
+    },
+    {
+      "name": "4학년 7반",
+      "score": 2361,
+      "count": 5
+    },
+    {
+      "name": "4학년 6반",
+      "score": 2072,
+      "count": 4
+    },
+    {
+      "name": "5학년 7반",
+      "score": 1200,
+      "count": 3
+    },
+    {
+      "name": "5학년 4반",
+      "score": 799,
+      "count": 1
+    }
+  ]
+}
+__JUNE_RANKINGS_END__
+==============================================

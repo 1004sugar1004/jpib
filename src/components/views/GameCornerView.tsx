@@ -49,6 +49,7 @@ interface GameCornerViewProps {
 
 export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: GameCornerViewProps) => {
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'student' | 'free' | 'classic'>('all');
   const isTeacher = profile?.role === 'teacher';
   const [showCardWarning, setShowCardWarning] = useState(
     !isTeacher && (profile?.completedStudyItems?.length || 0) === 0 && (profile?.gameTickets || 0) === 0
@@ -131,11 +132,11 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
   }
 
   return (
-    <div className="min-h-screen w-full p-4 py-8 space-y-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <header className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl border border-white/20 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <Gamepad2 className="w-32 h-32" />
+    <div className="min-h-screen w-full p-4 py-8 space-y-8 bg-[#fbf9f6]">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <header className="bg-white/95 backdrop-blur-md p-6 md:p-8 rounded-[2.5rem] shadow-xl border border-gray-100 text-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5">
+          <Gamepad2 className="w-32 h-32 text-indigo-600" />
         </div>
         <Button 
           variant="secondary" 
@@ -145,78 +146,142 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
         >
           뒤로 가기
         </Button>
-        <h2 className="text-3xl font-black text-gray-900">IB 게임 코너</h2>
-        <p className="text-gray-500 font-bold">
+        <h2 className="text-3xl font-black text-gray-900 tracking-tight">IB 게임 코너</h2>
+        <p className="text-gray-500 font-bold mt-1 text-sm">
           {isTeacher ? '선생님은 모든 게임을 자유롭게 체험하실 수 있습니다.' : '퀴즈를 풀고 얻은 티켓으로 게임을 즐겨보세요!'}
         </p>
         
-        <div className="mt-6 inline-flex items-center gap-3 px-6 py-3 bg-indigo-50 rounded-2xl border border-indigo-100">
-          <Trophy className="w-6 h-6 text-indigo-600" />
-          <span className="font-black text-indigo-900">
+        <div className="mt-4 inline-flex items-center gap-2.5 px-5 py-2.5 bg-indigo-50 rounded-2xl border border-indigo-100">
+          <Trophy className="w-5 h-5 text-indigo-600" />
+          <span className="font-black text-indigo-900 text-sm">
             {isTeacher ? '무제한 체험 모드' : `보유 티켓: ${tickets}개`}
           </span>
         </div>
+
+        {/* 🎮 NEW GAME CATEGORY FILTER TABS */}
+        <div className="flex flex-wrap justify-center gap-2 mt-6 pt-6 border-t border-gray-100">
+          <button 
+            onClick={() => setActiveFilter('all')}
+            className={cn(
+              "px-4 py-2 text-xs font-black rounded-full transition-all border cursor-pointer",
+              activeFilter === 'all' 
+                ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100" 
+                : "bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:bg-gray-50"
+            )}
+          >
+            전체 게임 ({games.length})
+          </button>
+          <button 
+            onClick={() => setActiveFilter('student')}
+            className={cn(
+              "px-4 py-2 text-xs font-black rounded-full transition-all border cursor-pointer",
+              activeFilter === 'student' 
+                ? "bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-100" 
+                : "bg-white border-gray-200 text-gray-600 hover:border-amber-300 hover:bg-gray-50"
+            )}
+          >
+            ⭐️ 학생 기획 우수작
+          </button>
+          <button 
+            onClick={() => setActiveFilter('free')}
+            className={cn(
+              "px-4 py-2 text-xs font-black rounded-full transition-all border cursor-pointer",
+              activeFilter === 'free' 
+                ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100" 
+                : "bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:bg-gray-50"
+            )}
+          >
+            🎁 티켓 프리패스 (무료)
+          </button>
+          <button 
+            onClick={() => setActiveFilter('classic')}
+            className={cn(
+              "px-4 py-2 text-xs font-black rounded-full transition-all border cursor-pointer",
+              activeFilter === 'classic' 
+                ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100" 
+                : "bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:bg-gray-50"
+            )}
+          >
+            🕹️ 클래식 명작 코너
+          </button>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {games.map((game) => {
-          const isLocked = false; // All games unlocked as requested
-          const isFreeTestGame = game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja' || game.id === 'uno' || game.id === 'dobble' || game.id === 'cuphalligalli';
-          
-          return (
-            <motion.div
-              key={game.id}
-              whileHover={!isLocked && (isFreeTestGame || tickets > 0 || isTeacher) ? { scale: 1.02 } : {}}
-              whileTap={!isLocked && (isFreeTestGame || tickets > 0 || isTeacher) ? { scale: 0.98 } : {}}
-              onClick={() => {
-                if (isLocked) return;
-                if (!isFreeTestGame && tickets <= 0 && !isTeacher) {
-                  console.log('게임 티켓이 부족합니다! 퀴즈를 풀어 티켓을 획득하세요.');
-                  return;
-                }
-                if (!isTeacher && !isFreeTestGame) onUseTicket();
-                setSelectedGame(game.id);
-              }}
-              className={cn(
-                "cursor-pointer group relative",
-                isLocked && "cursor-not-allowed opacity-75"
-              )}
-            >
-              <Card 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {games
+          .filter(game => {
+            if (activeFilter === 'all') return true;
+            if (activeFilter === 'student') {
+              return game.id === 'dobble' || game.id === 'cuphalligalli' || game.id === 'jenga';
+            }
+            if (activeFilter === 'free') {
+              return game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja' || game.id === 'uno' || game.id === 'dobble' || game.id === 'cuphalligalli';
+            }
+            if (activeFilter === 'classic') {
+              return ['anipang', 'galaga', 'fruit', 'store', 'mario', 'rhythm', 'drawing'].includes(game.id);
+            }
+            return true;
+          })
+          .map((game) => {
+            const isLocked = false; // All games unlocked as requested
+            const isFreeTestGame = game.id === 'halligalli' || game.id === 'jenga' || game.id === 'ninja' || game.id === 'uno' || game.id === 'dobble' || game.id === 'cuphalligalli';
+            
+            return (
+              <motion.div
+                key={game.id}
+                whileHover={!isLocked && (isFreeTestGame || tickets > 0 || isTeacher) ? { scale: 1.02 } : {}}
+                whileTap={!isLocked && (isFreeTestGame || tickets > 0 || isTeacher) ? { scale: 0.98 } : {}}
+                onClick={() => {
+                  if (isLocked) return;
+                  if (!isFreeTestGame && tickets <= 0 && !isTeacher) {
+                    console.log('게임 티켓이 부족합니다! 퀴즈를 풀어 티켓을 획득하세요.');
+                    return;
+                  }
+                  if (!isTeacher && !isFreeTestGame) onUseTicket();
+                  setSelectedGame(game.id);
+                }}
                 className={cn(
-                  "p-8 h-full flex flex-col items-center text-center transition-all border-4 relative overflow-hidden",
-                  isLocked ? "bg-gray-50 border-gray-200" : "hover:border-indigo-400 border-transparent"
+                  "cursor-pointer group relative h-[240px]",
+                  isLocked && "cursor-not-allowed opacity-75"
                 )}
-                style={!isLocked ? { 
-                  backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)), url("${game.bgImage}")`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                } : {}}
               >
-                {isFreeTestGame && (
-                  <div className="absolute top-4 right-4 bg-emerald-500 text-white text-[11px] font-black px-2.5 py-1 rounded-full shadow-md animate-pulse tracking-wider flex items-center gap-1 z-10">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>테스트 (티켓 무료)</span>
+                <Card 
+                  className={cn(
+                    "p-5 h-full flex flex-col items-center justify-between text-center transition-all border-2 relative overflow-hidden bg-white",
+                    isLocked ? "bg-gray-50 border-gray-200" : "hover:border-indigo-400 border-gray-100 shadow-sm hover:shadow-md"
+                  )}
+                  style={!isLocked ? { 
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), url("${game.bgImage}")`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  } : {}}
+                >
+                  {isFreeTestGame && (
+                    <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse tracking-wider flex items-center gap-0.5 z-10">
+                      <Sparkles className="w-3 h-3" />
+                      <span>무료</span>
+                    </div>
+                  )}
+                  
+                  <div className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-white shadow-md relative",
+                    isLocked ? "bg-gray-400" : game.color
+                  )}>
+                    {isLocked ? <Lock className="w-7 h-7" /> : <game.icon className="w-7 h-7" />}
                   </div>
-                )}
-                
-                <div className={cn(
-                  "w-20 h-20 rounded-3xl flex items-center justify-center mb-6 text-white shadow-lg relative",
-                  isLocked ? "bg-gray-400" : game.color
-                )}>
-                  {isLocked ? <Lock className="w-10 h-10" /> : <game.icon className="w-10 h-10" />}
-                </div>
-                
-                <h3 className="text-xl font-black text-gray-900 mb-2">{game.name}</h3>
-                <p className="text-gray-500 text-sm mb-4">{game.description}</p>
-                
-                <div className="mt-auto flex items-center gap-1 text-indigo-600 font-bold text-sm">
-                  게임 시작하기 <ArrowLeft className="w-4 h-4 rotate-180" />
-                </div>
-              </Card>
-            </motion.div>
-          );
-        })}
+                  
+                  <div className="flex-1 flex flex-col justify-center min-w-0 px-1">
+                    <h3 className="text-sm font-black text-gray-900 mb-1 truncate">{game.name}</h3>
+                    <p className="text-gray-400 text-[10px] font-bold line-clamp-2 leading-normal">{game.description}</p>
+                  </div>
+                  
+                  <div className="mt-3 flex items-center gap-1 text-indigo-600 font-extrabold text-xs">
+                    플레이하기 <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                  </div>
+                </Card>
+              </motion.div>
+            );
+          })}
       </div>
 
       {/* Card Warning Popup */}

@@ -2,6 +2,29 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { BloomEffect, EffectComposer, EffectPass, RenderPass, SMAAEffect, SMAAPreset } from 'postprocessing';
 
+// Safe monkey-patch to prevent "Cannot read properties of null (reading 'alpha')" in postprocessing
+if (typeof window !== 'undefined') {
+  const patchGetContextAttributes = (proto: any) => {
+    if (proto && proto.getContextAttributes) {
+      const original = proto.getContextAttributes;
+      proto.getContextAttributes = function(this: any) {
+        try {
+          const attrs = original.apply(this, arguments);
+          return attrs || { alpha: true };
+        } catch (e) {
+          return { alpha: true };
+        }
+      };
+    }
+  };
+  if (typeof WebGLRenderingContext !== 'undefined') {
+    patchGetContextAttributes(WebGLRenderingContext.prototype);
+  }
+  if (typeof WebGL2RenderingContext !== 'undefined') {
+    patchGetContextAttributes(WebGL2RenderingContext.prototype);
+  }
+}
+
 export interface HyperspeedColors {
   roadColor: number;
   islandColor: number;

@@ -60,7 +60,6 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isTracking, setIsTracking] = useState(false);
   const [orbitAngle, setOrbitAngle] = useState(0);
-  const [showNotice, setShowNotice] = useState(false);
 
   // Smoothly rotate the cards orbit over time
   useEffect(() => {
@@ -236,7 +235,7 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
 
           {/* Central Logo Orb */}
           <motion.div 
-            onClick={() => setShowNotice(true)}
+            onClick={() => window.dispatchEvent(new CustomEvent('open-announcement', { detail: { tab: 'june_ranking_recovery' } }))}
             whileHover={{ scale: 1.1, boxShadow: "0 0 60px rgba(99,102,241,0.5)" }}
             whileTap={{ scale: 0.95 }}
             className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-indigo-600/40 via-purple-600/30 to-blue-600/50 border border-white/30 shadow-[0_0_50px_rgba(99,102,241,0.3)] flex items-center justify-center p-1 backdrop-blur-sm z-30 pointer-events-auto cursor-pointer transition-shadow"
@@ -278,7 +277,7 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
           className="mt-4 sm:mt-6 md:mt-8 relative z-40"
         >
           <Button
-            onClick={() => setShowNotice(true)}
+            onClick={onEnter}
             className="px-6 py-4 sm:px-8 sm:py-5 text-sm sm:text-lg font-black rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:shadow-[0_0_40px_rgba(99,102,241,0.45)] transition-all transform hover:scale-[1.03] active:scale-[0.98] border border-indigo-400/20 flex items-center gap-2 group cursor-pointer"
           >
             <span>탐험 시작하기</span>
@@ -295,113 +294,13 @@ export const IntroView = ({ onEnter }: IntroViewProps) => {
       {/* Floating Notice Button in Top Right */}
       <div className="absolute top-4 right-4 z-40">
         <button
-          onClick={() => setShowNotice(true)}
+          onClick={() => window.dispatchEvent(new CustomEvent('open-announcement', { detail: { tab: 'june_ranking_recovery' } }))}
           className="px-4 py-2.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/30 text-xs sm:text-sm font-black text-indigo-300 shadow-lg hover:shadow-indigo-500/20 transition-all flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
         >
           <span className="animate-pulse text-sm">📢</span>
           <span>6월 최종 랭킹 복구 공지</span>
         </button>
       </div>
-
-      {/* GALACTIC NOTICE POPUP MODAL */}
-      <AnimatePresence>
-        {showNotice && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-slate-900 border-2 border-indigo-500/40 p-6 sm:p-8 rounded-[2.5rem] max-w-xl w-full relative shadow-[0_0_50px_rgba(99,102,241,0.3)] overflow-hidden text-left"
-            >
-              {/* Star dust effect in modal */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,#ffffff03,transparent)] pointer-events-none" />
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-
-              {/* Close Button */}
-              <button
-                onClick={() => setShowNotice(false)}
-                className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors border border-white/10 cursor-pointer z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-start gap-3.5 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-400/30 flex items-center justify-center text-2xl shrink-0">
-                  🏆
-                </div>
-                <div>
-                  <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase">System Notice & Bug Fix</span>
-                  <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug">
-                    6월 최종 학급 랭킹 집계 오류 정상 복구 및 패치 안내
-                  </h3>
-                </div>
-              </div>
-
-              <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 max-h-[50vh] overflow-y-auto pr-2">
-                <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-slate-300">
-                  <p className="font-bold text-white mb-2 text-sm flex items-center gap-1.5">
-                    <span>📢</span>
-                    <span>4학년 1반 6월 순위 정상 복구 완료!</span>
-                  </p>
-                  <p className="mb-2">
-                    6월 30일 밤까지 당당히 1위를 달리고 있던 <strong className="text-indigo-300 font-extrabold">4학년 1반</strong>이, 7월 1일 월말 데이터 전환 시스템 오류로 인해 점수 합산에서 누락되며 순위가 일시적으로 어긋났던 문제를 완벽하게 수정하였습니다!
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    7월 첫 로그인 시 이전 달의 데이터가 갱신되는 과정에서 누락을 방지하는 알고리즘을 완벽하게 패치하여, 6월의 진정한 챔피언 자리를 정상 복원하였습니다.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <h4 className="font-extrabold text-white text-xs mb-2.5 flex items-center gap-1.5">
-                    <span>🥇</span>
-                    <span>2026년 6월 최종 학급 랭킹 (완벽 복원 결과)</span>
-                  </h4>
-                  <div className="space-y-1.5 font-bold text-slate-300 text-xs">
-                    <div className="flex items-center justify-between p-2 rounded bg-indigo-500/20 border border-indigo-500/30 text-indigo-200">
-                      <span>👑 1위: 4학년 1반</span>
-                      <span>200,988점 (최종 1등 확정!)</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-800 border border-white/5">
-                      <span>🥈 2위: 3학년 3반</span>
-                      <span>142,997점</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-800 border border-white/5">
-                      <span>🥉 3위: 4학년 5반</span>
-                      <span>90,038점</span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-850/50 text-slate-400 text-[10px] mt-1">
-                      <span>• 4위: 4학년 6반 (71,230점)</span>
-                      <span>• 5위: 4학년 7반 (63,220점)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-slate-400 text-xs">
-                  <p className="font-extrabold text-emerald-400 mb-1">🛠️ 기타 추가 버그 패치 안내</p>
-                  <ul className="list-disc list-inside space-y-1 text-[11px] leading-relaxed">
-                    <li>김*린 학생의 초성 퀴즈 오작동/멈춤 현상 조치 완료</li>
-                    <li>이*민 학생 기획의 편의점 정리 게임 3스테이지 진행 렉 수정</li>
-                    <li>전*원 학생의 할리갈리 게임 전반적인 로딩 렉 최적화</li>
-                    <li>반*아 학생의 컵할리갈리 게임 정식 탑재 및 출시 완료!</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  onClick={() => {
-                    setShowNotice(false);
-                    onEnter();
-                  }}
-                  className="w-full py-4 text-sm sm:text-base font-black rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 cursor-pointer border border-indigo-400/20"
-                >
-                  <span>수정 사항 확인 완료 & 탐험 계속하기 🚀</span>
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
