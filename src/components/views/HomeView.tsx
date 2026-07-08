@@ -1792,6 +1792,16 @@ export const HomeView = ({
             <Button variant="ghost" onClick={onLogout} icon={LogOut} className="text-gray-400 hover:text-red-500">
               로그아웃
             </Button>
+            {profile?.uid && profile.uid !== 'guest' && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => window.dispatchEvent(new CustomEvent('open-teacher-notes'))}
+                className="bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-100 mt-2 font-black"
+              >
+                💌 선생님 편지함
+              </Button>
+            )}
             {user?.email === '1004sugar1004@gmail.com' && (
               <Button 
                 variant="secondary" 

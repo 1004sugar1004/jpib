@@ -5,6 +5,7 @@ export interface UserProfile {
   class: string;
   role: 'student' | 'teacher';
   score: number;
+  email?: string;
   lastQuizDate?: string;
   level?: number;
   streak?: number;

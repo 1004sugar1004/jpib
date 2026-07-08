@@ -96,6 +96,24 @@ export const PRE_SEEDED_NOTES: TeacherNote[] = [
     targetClass: "4",
     content: "naldeulda님! 김혜진 선생님이 보내신 테스트 쪽지입니다. 행복한 하루 되세요! ❤️ -김혜진 선생님이-",
     timestamp: 1783478400000
+  },
+  {
+    id: "note_nalrary_1",
+    senderName: "김혜진 선생님",
+    targetName: "nalrary",
+    targetGrade: "4",
+    targetClass: "4",
+    content: "nalrary님! 김혜진 선생님이 보내신 테스트 쪽지입니다. 가입/로그인 및 쪽지 수신 테스트가 정상 작동 중입니다! 🎉 -김혜진 선생님이-",
+    timestamp: 1783478400000
+  },
+  {
+    id: "note_nalrary_2",
+    senderName: "김혜진 선생님",
+    targetName: "nalrary@naver.com",
+    targetGrade: "4",
+    targetClass: "4",
+    content: "nalrary@naver.com 이메일 연동 테스트 쪽지입니다. 쪽지 알림과 내용이 완벽히 전송되었습니다! ⭐ -김혜진 선생님이-",
+    timestamp: 1783478400000
   }
 ];
 
@@ -111,23 +129,33 @@ export const matchesProfile = (note: TeacherNote, profile: UserProfile) => {
   const profileGradeNum = getGradeClassNum(profile.grade);
   const profileClassNum = getGradeClassNum(profile.class);
   
-  const noteName = (note.targetName || '').trim();
-  const profileName = (profile.name || '').trim();
+  const noteName = (note.targetName || '').trim().toLowerCase();
+  const profileName = (profile.name || '').trim().toLowerCase();
+  const profileEmail = (profile.email || '').trim().toLowerCase();
 
-  // 1. If it's a test name ("날들다", "naldeulda", "테스터"), match immediately by name to guarantee delivery during testing
-  const isTestUser = ['날들다', 'naldeulda', '테스터'].some(t => 
-    profileName.toLowerCase().includes(t.toLowerCase()) || 
-    noteName.toLowerCase().includes(t.toLowerCase())
+  // 1. If it's a test name/email, match immediately by name or email
+  const isTestUser = ['날들다', 'naldeulda', '테스터', 'nalrary'].some(t => 
+    profileName.includes(t) || 
+    noteName.includes(t) ||
+    profileEmail.includes(t)
   );
-  if (isTestUser && noteName.toLowerCase() === profileName.toLowerCase()) {
-    return true;
+
+  if (isTestUser) {
+    if (
+      noteName === profileName || 
+      noteName === profileEmail || 
+      (profileEmail === 'nalrary@naver.com' && (noteName.includes('nalrary') || noteName.includes('날들다') || noteName.includes('테스터'))) ||
+      (profileName.includes('nalrary') && noteName.includes('nalrary'))
+    ) {
+      return true;
+    }
   }
   
-  // 2. Otherwise, match by grade, class, and name
+  // 2. Otherwise, match by grade, class, and name/email
   return (
     noteGradeNum === profileGradeNum &&
     noteClassNum === profileClassNum &&
-    noteName === profileName
+    (noteName === profileName || noteName === profileEmail)
   );
 };
 

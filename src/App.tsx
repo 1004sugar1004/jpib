@@ -273,6 +273,9 @@ export default function App() {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             let userData = docSnap.data() as UserProfile;
+            if (firebaseUser.email) {
+              userData.email = firebaseUser.email;
+            }
             const today = getCurrentDate();
             
             // Reset daily stats if it's a new day
@@ -544,6 +547,7 @@ export default function App() {
       monthlyScore: 0,
       dailyScore: 0,
       dailyXP: 0,
+      email: user.email || undefined,
       lastXPDate: getCurrentDate(),
       lastActiveMonth: getCurrentMonth(),
       completedStudyItems: [],
