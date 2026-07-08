@@ -18,7 +18,8 @@ import {
   Sword,
   Sparkles,
   MessageSquare,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert
 } from 'lucide-react';
 import { AnipangGame } from '../games/AnipangGame';
 import { GalagaGame } from '../games/GalagaGame';

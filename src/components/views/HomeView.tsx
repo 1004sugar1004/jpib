@@ -33,7 +33,9 @@ import {
   Award,
   MessageSquare,
   User as UserIcon,
-  Ticket
+  Ticket,
+  ShieldAlert,
+  Globe
 } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { ibReflectionQuestions } from '../../content';
@@ -46,7 +48,7 @@ interface HomeViewProps {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   reflectionData: Record<string, string>;
-  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest' | 'certificate-gallery' | 'ib-board', initialStudyTab?: number) => void;
+  setView: (view: 'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest' | 'certificate-gallery' | 'ib-board' | 'detective' | 'landmark-explorer', initialStudyTab?: number) => void;
   rankings: UserProfile[];
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
@@ -179,6 +181,28 @@ export const HomeView = ({
       action: () => setView('concept-forest') 
     },
     { 
+      id: 'detective', 
+      name: '범인찾기', 
+      desc: '단서와 알리바이로 범인 검거', 
+      badge: 'NEW', 
+      category: 'DETECTIVE GAME', 
+      actionText: '수사하기', 
+      circleBg: 'bg-rose-50 text-rose-600', 
+      icon: '🕵️',
+      action: () => setView('detective') 
+    },
+    { 
+      id: 'landmark-explorer', 
+      name: '랜드마크 세계탐험대', 
+      desc: '세계 지도 위의 유명 랜드마크 정복', 
+      badge: 'NEW', 
+      category: 'WORLD STUDY', 
+      actionText: '탐험하기', 
+      circleBg: 'bg-sky-50 text-sky-600', 
+      icon: '🌍',
+      action: () => setView('landmark-explorer') 
+    },
+    { 
       id: 'games', 
       name: '게임 코너', 
       desc: '티켓으로 미니게임 즐기기', 
@@ -297,6 +321,8 @@ export const HomeView = ({
     { id: 'music-quiz', name: '음악 퀴즈', desc: '재미있는 가사/멜로디 퀴즈', icon: ASSETS.quiz.music_icon, bg: 'from-rose-50 to-white hover:border-rose-400', action: () => setView('music-quiz'), color: 'rose', xp: '정답당 +50 XP', isImg: true },
     { id: 'bingo', name: '지식 빙고', desc: 'AI 컴퓨터와 겨루는 빙고', icon: ASSETS.quiz.game_icon, bg: 'from-amber-50 to-white hover:border-amber-400', action: () => setView('bingo'), color: 'amber', xp: '승리 시 +50 XP', isImg: true },
     { id: 'forest', name: '개념의 숲', desc: '질문 풀고 나무 키우기', icon: '🌳', bg: 'from-emerald-50 to-white hover:border-emerald-400', action: () => setView('concept-forest'), color: 'emerald', xp: '완료 시 +50 XP' },
+    { id: 'detective', name: '범인찾기', desc: '단서와 알리바이로 범인 검거', icon: '🕵️', bg: 'from-rose-50 to-white hover:border-rose-400', action: () => setView('detective'), color: 'rose', xp: '검거 시 XP 획득' },
+    { id: 'landmark-explorer', name: '랜드마크 세계탐험대', desc: '세계 지도 위 유명 랜드마크 정복', icon: '🌍', bg: 'from-sky-50 to-white hover:border-sky-400', action: () => setView('landmark-explorer'), color: 'sky', xp: '탐험 성공 시 XP / 코인 획득' },
     { id: 'games', name: '게임 코너', desc: '티켓으로 미니게임 즐기기', icon: ASSETS.quiz.game_icon, bg: 'from-pink-50 to-white hover:border-pink-400', action: () => setView('games'), color: 'pink', isImg: true },
     { id: 'ranking', name: '명예의 전당', desc: '최고의 탐험가 순위', icon: ASSETS.quiz.ranking_icon, bg: 'from-yellow-50 to-white hover:border-yellow-400', action: () => setView('ranking'), color: 'yellow', isImg: true },
     { id: 'certificate', name: '자격증 발급', desc: '나만의 탐험가 자격증', icon: 'https://i.imgur.com/ToOjCxD.png', bg: 'from-indigo-50 to-white hover:border-indigo-400', action: () => setView('certificate'), color: 'indigo', isImg: true },
@@ -1039,6 +1065,27 @@ export const HomeView = ({
                 </p>
                 <p className="text-[9px] text-[#818a84] font-semibold mt-0.5">
                   질문 풀고 나무 키우기
+                </p>
+              </div>
+            </div>
+
+            {/* Treatment Card 4 */}
+            <div 
+              onClick={() => {
+                setView('detective');
+                if (!isPinnedLayout) setSidebarOpen(false);
+              }}
+              className="bg-[#fbf9f6] border border-[#eceae2] rounded-2xl p-3 min-w-[140px] flex flex-col justify-between h-[115px] cursor-pointer hover:border-[#3c5647] hover:bg-white transition-all snap-start group"
+            >
+              <span className="self-start text-[8px] font-black bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                🕵️ MYSTERY
+              </span>
+              <div className="mt-2">
+                <p className="text-[11px] font-black text-[#1c2c24] leading-tight group-hover:text-[#3c5647]">
+                  명탐정 범인찾기
+                </p>
+                <p className="text-[9px] text-[#818a84] font-semibold mt-0.5">
+                  단서로 범인 찾아내기
                 </p>
               </div>
             </div>
@@ -2270,6 +2317,30 @@ export const HomeView = ({
             <h4 className="font-black text-emerald-900 text-sm">개념의 숲</h4>
             <p className="text-xs text-emerald-700 font-bold mt-1">+50 XP</p>
           </div>
+
+          <div 
+            onClick={() => setView('detective')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-rose-50 transition-colors group"
+            id="homeview-quick-detective"
+          >
+            <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform text-rose-600">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <h4 className="font-black text-rose-900 text-sm">범인찾기</h4>
+            <p className="text-xs text-rose-700 font-bold mt-1">사건 해결 XP</p>
+          </div>
+
+          <div 
+            onClick={() => setView('landmark-explorer')}
+            className="flex flex-col items-center text-center p-4 bg-white/60 rounded-3xl border border-white shadow-sm cursor-pointer hover:bg-sky-50 transition-colors group"
+            id="homeview-quick-landmark-explorer"
+          >
+            <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center mb-3 p-2 group-hover:scale-110 transition-transform text-sky-600">
+              <Globe className="w-8 h-8" />
+            </div>
+            <h4 className="font-black text-sky-900 text-sm">세계탐험대</h4>
+            <p className="text-xs text-sky-700 font-bold mt-1">지구 탐험 XP</p>
+          </div>
         </div>
       </motion.div>
 
@@ -2531,6 +2602,52 @@ export const HomeView = ({
               완료 시 +50 XP 획득!
             </div>
             <div className="mt-6 flex items-center gap-1 text-emerald-600 font-bold text-sm">
+              도전하기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('detective')}
+          className="group"
+          id="homeview-card-detective"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-rose-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-rose-50/30">
+            <div className="w-20 h-20 bg-rose-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-rose-100 overflow-hidden p-3 text-rose-600">
+              <ShieldAlert className="w-12 h-12" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">범인찾기</h3>
+            <p className="text-gray-500 text-sm font-medium mb-2">단서와 알리바이를 조합하여 진짜 범인을 검거하세요!</p>
+            <div className="flex items-center gap-1 px-3 py-1 bg-rose-50 rounded-full text-[10px] font-black text-rose-600 border border-rose-100">
+              <ShieldAlert className="w-3 h-3" />
+              검거 성공 시 XP 획득!
+            </div>
+            <div className="mt-6 flex items-center gap-1 text-rose-600 font-bold text-sm">
+              도전하기 <ChevronRight className="w-4 h-4" />
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -10, scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setView('landmark-explorer')}
+          className="group"
+          id="homeview-card-landmark-explorer"
+        >
+          <Card className="p-8 cursor-pointer border-2 border-transparent group-hover:border-sky-400 transition-all h-full flex flex-col items-center text-center bg-gradient-to-b from-white to-sky-50/30">
+            <div className="w-20 h-20 bg-sky-100 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-sky-100 overflow-hidden p-3 text-sky-600">
+              <Globe className="w-12 h-12" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-gray-900">랜드마크 세계탐험대</h3>
+            <p className="text-gray-500 text-sm font-medium mb-2">세계지도 위의 유명 랜드마크를 정복하고 보상을 획득하세요!</p>
+            <div className="flex items-center gap-1 px-3 py-1 bg-sky-50 rounded-full text-[10px] font-black text-sky-600 border border-sky-100">
+              <Globe className="w-3 h-3 text-sky-500" />
+              탐험 성공 시 +50 XP / +10 코인 획득!
+            </div>
+            <div className="mt-6 flex items-center gap-1 text-sky-600 font-bold text-sm">
               도전하기 <ChevronRight className="w-4 h-4" />
             </div>
           </Card>

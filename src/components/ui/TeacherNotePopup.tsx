@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, MailOpen, Heart, Sparkles, X, Check, Bookmark, Send } from 'lucide-react';
 import { Button } from './Button';
@@ -171,8 +171,17 @@ export const TeacherNotePopup = ({ profile, onClose, forceOpenList = false }: Te
   const [activeNotes, setActiveNotes] = useState<TeacherNote[]>([]);
   const [currentNoteIdx, setCurrentNoteIdx] = useState(0);
   const [isOpenedEnvelope, setIsOpenedEnvelope] = useState(false);
-  const [readNoteIds, setReadNoteIds] = useState<string[]>([]);
+  const [readNoteIds, setReadNoteIds] = useState<string[]>(() => {
+    try {
+      const savedRead = localStorage.getItem('teacher_notes_read_v1');
+      return savedRead ? JSON.parse(savedRead) : [];
+    } catch (e) {
+      console.error('Error parsing teacher_notes_read_v1', e);
+      return [];
+    }
+  });
   const [viewingAll, setViewingAll] = useState(forceOpenList);
+  const shownNoteIdsRef = useRef<Set<string>>(new Set());
 
   // Sync forceOpenList prop with viewingAll state
   useEffect(() => {
@@ -192,16 +201,6 @@ export const TeacherNotePopup = ({ profile, onClose, forceOpenList = false }: Te
       console.error("onSnapshot teacherNotes in popup error:", error);
       setDbNotes([]); // Fallback to no Firestore notes on error, pre-seeded will still render
     });
-
-    // Load read notes tracking from localStorage
-    try {
-      const savedRead = localStorage.getItem('teacher_notes_read_v1');
-      if (savedRead) {
-        setReadNoteIds(JSON.parse(savedRead));
-      }
-    } catch (e) {
-      console.error(e);
-    }
 
     return () => unsubscribe();
   }, []);
@@ -229,9 +228,14 @@ export const TeacherNotePopup = ({ profile, onClose, forceOpenList = false }: Te
     if (unread.length > 0 && !forceOpenList) {
       // Find the index of the first unread note
       const firstUnreadIdx = userNotes.findIndex(n => n.id && !readNoteIds.includes(n.id));
-      setCurrentNoteIdx(firstUnreadIdx >= 0 ? firstUnreadIdx : 0);
-      setIsOpen(true);
-      setIsOpenedEnvelope(false);
+      const firstUnreadNote = userNotes[firstUnreadIdx];
+      
+      if (firstUnreadNote && firstUnreadNote.id && !shownNoteIdsRef.current.has(firstUnreadNote.id)) {
+        shownNoteIdsRef.current.add(firstUnreadNote.id);
+        setCurrentNoteIdx(firstUnreadIdx >= 0 ? firstUnreadIdx : 0);
+        setIsOpen(true);
+        setIsOpenedEnvelope(false);
+      }
     }
   }, [profile, dbNotes, readNoteIds, forceOpenList]);
 

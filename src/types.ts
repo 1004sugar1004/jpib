@@ -23,6 +23,10 @@ export interface UserProfile {
   activityCounts?: Record<string, number>; // { quiz: 5, cards: 2, ... }
   dailyQuests?: DailyQuest[];
   lastActivityTimestamp?: number;
+  // Landmark Explorer fields
+  coins?: number;
+  completedLandmarks?: string[];
+  earnedBadges?: string[];
 }
 
 export interface DailyQuest {
@@ -70,5 +74,21 @@ export interface TeacherNote {
   content: string;
   timestamp: number;
   readBy?: string[]; // uids of students who marked it as read
+}
+
+export interface Landmark {
+  id: string;
+  name: string;
+  country: string;
+  city?: string;
+  continent: string;
+  image: string;
+  question: string;
+  choices: string[];
+  answerIdx: number;
+  x: number; // map coordinate percentage from left
+  y: number; // map coordinate percentage from top
+  xpGained?: number;
+  coinGained?: number;
 }
 

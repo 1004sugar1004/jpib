@@ -38,6 +38,8 @@ import { CertificateGalleryView } from './components/views/CertificateGalleryVie
 import { IBBoardView } from './components/views/IBBoardView';
 import { PlanView } from './components/views/PlanView';
 import { ConceptForestView } from './components/views/ConceptForestView';
+import { DetectiveGame } from './components/games/DetectiveGame';
+import LandmarkExplorer from './components/games/LandmarkExplorer';
 import { IntroView } from './components/views/IntroView';
 import { LevelUpModal } from './components/ui/LevelUpModal';
 import { BackgroundMusic } from './components/ui/BackgroundMusic';
@@ -128,7 +130,7 @@ export default function App() {
   }, [user]);
   const [isGuest, setIsGuest] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest' | 'certificate-gallery' | 'ib-board'>('home');
+  const [view, setView] = useState<'home' | 'study' | 'quiz' | 'music-quiz' | 'bingo' | 'ranking' | 'flashcards' | 'games' | 'memory' | 'certificate' | 'plan' | 'dashboard' | 'concept-forest' | 'certificate-gallery' | 'ib-board' | 'detective' | 'landmark-explorer'>('home');
   const [rankings, setRankings] = useState<UserProfile[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [bgMusicPlaying, setBgMusicPlaying] = useState(false);
@@ -705,9 +707,16 @@ export default function App() {
     }
   }, [profile, isGuest]);
 
-  const handleEarnXP = React.useCallback(async (xp: number, activityType: DailyQuest['type'] = 'study', accuracy: number = 1, duration: number = 10, questAmount: number = 1) => {
+  const handleEarnXP = React.useCallback(async (xp: number, activityType: DailyQuest['type'] = 'study', accuracy: number = 1, duration: number = 10, questAmount: number = 1, extraData?: Partial<UserProfile>) => {
     if (profile) {
-      if (isGuest) return; // Guests don't earn persistent XP
+      if (isGuest) {
+        if (extraData) {
+          setProfile(prev => prev ? ({ ...prev, ...extraData, score: (prev.score || 0) + xp }) : null);
+        } else {
+          setProfile(prev => prev ? ({ ...prev, score: (prev.score || 0) + xp }) : null);
+        }
+        return; // Guests don't earn persistent XP
+      }
       const today = getCurrentDate();
       const currentDailyXP = profile.lastXPDate === today ? (profile.dailyXP || 0) : 0;
 
@@ -749,7 +758,7 @@ export default function App() {
         const userRef = doc(db, 'users', profile.uid);
         const publicRef = doc(db, 'publicProfiles', profile.uid);
 
-        await updateDoc(userRef, {
+        const updateFields = {
           score: newTotalScore,
           monthlyScore: newMonthlyScore,
           lastActiveMonth: currentMonth,
@@ -757,8 +766,11 @@ export default function App() {
           dailyScore: newDailyScore,
           lastXPDate: today,
           dailyQuests: newQuests,
-          gameTickets: newTickets
-        });
+          gameTickets: newTickets,
+          ...extraData
+        };
+
+        await updateDoc(userRef, updateFields);
 
         // Sync to public profile with full info to satisfy security rules
         await setDoc(publicRef, {
@@ -783,14 +795,7 @@ export default function App() {
 
         setProfile(prev => prev ? ({ 
           ...prev, 
-          score: newTotalScore, 
-          monthlyScore: newMonthlyScore,
-          lastActiveMonth: currentMonth,
-          dailyXP: currentDailyXP + xpToGain,
-          dailyScore: newDailyScore,
-          lastXPDate: today,
-          dailyQuests: newQuests,
-          gameTickets: newTickets
+          ...updateFields
         }) : null);
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${profile.uid}`);
@@ -1009,7 +1014,7 @@ export default function App() {
 
   // Navigation Guard
   useEffect(() => {
-    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games', 'concept-forest'];
+    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games', 'concept-forest', 'detective', 'landmark-explorer'];
     const isProtected = protectedViews.includes(view);
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1062,7 +1067,7 @@ export default function App() {
   };
 
   const handleProtectedViewChange = (newView: typeof view, initialStudyTab?: number) => {
-    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games', 'concept-forest'];
+    const protectedViews = ['quiz', 'music-quiz', 'bingo', 'memory', 'flashcards', 'games', 'concept-forest', 'detective', 'landmark-explorer'];
     const dontShowUntil = localStorage.getItem('dontShowExitConfirmUntil');
     const isMuted = dontShowUntil && new Date().getTime() < parseInt(dontShowUntil);
 
@@ -1192,9 +1197,9 @@ export default function App() {
         ) : (
           <motion.div
             key={view}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="relative z-10"
           >
@@ -1264,6 +1269,21 @@ export default function App() {
                 setView={handleProtectedViewChange}
                 onEarnXP={handleEarnXP}
                 soundEnabled={soundEnabled}
+              />
+            )}
+            {view === 'detective' && (
+              <DetectiveGame 
+                soundEnabled={soundEnabled}
+                onClose={() => handleProtectedViewChange('home')}
+                onEarnXP={handleEarnXP}
+              />
+            )}
+            {view === 'landmark-explorer' && (
+              <LandmarkExplorer
+                profile={profile}
+                onEarnXP={handleEarnXP}
+                soundEnabled={soundEnabled}
+                setView={handleProtectedViewChange}
               />
             )}
             {view === 'ranking' && (
@@ -1350,7 +1370,7 @@ export default function App() {
 
       {/* Footer */}
       {view !== 'games' && (
-        <footer className="relative z-10 py-12 text-center">
+        <footer className="relative z-0 py-12 text-center">
           <div className="max-w-4xl mx-auto px-4">
             <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-8" />
             <div className="flex flex-col items-center gap-4">
