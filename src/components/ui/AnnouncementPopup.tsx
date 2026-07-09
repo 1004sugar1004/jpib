@@ -20,7 +20,7 @@ interface Notice {
 
 export const AnnouncementPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string>('june_ranking_recovery');
+  const [selectedId, setSelectedId] = useState<string>('nickname_regulation');
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('detail');
   const [dontShowToday, setDontShowToday] = useState(false);
   const [dontShowForWeek, setDontShowForWeek] = useState(false);
@@ -29,6 +29,17 @@ export const AnnouncementPopup = () => {
   const [readHistory, setReadHistory] = useState<Record<string, boolean>>({});
 
   const notices: Notice[] = [
+    {
+      id: 'nickname_regulation',
+      title: '🚨 올바른 닉네임 사용 및 변경 권고 안내 (필독)',
+      date: '2026.07.09',
+      priority: 'high',
+      category: '이용 규정',
+      badge: '중요공지',
+      badgeColor: 'bg-red-500 text-white border-red-600',
+      summary: '자신의 실명이 들어가지 않거나 길고 장난스러운 닉네임은 변경이 필요합니다. 미변경 시 이용 제한 및 시상 제외될 수 있습니다.',
+      icon: AlertCircle
+    },
     {
       id: 'june_ranking_recovery',
       title: '🏆 6월 최종 개인 및 학급 랭킹 완벽 복구 공지',
@@ -149,6 +160,102 @@ export const AnnouncementPopup = () => {
   // Render the selected announcement's body content
   const renderContent = () => {
     switch (selectedId) {
+      case 'nickname_regulation':
+        return (
+          <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-gray-700 animate-fade-in">
+            {/* Critical Warning Banner */}
+            <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl border-2 border-red-200">
+              <h4 className="font-extrabold text-red-800 flex items-center gap-1.5 text-xs sm:text-sm mb-1.5">
+                ⚠️ 올바른 이름(실명) 사용 및 닉네임 규정 강화 안내
+              </h4>
+              <p className="text-gray-800 font-bold text-[11px] sm:text-xs">
+                최근 일부 학생들이 자신의 실명을 넣지 않거나, 지나치게 길고 장난스러운 닉네임(ID)을 만들어 사용하여 다른 친구들과 선생님들의 이용에 혼란을 주고 있습니다.
+              </p>
+              <p className="text-red-700 font-extrabold text-[11px] sm:text-xs mt-2 bg-red-100/50 p-2.5 rounded-xl border border-red-200">
+                📢 규정 미준수 시 불이익 및 제한 조치 안내:<br />
+                1. 서비스 이용 제한: 규정에 어긋나는 닉네임은 사전 예고 없이 서비스 이용이 정지 또는 제한될 수 있습니다.<br />
+                2. 포상 및 시상 제외: 매월 지급되는 기프티콘 상품 및 명예의 전당 학기별 최종 시상 대상에서 즉시 제외됩니다.
+              </p>
+            </div>
+
+            {/* Do's and Don'ts */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Allowed Cases */}
+              <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                <h5 className="font-black text-emerald-950 text-xs sm:text-sm mb-2 flex items-center gap-1.5">
+                  <span className="text-emerald-600">🟢</span> 올바른 예시 (권장)
+                </h5>
+                <ul className="space-y-1.5 text-[11px] sm:text-xs text-gray-600 font-semibold">
+                  <li className="flex items-start gap-1">
+                    <span className="text-emerald-500">✓</span> 자신의 본명(실명)이 명확히 들어간 형태
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span className="text-emerald-500">✓</span> <code className="bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-mono">홍길동</code> 또는 <code className="bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-mono">홍길동 😊</code> 등 깔끔한 표현
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span className="text-emerald-500">✓</span> 본인 확인과 학급 확인이 직관적으로 가능한 형태
+                  </li>
+                </ul>
+              </div>
+
+              {/* Forbidden Cases */}
+              <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-100">
+                <h5 className="font-black text-rose-950 text-xs sm:text-sm mb-2 flex items-center gap-1.5">
+                  <span className="text-rose-600">🔴</span> 잘못된 예시 (금지)
+                </h5>
+                <ul className="space-y-1.5 text-[11px] sm:text-xs text-gray-600 font-semibold">
+                  <li className="flex items-start gap-1">
+                    <span className="text-rose-500">✗</span> 실명이 들어가지 않은 닉네임
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span className="text-rose-500">✗</span> 한 눈에 읽기 어려울 정도로 지나치게 긴 닉네임 (10자 이상)
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span className="text-rose-500">✗</span> 타인 비방, 비속어, 장난스러운 문장이나 유머용 닉네임
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* List of Detected Playful IDs */}
+            <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200">
+              <h5 className="font-black text-amber-950 text-xs sm:text-sm mb-2 flex items-center gap-1.5">
+                🔍 주요 정정 대상 닉네임 유형 (실제 장난스런 생성 사례)
+              </h5>
+              <p className="text-gray-500 text-[10px] sm:text-[11px] font-medium mb-2.5">
+                현재 등록된 계정 중 아래와 같이 본명이 아니거나 과도하게 긴 닉네임들은 <strong className="text-red-600">즉시 정상적인 실명으로 변경</strong>해야 이용 제한 및 시상 제외를 피할 수 있습니다.
+              </p>
+              
+              <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                <div className="p-2 rounded-xl bg-white border border-amber-100 text-[10.5px] font-semibold text-gray-700 flex items-start gap-2">
+                  <span className="text-red-500 shrink-0">🚨 초장문형:</span>
+                  <span>"김페이커 트랄랄레오트랄랄라 봉주루 손흥민 BTS 거북이와 두루미 ... 이종현" (닉네임 길이 초과)</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-amber-100 text-[10.5px] font-semibold text-gray-700 flex items-start gap-2">
+                  <span className="text-red-500 shrink-0">🚨 스토리 장난형:</span>
+                  <span>"동물원에 간 윤성빈차차와이찬율차차가 원숭이에게 끌려가 우끼끼가 됐다"</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-amber-100 text-[10.5px] font-semibold text-gray-700 flex items-start gap-2">
+                  <span className="text-red-500 shrink-0">🚨 비실명 표현:</span>
+                  <span>"아이비를 변기에 넣고 내려", "듀오링고한테 고문 당한 ...", "잘생긴 슈퍼 민환이의 아들은 ..."</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-amber-100 text-[10.5px] font-semibold text-gray-700 flex items-start gap-2">
+                  <span className="text-red-500 shrink-0">🚨 투명 문자형:</span>
+                  <span>"ㅤㅤ최진호" (이름 앞에 보이지 않는 투명 문자를 넣어 비정상 정렬을 시도하는 경우)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* How to Change */}
+            <div className="p-3.5 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+              <h5 className="font-black text-indigo-950 text-xs mb-1">🛠️ 닉네임 변경하는 방법:</h5>
+              <p className="text-gray-600 text-[11px] font-semibold">
+                화면 우측 상단의 <strong className="text-indigo-600">내 프로필(또는 마이페이지)</strong> 또는 <strong className="text-indigo-600">설정</strong> 메뉴로 이동하여 실명으로 수정 후 저장하시면 실시간으로 반영됩니다! 
+              </p>
+            </div>
+          </div>
+        );
+
       case 'june_ranking_recovery':
         return (
           <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-gray-700 animate-fade-in">

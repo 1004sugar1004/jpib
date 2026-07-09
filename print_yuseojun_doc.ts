@@ -25,6 +25,7 @@ async function main() {
   } else {
     console.log("No document found in 'publicProfiles' collection.");
   }
+  process.exit(0);
 }
 
 main().catch(console.error);
