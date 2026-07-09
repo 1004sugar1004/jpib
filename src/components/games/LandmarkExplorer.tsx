@@ -477,7 +477,21 @@ export default function LandmarkExplorer({
   const earnedBadges = profile?.earnedBadges || [];
 
   const handleSelectLandmark = (id: string) => {
-    const found = landmarks.find(lm => lm.id === id);
+    let found = landmarks.find(lm => lm.id === id);
+    
+    // Fallback: If id is numeric (e.g., from custom SVG), find by sequential index
+    if (!found && /^\d+$/.test(id)) {
+      const idx = parseInt(id, 10) - 1;
+      if (idx >= 0 && idx < landmarks.length) {
+        found = landmarks[idx];
+      }
+    }
+
+    // Fallback: Find by name
+    if (!found) {
+      found = landmarks.find(lm => lm.name === id);
+    }
+
     if (found) {
       setSelectedLandmark(found);
     }

@@ -50,8 +50,30 @@ export const LandmarkMap = ({ landmarks, completedIds, onSelectLandmark }: Landm
       const landmarkElem = target.closest('[data-landmark-id]');
       if (landmarkElem) {
         const id = landmarkElem.getAttribute('data-landmark-id');
+        const name = landmarkElem.getAttribute('data-name');
         if (id) {
-          onSelectLandmark(id);
+          let realId: string | null = null;
+          
+          // 1. Match by sequential index if id is numeric
+          if (/^\d+$/.test(id)) {
+            const idx = parseInt(id, 10) - 1;
+            if (idx >= 0 && idx < landmarks.length) {
+              realId = landmarks[idx].id;
+            }
+          }
+          
+          // 2. Match by name
+          if (!realId && name) {
+            const found = landmarks.find(lm => lm.name === name);
+            if (found) realId = found.id;
+          }
+          
+          // 3. Fallback
+          if (!realId) {
+            realId = id;
+          }
+          
+          onSelectLandmark(realId);
         }
       }
     };
@@ -60,7 +82,7 @@ export const LandmarkMap = ({ landmarks, completedIds, onSelectLandmark }: Landm
     return () => {
       container.removeEventListener('click', handleSvgClick);
     };
-  }, [svgContent, onSelectLandmark]);
+  }, [svgContent, onSelectLandmark, landmarks]);
 
   // Dynamically update 'completed' state on custom SVG pin nodes
   useEffect(() => {
@@ -68,15 +90,36 @@ export const LandmarkMap = ({ landmarks, completedIds, onSelectLandmark }: Landm
     const pins = mapContainerRef.current.querySelectorAll('.pin');
     pins.forEach((pin) => {
       const landmarkId = pin.getAttribute('data-landmark-id');
+      const name = pin.getAttribute('data-name');
       if (landmarkId) {
-        if (completedIds.includes(landmarkId)) {
+        let realId: string | null = null;
+        if (/^\d+$/.test(landmarkId)) {
+          const idx = parseInt(landmarkId, 10) - 1;
+          if (idx >= 0 && idx < landmarks.length) {
+            realId = landmarks[idx].id;
+          }
+        }
+        if (!realId && name) {
+          const found = landmarks.find(lm => lm.name === name);
+          if (found) realId = found.id;
+        }
+        if (!realId) {
+          realId = landmarkId;
+        }
+
+        if (completedIds.includes(realId)) {
           pin.classList.add('completed');
+          // Add visual cue for completed custom SVG pins (emerald green)
+          (pin as HTMLElement).style.fill = '#10B981';
+          (pin as HTMLElement).style.stroke = '#34D399';
         } else {
           pin.classList.remove('completed');
+          (pin as HTMLElement).style.fill = '';
+          (pin as HTMLElement).style.stroke = '';
         }
       }
     });
-  }, [svgContent, completedIds]);
+  }, [svgContent, completedIds, landmarks]);
 
   if (svgContent) {
     return (

@@ -150,6 +150,27 @@ Technical Guidelines for the SVG:
     }
   });
 
+  // GET endpoint to serve the backup profiles to the teacher dashboard
+  app.get("/api/backup-profiles", (req: any, res: any) => {
+    try {
+      const backupPath = path.join(process.cwd(), "full_profiles.json");
+      if (fs.existsSync(backupPath)) {
+        const rawBackup = fs.readFileSync(backupPath, "utf8");
+        // Clean up any non-JSON prefixes if any
+        const jsonStartIndex = rawBackup.indexOf('{');
+        const jsonEndIndex = rawBackup.lastIndexOf('}') + 1;
+        const jsonStr = rawBackup.substring(jsonStartIndex, jsonEndIndex);
+        const data = JSON.parse(jsonStr);
+        res.json(data);
+      } else {
+        res.status(404).json({ error: "Backup file not found" });
+      }
+    } catch (err: any) {
+      console.error("Error reading backup profiles:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Vite Middleware for Asset Handling
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -82,9 +82,9 @@ export const HomeView = ({
   const [showAllMenuModal, setShowAllMenuModal] = React.useState(false);
   const [activeLayout, setActiveLayout] = React.useState<'classic' | 'dashboard' | 'bento' | 'sidebar'>(() => {
     try {
-      return (localStorage.getItem('home_layout_style') as any) || 'sidebar';
+      return (localStorage.getItem('home_layout_style') as any) || 'classic';
     } catch (e) {
-      return 'sidebar';
+      return 'classic';
     }
   });
   const [dashboardTab, setDashboardTab] = React.useState<'study' | 'ranking' | 'guide'>('study');

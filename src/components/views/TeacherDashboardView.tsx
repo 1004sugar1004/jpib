@@ -19,9 +19,9 @@ import {
   MessageSquare,
   Check
 } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writeBatch, doc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, Timestamp, getDocs, writeBatch, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { ActivityLog, Feedback, TeacherNote } from '../../types';
+import { ActivityLog, Feedback, TeacherNote, UserProfile } from '../../types';
 import { cn } from '../../lib/utils';
 import { PRE_SEEDED_NOTES } from '../ui/TeacherNotePopup';
 
@@ -34,7 +34,20 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [notes, setNotes] = useState<TeacherNote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'logs' | 'feedback' | 'notes'>('logs');
+  const [activeTab, setActiveTab] = useState<'logs' | 'feedback' | 'notes' | 'students'>('logs');
+
+  // Student management states
+  const [studentProfiles, setStudentProfiles] = useState<UserProfile[]>([]);
+  const [backupProfiles, setBackupProfiles] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [restoringUids, setRestoringUids] = useState<Record<string, boolean>>({});
+  const [restoreSuccess, setRestoreSuccess] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [editScoreModalOpen, setEditScoreModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<UserProfile | null>(null);
+  const [editingScore, setEditingScore] = useState<number>(0);
+  const [editingMonthlyScore, setEditingMonthlyScore] = useState<number>(0);
+  const [isSavingScore, setIsSavingScore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [isResetting, setIsResetting] = useState(false);
@@ -161,6 +174,109 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
       unsubNotes();
     };
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'students') {
+      loadStudentData();
+    }
+  }, [activeTab]);
+
+  const loadStudentData = async () => {
+    setLoadingStudents(true);
+    setRestoreError(null);
+    setRestoreSuccess(null);
+    try {
+      // 1. Load profiles from Firestore
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const profiles = usersSnap.docs.map(doc => ({
+        ...doc.data()
+      })) as UserProfile[];
+      setStudentProfiles(profiles);
+
+      // 2. Load backup from backend API
+      const res = await fetch('/api/backup-profiles');
+      if (res.ok) {
+        const backupData = await res.json();
+        setBackupProfiles(backupData.individual || []);
+      }
+    } catch (err) {
+      console.error("Error loading student/backup data:", err);
+      setRestoreError("데이터를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleRestoreBackupScore = async (student: UserProfile, backup: any) => {
+    setRestoringUids(prev => ({ ...prev, [student.uid]: true }));
+    setRestoreError(null);
+    setRestoreSuccess(null);
+    try {
+      const newScore = (backup.score || 0) + (student.score || 0);
+      const newMonthly = (backup.monthlyScore || 0) + (student.monthlyScore || 0);
+      
+      const userRef = doc(db, 'users', student.uid);
+      const publicRef = doc(db, 'publicProfiles', student.uid);
+      
+      const trimmedName = student.name.trim();
+
+      await Promise.all([
+        updateDoc(userRef, {
+          score: newScore,
+          monthlyScore: newMonthly,
+          name: trimmedName
+        }),
+        updateDoc(publicRef, {
+          score: newScore,
+          monthlyScore: newMonthly,
+          name: trimmedName
+        })
+      ]);
+
+      setRestoreSuccess(`'${trimmedName}' 학생의 점수가 성공적으로 복원되었습니다! (총 점수: ${newScore}점, 월간 점수: ${newMonthly}점)`);
+      await loadStudentData();
+    } catch (err: any) {
+      console.error("Failed to restore score:", err);
+      setRestoreError(`점수 복구 실패: ${err.message || err}`);
+    } finally {
+      setRestoringUids(prev => ({ ...prev, [student.uid]: false }));
+    }
+  };
+
+  const handleSaveCustomScore = async () => {
+    if (!editingStudent) return;
+    setIsSavingScore(true);
+    setRestoreError(null);
+    setRestoreSuccess(null);
+    try {
+      const userRef = doc(db, 'users', editingStudent.uid);
+      const publicRef = doc(db, 'publicProfiles', editingStudent.uid);
+      const trimmedName = editingStudent.name.trim();
+
+      await Promise.all([
+        updateDoc(userRef, {
+          score: editingScore,
+          monthlyScore: editingMonthlyScore,
+          name: trimmedName
+        }),
+        updateDoc(publicRef, {
+          score: editingScore,
+          monthlyScore: editingMonthlyScore,
+          name: trimmedName
+        })
+      ]);
+
+      setRestoreSuccess(`'${trimmedName}' 학생의 점수가 성공적으로 수정되었습니다.`);
+      setEditScoreModalOpen(false);
+      setEditingStudent(null);
+      await loadStudentData();
+    } catch (err: any) {
+      console.error("Failed to save custom score:", err);
+      setRestoreError(`점수 수정 실패: ${err.message || err}`);
+    } finally {
+      setIsSavingScore(false);
+    }
+  };
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -418,6 +534,15 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
             >
               💌 보낸 쪽지함 ({notes.length})
             </button>
+            <button
+              onClick={() => setActiveTab('students')}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-black transition-all",
+                activeTab === 'students' ? "bg-white text-rose-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              🧑‍🎓 학생 데이터 관리
+            </button>
           </div>
 
           <div className="relative">
@@ -523,7 +648,7 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
         {/* Activity Table */}
         <div className="lg:col-span-3">
           <Card className="overflow-hidden border-gray-100 shadow-xl">
-            {activeTab === 'logs' ? (
+            {activeTab === 'logs' && (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -623,7 +748,9 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                   </tbody>
                 </table>
               </div>
-            ) : (
+            )}
+
+            {activeTab === 'feedback' && (
               <div className="p-6 space-y-4">
                 {loading ? (
                   <div className="py-12 text-center text-gray-400 font-bold">의견을 불러오는 중...</div>
@@ -760,6 +887,182 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'students' && (
+              <div className="p-6 space-y-6 animate-fade-in">
+                <div>
+                  <h3 className="font-black text-lg text-gray-900 flex items-center gap-2">
+                    <span>🧑‍🎓 학생 데이터 및 점수 관리</span>
+                    {backupProfiles.length > 0 && (
+                      <span className="text-[10px] bg-indigo-50 text-indigo-700 font-black px-2 py-0.5 rounded-full">
+                        백업 동기화 완료
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-gray-400 font-bold mt-0.5">
+                    학생들의 점수를 수정하거나, 오류(점수 누락/초기화 등)가 발생한 학생의 데이터를 백업본을 통해 실시간으로 안전하게 복구합니다.
+                  </p>
+                </div>
+
+                {/* Status Alert Panels (Proactive Error Detection) */}
+                {(() => {
+                  const anomalyStudents = studentProfiles.map(student => {
+                    const backup = backupProfiles.find(b => b.uid === student.uid);
+                    if (backup && (student.score || 0) < (backup.score || 0)) {
+                      return { student, backup, diff: backup.score - (student.score || 0) };
+                    }
+                    return null;
+                  }).filter(Boolean) as Array<{ student: UserProfile, backup: any, diff: number }>;
+
+                  if (anomalyStudents.length > 0) {
+                    return (
+                      <div className="p-5 bg-amber-50 border-2 border-amber-200 rounded-3xl space-y-4">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+                          <div>
+                            <h4 className="text-sm font-black text-amber-900">⚠️ 점수 유실/오류 감지 ({anomalyStudents.length}명)</h4>
+                            <p className="text-xs text-amber-700 font-bold mt-0.5">
+                              최근 백업본과 비교했을 때, 누적 점수가 비정상적으로 적게 기록된 학생이 발견되었습니다. 즉시 복구를 통해 이전 점수를 완벽히 복원할 수 있습니다.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="divide-y divide-amber-100 bg-white rounded-2xl overflow-hidden border border-amber-100">
+                          {anomalyStudents.map(({ student, backup, diff }) => (
+                            <div key={student.uid} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div>
+                                <span className="text-xs font-black text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full mr-2">
+                                  {student.grade} {student.class}
+                                </span>
+                                <span className="text-sm font-black text-gray-900 mr-2">{student.name}</span>
+                                <span className="text-xs text-gray-400 font-semibold">({student.email})</span>
+                                <div className="mt-1 text-xs font-bold text-gray-500 space-x-3">
+                                  <span>현재 점수: <strong className="text-red-500">{student.score}점</strong></span>
+                                  <span>백업 점수: <strong className="text-emerald-600">{backup.score}점</strong></span>
+                                  <span>손실된 점수: <strong className="text-amber-600">-{diff}점</strong></span>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                disabled={restoringUids[student.uid]}
+                                onClick={() => handleRestoreBackupScore(student, backup)}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow border-none cursor-pointer shrink-0"
+                              >
+                                {restoringUids[student.uid] ? "복구 중..." : "백업 데이터로 즉시 복구하기"}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Messages Box */}
+                {restoreSuccess && (
+                  <div className="p-4 bg-emerald-50 text-emerald-800 text-xs font-black rounded-2xl border border-emerald-100 animate-fade-in">
+                    ✓ {restoreSuccess}
+                  </div>
+                )}
+                {restoreError && (
+                  <div className="p-4 bg-red-50 text-red-800 text-xs font-black rounded-2xl border border-red-100 animate-fade-in">
+                    ✗ {restoreError}
+                  </div>
+                )}
+
+                {/* Students List Table */}
+                <div className="border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                  <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                    <span className="text-xs font-black text-gray-500">등록된 학생 리스트 (총 {studentProfiles.length}명)</span>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={loadStudentData}
+                      icon={RefreshCcw}
+                      className="w-8 h-8 p-0 rounded-full"
+                    >
+                      {""}
+                    </Button>
+                  </div>
+                  {loadingStudents ? (
+                    <div className="p-12 text-center text-gray-400 font-bold">학생 데이터를 불러오는 중...</div>
+                  ) : studentProfiles.length === 0 ? (
+                    <div className="p-12 text-center text-gray-400 font-bold">등록된 학생이 없습니다.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-100 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                            <th className="p-4">학년/반</th>
+                            <th className="p-4">이름</th>
+                            <th className="p-4 text-center">누적 점수 (Score)</th>
+                            <th className="p-4 text-center">월간 점수 (Monthly)</th>
+                            <th className="p-4 text-center">일간 점수 (Daily)</th>
+                            <th className="p-4 text-center">관리</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 text-sm">
+                          {studentProfiles
+                            .filter(s => s.role === 'student')
+                            .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                            .map((student) => {
+                              const backup = backupProfiles.find(b => b.uid === student.uid);
+                              const hasAnomaly = backup && (student.score || 0) < (backup.score || 0);
+
+                              return (
+                                <tr key={student.uid} className={cn("hover:bg-gray-50/50 transition-colors", hasAnomaly && "bg-amber-50/10")}>
+                                  <td className="p-4 font-black text-gray-600">{student.grade} {student.class}</td>
+                                  <td className="p-4 font-black text-gray-900">
+                                    <div className="flex items-center gap-2">
+                                      {student.name}
+                                      {hasAnomaly && (
+                                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-700 animate-pulse">
+                                          점수 오류
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 text-center font-mono font-black text-gray-700">{student.score?.toLocaleString()}점</td>
+                                  <td className="p-4 text-center font-mono font-bold text-gray-500">{student.monthlyScore?.toLocaleString()}점</td>
+                                  <td className="p-4 text-center font-mono font-semibold text-gray-400">{student.dailyScore?.toLocaleString()}점</td>
+                                  <td className="p-4 text-center">
+                                    <div className="flex justify-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setEditingStudent(student);
+                                          setEditingScore(student.score || 0);
+                                          setEditingMonthlyScore(student.monthlyScore || 0);
+                                          setEditScoreModalOpen(true);
+                                        }}
+                                        className="text-xs font-black border-gray-200 hover:bg-gray-100 text-gray-700 px-2.5 py-1 rounded-lg"
+                                      >
+                                        점수 수정
+                                      </Button>
+                                      {backup && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => handleRestoreBackupScore(student, backup)}
+                                          disabled={restoringUids[student.uid]}
+                                          className="text-xs font-black text-indigo-600 hover:bg-indigo-50 px-2.5 py-1 rounded-lg"
+                                        >
+                                          백업 복구
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </Card>
@@ -984,6 +1287,67 @@ export const TeacherDashboardView = ({ setView }: TeacherDashboardViewProps) => 
                 className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-lg shadow-rose-100"
               >
                 {isDeletingNote ? "삭제 중..." : "네, 삭제합니다"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Custom Score Edit Modal */}
+      {editScoreModalOpen && editingStudent && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-[2.5rem] p-8 max-w-md w-full border-4 border-indigo-100 shadow-2xl space-y-6 text-left"
+          >
+            <div className="text-center">
+              <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                {editingStudent.grade} {editingStudent.class}
+              </span>
+              <h3 className="text-2xl font-black text-gray-900 mt-2">{editingStudent.name} 학생 점수 수정</h3>
+              <p className="text-xs text-gray-400 font-bold mt-1">학생의 점수를 임의로 자유롭게 조정합니다.</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-widest">누적 총 점수 (Cumulative Score)</label>
+                <input 
+                  type="number"
+                  value={editingScore}
+                  onChange={(e) => setEditingScore(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-widest">월간 점수 (Monthly Score)</label>
+                <input 
+                  type="number"
+                  value={editingMonthlyScore}
+                  onChange={(e) => setEditingMonthlyScore(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setEditScoreModalOpen(false);
+                  setEditingStudent(null);
+                }}
+                className="flex-1 py-4 rounded-2xl font-black border-none"
+              >
+                취소
+              </Button>
+              <Button 
+                onClick={handleSaveCustomScore}
+                disabled={isSavingScore}
+                className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 border-none cursor-pointer"
+              >
+                {isSavingScore ? "저장 중..." : "점수 저장하기"}
               </Button>
             </div>
           </motion.div>
