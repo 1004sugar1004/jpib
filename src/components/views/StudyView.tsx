@@ -177,9 +177,10 @@ export const StudyView = ({
   const [consonantInput, setConsonantInput] = useState('');
   const [consonantFeedback, setConsonantFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [consonantStreak, setConsonantStreak] = useState(0);
+  const [hasCorrectlyAnsweredCurrent, setHasCorrectlyAnsweredCurrent] = useState(false);
 
   const handleCheckConsonant = () => {
-    if (consonantFeedback === 'correct') return;
+    if (hasCorrectlyAnsweredCurrent || consonantFeedback === 'correct') return;
     if (!consonantQuestions || consonantQuestions.length === 0) return;
 
     const q = consonantQuestions[consonantIdx];
@@ -200,6 +201,7 @@ export const StudyView = ({
 
     if (isCorrect) {
       setConsonantFeedback('correct');
+      setHasCorrectlyAnsweredCurrent(true);
       setConsonantStreak(prev => prev + 1);
       if (soundEnabled) {
         const soundUrl = ASSETS.sounds.correct || "https://ik.imagekit.io/foefnjeua/correct.mp3";
@@ -229,6 +231,7 @@ export const StudyView = ({
   const handleNextConsonant = () => {
     setConsonantInput('');
     setConsonantFeedback(null);
+    setHasCorrectlyAnsweredCurrent(false);
     if (consonantQuestions && consonantQuestions.length > 0) {
       setConsonantIdx(prev => (prev + 1) % consonantQuestions.length);
     }
@@ -278,7 +281,7 @@ export const StudyView = ({
   const tabCompletionStatus = useMemo(() => {
     return tabs.map(tab => {
       if (tab.id === 7) {
-        return consonantIdx > 0 || consonantFeedback === 'correct';
+        return consonantIdx > 0 || hasCorrectlyAnsweredCurrent || consonantFeedback === 'correct';
       }
       if (tab.id === 6) {
         const answers = randomQuestions.map(q => reflectionData[q] || '');
@@ -808,13 +811,15 @@ export const StudyView = ({
                   <input
                     type="text"
                     value={consonantInput}
+                    readOnly={hasCorrectlyAnsweredCurrent || consonantFeedback === 'correct'}
                     onChange={(e) => {
+                      if (hasCorrectlyAnsweredCurrent || consonantFeedback === 'correct') return;
                       setConsonantInput(e.target.value);
                       setConsonantFeedback(null);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        if (consonantFeedback === 'correct') {
+                        if (hasCorrectlyAnsweredCurrent || consonantFeedback === 'correct') {
                           handleNextConsonant();
                         } else {
                           handleCheckConsonant();
@@ -822,17 +827,17 @@ export const StudyView = ({
                       }
                     }}
                     placeholder="정답 단어를 적어주세요 (예 : 소통하는 사람)"
-                    className="w-full px-6 py-5 rounded-[2rem] bg-gray-50 border-2 border-gray-100 focus:border-cyan-300 focus:bg-white outline-none transition-all text-center text-xl font-black text-cyan-950 shadow-inner"
+                    className="w-full px-6 py-5 rounded-[2rem] bg-gray-50 border-2 border-gray-100 focus:border-cyan-300 focus:bg-white outline-none transition-all text-center text-xl font-black text-cyan-950 shadow-inner read-only:opacity-75 read-only:cursor-default"
                   />
 
                   <div className="flex gap-3">
                     <Button
                       onClick={handleCheckConsonant}
-                      disabled={consonantFeedback === 'correct'}
+                      disabled={hasCorrectlyAnsweredCurrent || consonantFeedback === 'correct'}
                       className="flex-1 h-14 text-base font-black bg-cyan-500 hover:bg-cyan-600 shrink-0 text-white shadow-lg shadow-cyan-100 rounded-2xl flex items-center justify-center gap-2"
                       icon={ShieldCheck}
                     >
-                      {consonantFeedback === 'correct' ? '정답 확인 완료' : '정답 확인'}
+                      {hasCorrectlyAnsweredCurrent || consonantFeedback === 'correct' ? '정답 확인 완료' : '정답 확인'}
                     </Button>
                     <button
                       onClick={handleNextConsonant}
