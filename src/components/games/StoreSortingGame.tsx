@@ -88,7 +88,7 @@ const checkShelf = (shelf: string[]) => {
   return shelf.length === SLOT_PER_SHELF && shelf.every(v => v === shelf[0]);
 };
 
-export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const StoreSortingGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [stage, setStage] = useState(1);
   const [shelves, setShelves] = useState<string[][]>(() => makeInitialShelves(1));
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -97,6 +97,12 @@ export const StoreSortingGame = ({ soundEnabled }: { soundEnabled: boolean }) =>
   const [showQuiz, setShowQuiz] = useState(false);
   const [gameWon, setGameWon] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+
+  useEffect(() => {
+    if (gameOver) {
+      onGameFinish?.(score);
+    }
+  }, [gameOver]);
   const [quizWrongCount, setQuizWrongCount] = useState(0);
   const [gameState, setGameState] = useState<'START' | 'PLAYING'>('START');
   const [isPaused, setIsPaused] = useState(false);

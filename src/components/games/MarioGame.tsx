@@ -8,8 +8,14 @@ import { cn } from '../../lib/utils';
 import { Cloud } from 'lucide-react';
 import { Button } from '../ui/Button';
 
-export const MarioGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const MarioGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
+
+  useEffect(() => {
+    if (gameState === 'GAMEOVER') {
+      onGameFinish?.(score);
+    }
+  }, [gameState]);
   const [marioY, setMarioY] = useState(0);
   const [worldX, setWorldX] = useState(0);
   const [score, setScore] = useState(0);

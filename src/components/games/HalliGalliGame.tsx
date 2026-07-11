@@ -248,8 +248,15 @@ const RenderDeck = ({ count, label, isPlayerTurn, onClick, disabled, isPlayer }:
 
 let sharedAudioContext: AudioContext | null = null;
 
-export const HalliGalliGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
+
+  useEffect(() => {
+    if (gameState === 'END') {
+      const finalScore = playerDeck.length + playerPlayed.length;
+      onGameFinish?.(finalScore);
+    }
+  }, [gameState]);
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const difficultyRef = useRef<'easy' | 'normal' | 'hard'>('normal');
   const [playerDeck, setPlayerDeck] = useState<Card[]>([]);

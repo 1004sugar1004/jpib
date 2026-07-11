@@ -117,5 +117,14 @@ service cloud.firestore {
       allow update: if isAdmin() || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']));
       allow delete: if isAdmin();
     }
+
+    match /gameScores/{docId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /bingoRooms/{roomId} {
+      allow read, create, update, delete: if isAuthenticated();
+    }
   }
 }

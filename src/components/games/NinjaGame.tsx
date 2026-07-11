@@ -17,6 +17,7 @@ import {
 
 interface NinjaGameProps {
   soundEnabled: boolean;
+  onGameFinish?: (score: number) => void;
 }
 
 interface IBTerm {
@@ -504,12 +505,18 @@ class FruitObject {
   }
 }
 
-export const NinjaGame = ({ soundEnabled }: NinjaGameProps) => {
+export const NinjaGame = ({ soundEnabled, onGameFinish }: NinjaGameProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER'>('START');
   const [score, setScore] = useState<number>(0);
+
+  useEffect(() => {
+    if (gameState === 'GAMEOVER') {
+      onGameFinish?.(score);
+    }
+  }, [gameState]);
   const [combo, setCombo] = useState<number>(0);
   const [maxCombo, setMaxCombo] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number>(60);

@@ -14,7 +14,7 @@ const STAGE_CONFIGS = [
   { name: '푸른 바다', emojis: ['🐳', '🐬', '🐙', '🦑', '🦀', '🦞'], target: 1500, color: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-600' },
 ];
 
-export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const AnipangGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [stage, setStage] = useState(0);
   const [grid, setGrid] = useState<string[][]>([]);
   const [selected, setSelected] = useState<[number, number] | null>(null);
@@ -22,6 +22,12 @@ export const AnipangGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [timeLeft, setTimeLeft] = useState(60);
   const [quizWrongCount, setQuizWrongCount] = useState(0);
   const [gameState, setGameState] = useState<'playing' | 'cleared' | 'gameover' | 'quiz'>('playing');
+
+  useEffect(() => {
+    if (gameState === 'gameover' || gameState === 'cleared') {
+      onGameFinish?.(score);
+    }
+  }, [gameState]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasShownMidQuiz, setHasShownMidQuiz] = useState(false);
   const [hintCells, setHintCells] = useState<[number, number][]>([]);

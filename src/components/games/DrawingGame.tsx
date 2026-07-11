@@ -98,8 +98,14 @@ function pickWords() {
   return shuffled.slice(0, ROUND_COUNT);
 }
 
-export const DrawingGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const DrawingGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [phase, setPhase] = useState<"intro" | "countdown" | "drawing" | "roundResult" | "ibQuiz" | "final">("intro");
+
+  useEffect(() => {
+    if (phase === 'final') {
+      onGameFinish?.(roundResults.filter(r => r.success).length);
+    }
+  }, [phase]);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("easy");
   const [words, setWords] = useState(pickWords());
   const [round, setRound] = useState(0);

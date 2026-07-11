@@ -6,8 +6,14 @@ import { Button } from '../ui/Button';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export const GalagaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const GalagaGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'QUIZ' | 'GAMEOVER'>('START');
+
+  useEffect(() => {
+    if (gameState === 'GAMEOVER') {
+      onGameFinish?.(score);
+    }
+  }, [gameState]);
   const [stage, setStage] = useState(1);
   const [showStageUp, setShowStageUp] = useState(false);
   const [energy, setEnergy] = useState(100);

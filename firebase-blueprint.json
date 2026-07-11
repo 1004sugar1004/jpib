@@ -105,6 +105,41 @@
         "createdAt": { "type": "integer" }
       },
       "required": ["userId", "caption", "createdAt"]
+    },
+    "gameScores": {
+      "title": "Game Score",
+      "description": "Leaderboard scores for each game.",
+      "type": "object",
+      "properties": {
+        "gameId": { "type": "string" },
+        "uid": { "type": "string" },
+        "userName": { "type": "string" },
+        "grade": { "type": "string" },
+        "class": { "type": "string" },
+        "score": { "type": "integer" },
+        "timestamp": { "type": "integer" }
+      },
+      "required": ["gameId", "uid", "userName", "score", "timestamp"]
+    },
+    "bingoRooms": {
+      "title": "Bingo Room",
+      "description": "Real-time multiplayer bingo game rooms.",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string" },
+        "status": { "type": "string", "enum": ["waiting", "setup", "playing", "ended"] },
+        "hostId": { "type": "string" },
+        "hostName": { "type": "string" },
+        "players": { "type": "object" },
+        "calledWords": { "type": "array", "items": { "type": "string" } },
+        "currentTurn": { "type": "string" },
+        "turnOrder": { "type": "array", "items": { "type": "string" } },
+        "winnerId": { "type": "string" },
+        "winnerName": { "type": "string" },
+        "createdAt": { "type": "integer" },
+        "updatedAt": { "type": "integer" }
+      },
+      "required": ["roomId", "status", "hostId", "hostName", "createdAt"]
     }
   },
   "firestore": {
@@ -139,6 +174,14 @@
     "/sharedCertificates/{docId}": {
       "schema": "sharedCertificates",
       "description": "User-shared certificates gallery entries."
+    },
+    "/gameScores/{docId}": {
+      "schema": "gameScores",
+      "description": "Leaderboard scores for each game."
+    },
+    "/bingoRooms/{roomId}": {
+      "schema": "bingoRooms",
+      "description": "Real-time multiplayer bingo game rooms."
     }
   }
 }

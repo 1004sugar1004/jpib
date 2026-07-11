@@ -54,8 +54,14 @@ function shuffled<T>(array: T[]): T[] {
   return r;
 }
 
-export const JengaGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const JengaGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'CRASHED'>('START');
+
+  useEffect(() => {
+    if (gameState === 'CRASHED') {
+      onGameFinish?.(score);
+    }
+  }, [gameState]);
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const difficultyRef = useRef<'easy' | 'normal' | 'hard'>('normal');
   const [score, setScore] = useState(0);

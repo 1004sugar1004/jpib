@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 
 interface UnoGameProps {
   soundEnabled: boolean;
+  onGameFinish?: (score: number) => void;
 }
 
 // ==========================================
@@ -76,7 +77,7 @@ const buildDeck = (): UnoCard[] => {
   return tempDeck.sort(() => Math.random() - 0.5);
 };
 
-export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
+export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled, onGameFinish }) => {
   const [difficulty, setDifficulty] = useState('normal');
   const [playerCount, setPlayerCount] = useState(2);
   const [deck, setDeck] = useState<UnoCard[]>([]);
@@ -211,13 +212,19 @@ export const UnoGame: React.FC<UnoGameProps> = ({ soundEnabled }) => {
 
     // 승리조건 체크
     if (nextHands[playerIdx].length === 0) {
+      let finalScore = 0;
       if (playerIdx === 0) {
         setGameMessage('🎉 완벽한 대승리입니다!!');
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+        const opponentCardsCount = nextHands.slice(1).reduce((acc, h) => acc + h.length, 0);
+        finalScore = 1000 + (opponentCardsCount * 100);
       } else {
         setGameMessage(`🤖 컴퓨터 ${playerIdx}번이 최종 승리했습니다.`);
+        const playerPlayedCount = Math.max(0, 10 - nextHands[0].length);
+        finalScore = playerPlayedCount * 30;
       }
       setCurrentTurn(-1);
+      onGameFinish?.(finalScore);
       return;
     }
 

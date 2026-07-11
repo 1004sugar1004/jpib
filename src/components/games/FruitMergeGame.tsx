@@ -25,7 +25,7 @@ const FRUITS_DATA = [
 const MAX_LEVEL = 10;
 const MAX_SPAWN_LEVEL = 4;
 
-export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const FruitMergeGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);
@@ -38,6 +38,12 @@ export const FruitMergeGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
   const [highScore, setHighScore] = useState(() => Number(localStorage.getItem('fruit-merge-highscore') || 0));
   const [discoveredFruits, setDiscoveredFruits] = useState<number[]>(() => JSON.parse(localStorage.getItem('discoveredFruits') || '[0]'));
   const [isGameOver, setIsGameOver] = useState(false);
+
+  useEffect(() => {
+    if (isGameOver) {
+      onGameFinish?.(score);
+    }
+  }, [isGameOver]);
   const [currentFruit, setCurrentFruit] = useState<Matter.Body | null>(null);
   const [nextFruitLevel, setNextFruitLevel] = useState(0);
   const [gameState, setGameState] = useState<'BOOTING' | 'IDLE' | 'QUIZ' | 'AIMING' | 'DROPPING' | 'POPUP' | 'GAMEOVER'>('BOOTING');

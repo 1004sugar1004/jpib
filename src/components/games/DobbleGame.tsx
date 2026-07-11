@@ -116,8 +116,14 @@ function pickOne<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)];
 }
 
-export const DobbleGame = ({ soundEnabled }: { soundEnabled: boolean }) => {
+export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boolean; onGameFinish?: (score: number) => void }) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
+
+  useEffect(() => {
+    if (gameState === 'END') {
+      onGameFinish?.(playerScore);
+    }
+  }, [gameState]);
   const [selectedDeckSize, setSelectedDeckSize] = useState<number>(12);
   const [selectedMode, setSelectedMode] = useState<'computer' | 'two'>('computer');
   const [gameMode, setGameMode] = useState<'computer' | 'two'>('computer');

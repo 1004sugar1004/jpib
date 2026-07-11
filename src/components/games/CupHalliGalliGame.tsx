@@ -107,10 +107,17 @@ const CARDS_POOL: CupCard[] = [
 
 interface CupHalliGalliGameProps {
   soundEnabled: boolean;
+  onGameFinish?: (score: number) => void;
 }
 
-export const CupHalliGalliGame = ({ soundEnabled }: CupHalliGalliGameProps) => {
+export const CupHalliGalliGame = ({ soundEnabled, onGameFinish }: CupHalliGalliGameProps) => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'END'>('START');
+
+  useEffect(() => {
+    if (gameState === 'END') {
+      onGameFinish?.(playerScore);
+    }
+  }, [gameState]);
   const [gameMode, setGameMode] = useState<'computer' | 'solo'>('computer');
   const [selectedTheme, setSelectedTheme] = useState<ThemeKey>('fruit'); // 과일 테마가 기본
   const [cpuDifficulty, setCpuDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');

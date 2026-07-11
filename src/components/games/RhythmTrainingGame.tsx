@@ -2,10 +2,16 @@ import React, { useEffect, useRef } from 'react';
 
 interface RhythmTrainingGameProps {
   soundEnabled: boolean;
+  onGameFinish?: (score: number) => void;
 }
 
-export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) => {
+export const RhythmTrainingGame = ({ soundEnabled, onGameFinish }: RhythmTrainingGameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onGameFinishRef = useRef(onGameFinish);
+
+  useEffect(() => {
+    onGameFinishRef.current = onGameFinish;
+  }, [onGameFinish]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -942,6 +948,7 @@ export const RhythmTrainingGame = ({ soundEnabled }: RhythmTrainingGameProps) =>
       if (animId) cancelAnimationFrame(animId);
       if (audio) { try { audio.pause(); audio.src = ''; } catch(e) {} }
       (wrap.querySelector('#np') as HTMLElement).style.display = 'none';
+      onGameFinishRef.current?.(Math.floor(score));
 
       const total = cnt.perfect + cnt.great + cnt.good + cnt.miss;
       const pct = total > 0 ? ((cnt.perfect + cnt.great + cnt.good) / total * 100) : 0;

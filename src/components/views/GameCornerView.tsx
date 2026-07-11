@@ -39,7 +39,7 @@ import dobbleImage from '../../assets/dobble.png';
 
 import { UserProfile } from '../../types';
 import { db } from '../../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 
 interface GameCornerViewProps {
   profile: UserProfile | null;
@@ -57,6 +57,67 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
   );
   const score = profile?.score || 0;
   const tickets = profile?.gameTickets || 0;
+
+  const [showRankingModal, setShowRankingModal] = useState<boolean>(false);
+  const [currentRankings, setCurrentRankings] = useState<any[]>([]);
+  const [lastSavedScore, setLastSavedScore] = useState<number | null>(null);
+  const [rankingLoading, setRankingLoading] = useState<boolean>(false);
+
+  const handleGameFinish = async (gameId: string, finalScore: number) => {
+    if (!profile) return;
+    setRankingLoading(true);
+    setLastSavedScore(finalScore);
+    setShowRankingModal(true);
+
+    try {
+      // 1. Save score to Firestore
+      await addDoc(collection(db, 'gameScores'), {
+        gameId,
+        uid: profile.uid,
+        userName: profile.name,
+        grade: profile.grade,
+        class: profile.class,
+        score: finalScore,
+        timestamp: Date.now()
+      });
+
+      // 2. Fetch scores for this game
+      const q = query(
+        collection(db, 'gameScores'),
+        where('gameId', '==', gameId)
+      );
+      const querySnapshot = await getDocs(q);
+      const scoresList: any[] = [];
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        scoresList.push({ id: doc.id, ...data });
+      });
+
+      // 3. Sort client-side to find top 3 unique users
+      const sorted = scoresList.sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return a.timestamp - b.timestamp;
+      });
+
+      const uniquePlayers: any[] = [];
+      const seenUids = new Set<string>();
+      for (const item of sorted) {
+        if (!seenUids.has(item.uid)) {
+          seenUids.add(item.uid);
+          uniquePlayers.push(item);
+        }
+        if (uniquePlayers.length >= 3) break;
+      }
+
+      setCurrentRankings(uniquePlayers);
+    } catch (err) {
+      console.error("Error saving/fetching game score: ", err);
+    } finally {
+      setRankingLoading(false);
+    }
+  };
 
   const [showTestVersionModal, setShowTestVersionModal] = useState<boolean>(true);
   const [feedbackText, setFeedbackText] = useState<string>('');
@@ -113,19 +174,123 @@ export const GameCornerView = ({ profile, setView, onUseTicket, soundEnabled }: 
                 ? "aspect-[3/4] md:aspect-square" 
                 : "aspect-[3/4] md:aspect-video"
           )}>
-            {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'galaga' && <GalagaGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'fruit' && <FruitMergeGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'store' && <StoreSortingGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'mario' && <MarioGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'rhythm' && <RhythmTrainingGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'drawing' && <DrawingGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'halligalli' && <HalliGalliGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'jenga' && <JengaGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'ninja' && <NinjaGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'uno' && <UnoGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'dobble' && <DobbleGame soundEnabled={soundEnabled} />}
-            {selectedGame === 'cuphalligalli' && <CupHalliGalliGame soundEnabled={soundEnabled} />}
+            {selectedGame === 'anipang' && <AnipangGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('anipang', score)} />}
+            {selectedGame === 'galaga' && <GalagaGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('galaga', score)} />}
+            {selectedGame === 'fruit' && <FruitMergeGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('fruit', score)} />}
+            {selectedGame === 'store' && <StoreSortingGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('store', score)} />}
+            {selectedGame === 'mario' && <MarioGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('mario', score)} />}
+            {selectedGame === 'rhythm' && <RhythmTrainingGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('rhythm', score)} />}
+            {selectedGame === 'drawing' && <DrawingGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('drawing', score)} />}
+            {selectedGame === 'halligalli' && <HalliGalliGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('halligalli', score)} />}
+            {selectedGame === 'jenga' && <JengaGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('jenga', score)} />}
+            {selectedGame === 'ninja' && <NinjaGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('ninja', score)} />}
+            {selectedGame === 'uno' && <UnoGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('uno', score)} />}
+            {selectedGame === 'dobble' && <DobbleGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('dobble', score)} />}
+            {selectedGame === 'cuphalligalli' && <CupHalliGalliGame soundEnabled={soundEnabled} onGameFinish={(score) => handleGameFinish('cuphalligalli', score)} />}
+
+            {/* Ranking Modal Overlay inside the active game container */}
+            {showRankingModal && (
+              <div className="absolute inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className="bg-white rounded-[2rem] p-6 max-w-sm w-full shadow-2xl border-4 border-indigo-400 relative flex flex-col items-center text-center font-sans"
+                >
+                  <div className="absolute -top-12 bg-amber-400 border-4 border-white p-3 rounded-full shadow-lg">
+                    <Trophy className="w-8 h-8 text-white animate-bounce" />
+                  </div>
+                  
+                  <h3 className="text-xl font-black text-slate-800 mt-6 mb-1">🏆 실시간 명예의 전당</h3>
+                  <p className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-4">
+                    {games.find(g => g.id === selectedGame)?.name}
+                  </p>
+
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 w-full mb-5">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">방금 획득한 나의 점수</span>
+                    <span className="text-2xl font-black text-indigo-600 font-mono">{lastSavedScore !== null ? lastSavedScore.toLocaleString() : 0}점</span>
+                  </div>
+
+                  <h4 className="text-xs font-black text-slate-400 text-left w-full mb-2 uppercase tracking-wider">Top 3 랭킹</h4>
+
+                  {rankingLoading ? (
+                    <div className="flex flex-col items-center justify-center py-6 gap-2 w-full">
+                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-semibold text-slate-500">점수 기록 및 랭킹 갱신 중...</span>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-2 mb-6">
+                      {currentRankings.length === 0 ? (
+                        <p className="text-xs font-semibold text-slate-400 py-4">아직 기록된 점수가 없습니다. 첫 번째 주인공이 되어보세요!</p>
+                      ) : (
+                        currentRankings.map((item, index) => {
+                          const medalColors = [
+                            'bg-amber-400 border-amber-300 text-white', // Gold
+                            'bg-slate-300 border-slate-200 text-white', // Silver
+                            'bg-amber-600 border-amber-500 text-white', // Bronze
+                          ];
+                          return (
+                            <div 
+                              key={item.id} 
+                              className={cn(
+                                "flex items-center justify-between p-2.5 rounded-xl border-2 transition-all",
+                                item.uid === profile?.uid 
+                                  ? "bg-indigo-50/50 border-indigo-200 shadow-sm" 
+                                  : "bg-slate-50/50 border-slate-100"
+                              )}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className={cn(
+                                  "w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-black shrink-0 font-mono",
+                                  medalColors[index] || "bg-slate-100 border-slate-200 text-slate-500"
+                                )}>
+                                  {index + 1}
+                                </span>
+                                <div className="text-left min-w-0">
+                                  <span className="text-xs font-black text-slate-800 block truncate leading-tight">
+                                    {item.userName}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-slate-400 block leading-none mt-0.5">
+                                    {item.grade}학년 {item.class}반
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="text-xs font-black text-slate-700 font-mono">
+                                {item.score.toLocaleString()}점
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 w-full mt-auto">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => {
+                        setShowRankingModal(false);
+                        setSelectedGame(null);
+                      }}
+                      className="flex-1 py-2.5 border-2 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs"
+                    >
+                      게임 목록
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setShowRankingModal(false);
+                        // To trigger hot reload/restart of the selected game, we can briefly clear and set it
+                        const gameId = selectedGame;
+                        setSelectedGame(null);
+                        setTimeout(() => setSelectedGame(gameId), 50);
+                      }}
+                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-100"
+                    >
+                      다시 도전하기
+                    </Button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
           </div>
         </div>
       </div>

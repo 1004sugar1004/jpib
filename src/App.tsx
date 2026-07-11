@@ -1262,6 +1262,7 @@ export default function App() {
                 setView={handleProtectedViewChange}
                 onEarnXP={handleEarnXP}
                 soundEnabled={soundEnabled}
+                profile={profile}
               />
             )}
             {view === 'concept-forest' && (
