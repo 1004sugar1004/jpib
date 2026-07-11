@@ -20,7 +20,7 @@ interface Notice {
 
 export const AnnouncementPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string>('nickname_regulation');
+  const [selectedId, setSelectedId] = useState<string>('bingo_and_ranking_update');
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('detail');
   const [dontShowToday, setDontShowToday] = useState(false);
   const [dontShowForWeek, setDontShowForWeek] = useState(false);
@@ -29,6 +29,17 @@ export const AnnouncementPopup = () => {
   const [readHistory, setReadHistory] = useState<Record<string, boolean>>({});
 
   const notices: Notice[] = [
+    {
+      id: 'bingo_and_ranking_update',
+      title: '🎉 실시간 빙고 멀티플레이어 & 게임별 개별 랭킹 전격 출시!',
+      date: '2026.07.11',
+      priority: 'high',
+      category: '업데이트',
+      badge: '신규기능',
+      badgeColor: 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-indigo-700',
+      summary: '친구들과 동시 접속하여 실시간 대결을 즐기는 멀티플레이어 빙고와, 각 게임별 개별 랭킹(리더보드) 기능이 전격 오픈되었습니다!',
+      icon: Sparkles
+    },
     {
       id: 'nickname_regulation',
       title: '🚨 올바른 닉네임 사용 및 변경 권고 안내 (필독)',
@@ -160,6 +171,67 @@ export const AnnouncementPopup = () => {
   // Render the selected announcement's body content
   const renderContent = () => {
     switch (selectedId) {
+      case 'bingo_and_ranking_update':
+        return (
+          <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-gray-700 animate-fade-in font-sans">
+            {/* Main Update Banner */}
+            <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border-2 border-indigo-200">
+              <h4 className="font-extrabold text-indigo-900 flex items-center gap-1.5 text-xs sm:text-sm mb-1.5">
+                🎉 실시간 빙고 멀티플레이어 & 게임별 개별 랭킹 업데이트!
+              </h4>
+              <p className="text-gray-800 font-bold text-[11px] sm:text-xs">
+                탐험대원 여러분의 뜨거운 성원에 힘입어, 친구와 함께 동시 접속하여 실시간으로 즐길 수 있는 <strong>빙고 멀티플레이어</strong>와 각 게임마다 자신의 한계를 시험하고 실력을 겨루는 <strong>게임별 개별 랭킹 리더보드</strong>가 추가되었습니다!
+              </p>
+            </div>
+
+            {/* Core Features */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Feature 1: Bingo multiplayer */}
+              <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-col justify-between">
+                <div>
+                  <h5 className="font-black text-indigo-950 text-xs sm:text-sm mb-2 flex items-center gap-1.5">
+                    <span className="text-indigo-500">🎮</span> 실시간 빙고 동시 접속 대결!
+                  </h5>
+                  <p className="text-gray-600 text-[11px] sm:text-xs font-semibold leading-normal mb-3">
+                    인공지능(AI) 대결을 넘어 이제 진짜 친구들과 함께 즐기세요! 대결방을 만들고 4자리 코드를 공유하거나 QR 코드를 찍어 쉽고 빠르게 접속할 수 있습니다.
+                  </p>
+                  <ul className="space-y-1 text-[10px] sm:text-[11px] text-gray-500 font-bold list-disc pl-3">
+                    <li>무제한 동시 접속 및 실시간 동기화</li>
+                    <li>모바일/PC 완벽 연동 & QR 코드 초대장</li>
+                    <li>턴 차례 자동 관리 및 승리 시 +50 XP 보상!</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Feature 2: Game-specific ranking updates */}
+              <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100 flex flex-col justify-between">
+                <div>
+                  <h5 className="font-black text-purple-950 text-xs sm:text-sm mb-2 flex items-center gap-1.5">
+                    <span className="text-purple-500">🏆</span> 미니게임별 개별 랭킹 (리더보드)
+                  </h5>
+                  <p className="text-gray-600 text-[11px] sm:text-xs font-semibold leading-normal mb-3">
+                    전체 통합 랭킹 외에도 각 게임 코너별로 개별적인 순위판(리더보드)이 새롭게 도입되었습니다! 어떤 게임의 최강자가 될지 도전해 보세요.
+                  </p>
+                  <ul className="space-y-1 text-[10px] sm:text-[11px] text-gray-500 font-bold list-disc pl-3">
+                    <li>게임별 실시간 상위 TOP 10 랭킹 노출</li>
+                    <li>할리갈리, 탐구 카드매칭, 우노, 탐정 게임 등 전격 반영</li>
+                    <li>최고 기록 달성 시 즉시 랭킹 업데이트</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Practical tips */}
+            <div className="p-3.5 bg-amber-50/50 rounded-2xl border border-amber-200">
+              <h5 className="font-black text-amber-950 text-xs mb-1">💡 어떻게 이용하나요?</h5>
+              <p className="text-gray-600 text-[11px] font-semibold leading-normal">
+                • <strong>실시간 빙고</strong>: 게임 코너에서 'IB 핵심 지식 빙고'를 누른 후 '실시간 멀티플레이어'를 선택해 방을 만들거나 친구의 방 코드(4자리)를 입력하세요.<br />
+                • <strong>게임별 랭킹</strong>: 게임 코너 및 명예의 전당 메뉴에서 각 게임을 터치하면 실시간 순위를 한눈에 확인하고 경쟁할 수 있습니다!
+              </p>
+            </div>
+          </div>
+        );
+
       case 'nickname_regulation':
         return (
           <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-gray-700 animate-fade-in">
