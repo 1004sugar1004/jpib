@@ -125,21 +125,24 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
     }
   }, [gameState]);
   const [selectedDeckSize, setSelectedDeckSize] = useState<number>(12);
-  const [selectedMode, setSelectedMode] = useState<'computer' | 'two'>('computer');
-  const [gameMode, setGameMode] = useState<'computer' | 'two'>('computer');
+  const [selectedMode, setSelectedMode] = useState<'computer' | 'two' | 'three'>('computer');
+  const [gameMode, setGameMode] = useState<'computer' | 'two' | 'three'>('computer');
   const [gameEdition, setGameEdition] = useState<'pokemon' | 'classic'>('pokemon');
   
   const [cardsLeft, setCardsLeft] = useState<number>(12);
   const [playerScore, setPlayerScore] = useState<number>(0);
   const [rivalScore, setRivalScore] = useState<number>(0);
+  const [computerScore, setComputerScore] = useState<number>(0);
   
   const [termsList, setTermsList] = useState<Term[]>([]);
   const [centerCards, setCenterCards] = useState<Term[]>([]);
   const [leftCards, setLeftCards] = useState<Term[]>([]);
   const [rightCards, setRightCards] = useState<Term[]>([]);
+  const [computerCards, setComputerCards] = useState<Term[]>([]);
   
   const [leftAnswer, setLeftAnswer] = useState<string>('');
   const [rightAnswer, setRightAnswer] = useState<string>('');
+  const [computerAnswer, setComputerAnswer] = useState<string>('');
   
   const [feedback, setFeedback] = useState<string>('같은 용어를 찾아 클릭하세요.');
   const [feedbackType, setFeedbackType] = useState<'normal' | 'correct' | 'wrong'>('normal');
@@ -282,7 +285,7 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
     initializeTerms();
   }, []);
 
-  const startRound = useCallback((currentLeftCards: number, currentMode: 'computer' | 'two') => {
+  const startRound = useCallback((currentLeftCards: number, currentMode: 'computer' | 'two' | 'three') => {
     if (computerTimerRef.current) {
       clearTimeout(computerTimerRef.current);
     }
@@ -313,25 +316,36 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
     const leftAns = pickOne<Term>(center);
     const centerRemaining = center.filter(t => (t as Term).id !== (leftAns as Term).id);
     const rightAns = pickOne<Term>(centerRemaining);
+    const centerRemaining2 = centerRemaining.filter(t => (t as Term).id !== (rightAns as Term).id);
+    const computerAns = pickOne<Term>(centerRemaining2);
 
     setLeftAnswer((leftAns as Term).id);
     setRightAnswer((rightAns as Term).id);
+    setComputerAnswer((computerAns as Term).id);
 
     const blockedIds = new Set(center.map(t => (t as Term).id));
     const fillers = shuffleArray<Term>(termsList.filter(t => !blockedIds.has((t as Term).id)));
 
     const left = [leftAns, ...fillers.slice(0, 5)];
     const right = [rightAns, ...fillers.slice(5, 10)];
+    const comp = [computerAns, ...fillers.slice(10, 15)];
 
     setCenterCards(shuffleArray<Term>(center));
     setLeftCards(shuffleArray<Term>(left));
     setRightCards(shuffleArray<Term>(right));
+    setComputerCards(shuffleArray<Term>(comp));
 
     if (currentMode === 'computer') {
       const delay = 3500 + Math.random() * 3200; // 3.5초 ~ 6.7초 (컴퓨터 대치 상태)
       computerTimerRef.current = setTimeout(() => {
         if (!acceptingClicksRef.current) return;
         handleComputerWin(rightAns as Term);
+      }, delay);
+    } else if (currentMode === 'three') {
+      const delay = 4500 + Math.random() * 4000; // 4.5초 ~ 8.5초 (3인 대결 밸런스)
+      computerTimerRef.current = setTimeout(() => {
+        if (!acceptingClicksRef.current) return;
+        handleComputerThreeWin(computerAns as Term);
       }, delay);
     }
   }, [termsList, playSound]);
@@ -344,9 +358,19 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
     playSound('start');
     setPlayerScore(0);
     setRivalScore(0);
+    setComputerScore(0);
     setCardsLeft(selectedDeckSize);
     setGameState('PLAYING');
-    setFeedback(selectedMode === 'computer' ? '나의 카드와 가운데 더미에서 똑같은 아이콘 단 1개만 찾으세요!' : '각자 카드와 가운데 공용 더미가 겹치는 아이콘을 먼저 찾으세요!');
+    
+    let guideText = '';
+    if (selectedMode === 'computer') {
+      guideText = '나의 카드와 가운데 더미에서 똑같은 아이콘 단 1개만 찾으세요!';
+    } else if (selectedMode === 'two') {
+      guideText = '각자 카드와 가운데 공용 더미가 겹치는 아이콘을 먼저 찾으세요!';
+    } else {
+      guideText = '각자 카드와 공용 더미가 겹치는 아이콘을 먼저 찾으세요! 컴퓨터봇도 함께 경쟁합니다!';
+    }
+    setFeedback(guideText);
     setFeedbackType('normal');
     
     setTimeout(() => {
@@ -367,6 +391,23 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
       
       setTimeout(() => {
         startRound(nextCount, 'computer');
+      }, 1600);
+      return nextCount;
+    });
+  };
+
+  const handleComputerThreeWin = (term: Term) => {
+    setAcceptingClicks(false);
+    acceptingClicksRef.current = false;
+    setComputerScore(prev => prev + 1);
+    setCardsLeft(prev => {
+      const nextCount = prev - 1;
+      setFeedback(`3번 컴퓨터봇이 어울리는 카드를 가져갔어요: ${term.ko}`);
+      setFeedbackType('wrong');
+      playSound('computer_win');
+      
+      setTimeout(() => {
+        startRound(nextCount, 'three');
       }, 1600);
       return nextCount;
     });
@@ -431,13 +472,13 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
             setCardsLeft(prev => {
               const nextCount = prev - 1;
               setTimeout(() => {
-                startRound(nextCount, 'computer');
+                startRound(nextCount, gameMode);
               }, 2000);
               return nextCount;
             });
             return;
           } else {
-            // 2-player mode, player 1 is locked. Check if player 2 is also locked.
+            // 2-player or 3-player mode, player 1 is locked. Check if player 2 is also locked.
             if (rightWrongCount >= 3) {
               // Both locked! Discard the card.
               setAcceptingClicks(false);
@@ -448,7 +489,7 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
               setCardsLeft(prev => {
                 const nextCount = prev - 1;
                 setTimeout(() => {
-                  startRound(nextCount, 'two');
+                  startRound(nextCount, gameMode);
                 }, 2000);
                 return nextCount;
               });
@@ -478,7 +519,7 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
             setCardsLeft(prev => {
               const nextCount = prev - 1;
               setTimeout(() => {
-                startRound(nextCount, 'two');
+                startRound(nextCount, gameMode);
               }, 2000);
               return nextCount;
             });
@@ -784,11 +825,11 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
             {/* 3. MODE */}
             <div className="space-y-1.5 text-left">
               <label className="text-[10px] font-black text-zinc-400 uppercase tracking-wider block font-bold">3. 도전 대결 방식</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() => setSelectedMode('computer')}
-                  className={`py-2 px-3 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-1.5 rounded-xl text-[11px] font-black border transition-all flex flex-col items-center justify-center gap-1 ${
                     selectedMode === 'computer' 
                       ? 'bg-white text-slate-950 border-white' 
                       : 'bg-slate-900 border-slate-800 text-zinc-400 hover:bg-slate-800'
@@ -800,7 +841,7 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
                 <button
                   type="button"
                   onClick={() => setSelectedMode('two')}
-                  className={`py-2 px-3 rounded-xl text-xs font-black border transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-1.5 rounded-xl text-[11px] font-black border transition-all flex flex-col items-center justify-center gap-1 ${
                     selectedMode === 'two' 
                       ? 'bg-white text-slate-950 border-white' 
                       : 'bg-slate-900 border-slate-800 text-zinc-400 hover:bg-slate-800'
@@ -808,6 +849,22 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>한패드 2인용</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedMode('three')}
+                  className={`py-2 px-1.5 rounded-xl text-[11px] font-black border transition-all flex flex-col items-center justify-center gap-1 ${
+                    selectedMode === 'three' 
+                      ? 'bg-white text-slate-950 border-white' 
+                      : 'bg-slate-900 border-slate-800 text-zinc-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex gap-0.5 items-center">
+                    <Users className="w-3 h-3 text-current" />
+                    <span className="text-[8px] font-extrabold">+</span>
+                    <Computer className="w-3 h-3 text-current" />
+                  </div>
+                  <span>3인용 (2인+컴)</span>
                 </button>
               </div>
             </div>
@@ -833,7 +890,7 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
       {gameState === 'PLAYING' && (
         <div className="flex-1 flex flex-col justify-around w-full p-2 z-10 gap-4 overflow-y-auto">
           {/* DASHBOARD STATUS - 세련되고 높은 명조 대비를 갖춘 고반사 일체형 스코어보드 */}
-          <div className="grid grid-cols-3 gap-3 px-4 py-3 bg-slate-900/90 border-2 border-slate-700/50 rounded-2xl max-w-2xl mx-auto w-full shadow-xl">
+          <div className={`grid ${gameMode === 'three' ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'} gap-3 px-4 py-3 bg-slate-900/90 border-2 border-slate-700/50 rounded-2xl max-w-3xl mx-auto w-full shadow-xl`}>
             <div className="flex flex-col items-center justify-center border-r border-slate-800">
               <span className="text-[10px] sm:text-[11px] text-amber-400 font-black tracking-wider uppercase">남은 전체 더미</span>
               <span className="text-xl sm:text-2xl font-black font-mono text-amber-400 drop-shadow">{cardsLeft}<span className="text-xs font-bold ml-0.5">장</span></span>
@@ -852,6 +909,15 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
               </span>
               <span className="text-xl sm:text-2xl text-rose-400 font-black font-mono drop-shadow">{rivalScore}<span className="text-xs font-bold ml-0.5">장</span></span>
             </div>
+
+            {gameMode === 'three' && (
+              <div className="flex flex-col items-center justify-center bg-purple-950/30 border border-purple-500/20 py-1.5 px-2 rounded-xl">
+                <span className="text-[10px] sm:text-[11px] text-purple-400 font-black tracking-wider uppercase">
+                  컴퓨터 득점
+                </span>
+                <span className="text-xl sm:text-2xl text-purple-400 font-black font-mono drop-shadow">{computerScore}<span className="text-xs font-bold ml-0.5">장</span></span>
+              </div>
+            )}
           </div>
 
           {/* DYNAMIC TURN STATEMENT */}
@@ -864,8 +930,8 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
             </span>
           </div>
 
-          {/* 3 CARDS ALIGNED AS GRID - 태블릿 화면 최적화: 가로 스택으로 감싸 세로 잘림 완벽 차단 */}
-          <div className="w-full max-w-[1360px] mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-8 lg:gap-14 py-2">
+          {/* 3 OR 4 CARDS ALIGNED AS GRID - 태블릿 화면 최적화: 가로 스택으로 감싸 세로 잘림 완벽 차단 */}
+          <div className="w-full max-w-[1360px] mx-auto flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 md:gap-8 lg:gap-10 py-2">
             
             {/* L SIDE: P1 CARDS */}
             <div className="flex flex-col items-center gap-1.5">
@@ -942,6 +1008,24 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
               </div>
             </div>
 
+            {/* COMPUTER SIDE IN 3-PLAYER MODE */}
+            {gameMode === 'three' && (
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex flex-col items-center gap-0.5 bg-purple-950/60 border-2 border-purple-500/40 p-1.5 sm:p-2 rounded-xl w-[150px] xs:w-[170px] sm:w-[200px] md:w-[225px] text-center shadow-lg">
+                  <span className="text-[10px] sm:text-xs font-black text-purple-400 flex items-center justify-center gap-1">
+                    <Computer className="w-3.5 h-3.5 text-purple-400 animate-bounce" />
+                    <span>3번 컴퓨터봇</span>
+                  </span>
+                  <span className="text-[11px] sm:text-xs font-black text-white bg-gradient-to-r from-purple-600 to-purple-500 border border-purple-400 rounded-lg px-2 py-0.5 mt-0.5 shadow-md w-full text-center">
+                    획득: {computerScore}장
+                  </span>
+                </div>
+                <div className="opacity-70 pointer-events-none filter saturate-50">
+                  {renderCard(computerCards, 'right', 5)}
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* BOTTOM QUICK DESK ACTIONS */}
@@ -977,7 +1061,7 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
           </div>
 
           <div className="w-full bg-slate-950/50 border border-slate-800/65 p-5 rounded-2xl space-y-4">
-            <div className="flex justify-around items-center">
+            <div className="flex justify-around items-center flex-wrap gap-2">
               <div className="text-center font-bold">
                 <p className="text-slate-400 text-xs mb-1">
                   {gameMode === 'computer' ? '나의 득점' : '플레이어 1'}
@@ -991,21 +1075,46 @@ export const DobbleGame = ({ soundEnabled, onGameFinish }: { soundEnabled: boole
                 </p>
                 <span className="text-3xl text-rose-400 font-black">{rivalScore}</span>
               </div>
+              {gameMode === 'three' && (
+                <>
+                  <div className="text-slate-600 text-2xl font-black">:</div>
+                  <div className="text-center font-bold">
+                    <p className="text-slate-400 text-xs mb-1">컴퓨터</p>
+                    <span className="text-3xl text-purple-400 font-black">{computerScore}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="bg-slate-900/80 py-3 px-3 rounded-xl border border-white/5 text-[11px] text-zinc-300 font-bold leading-relaxed">
-              {playerScore > rivalScore ? (
-                <span className="text-emerald-400 font-black">
-                  🎉 완벽한 신속성입니다! 승리를 기록하였습니다.
-                </span>
-              ) : playerScore < rivalScore ? (
-                <span className="text-rose-400 font-black">
-                  💥 이번 파트는 아쉽네요! 다시 눈에 힘을 기르고 도전해 보실래요?
-                </span>
+              {gameMode === 'three' ? (
+                (() => {
+                  const max = Math.max(playerScore, rivalScore, computerScore);
+                  if (playerScore === max && rivalScore === max && computerScore === max) {
+                    return <span className="text-amber-400 font-black">🤝 모두의 득점이 같습니다! 엄청난 대진이군요!</span>;
+                  }
+                  if (playerScore === max) {
+                    return <span className="text-emerald-400 font-black">🎉 1번 플레이어가 승리했습니다!</span>;
+                  }
+                  if (rivalScore === max) {
+                    return <span className="text-rose-400 font-black">🎉 2번 플레이어가 승리했습니다!</span>;
+                  }
+                  return <span className="text-purple-400 font-black">🤖 컴퓨터봇이 승리했습니다! 더 분발해 보세요!</span>;
+                })()
               ) : (
-                <span className="text-amber-400 font-black">
-                  🤝 놀랍게도 가져간 더미 수가 동일합니다! 환상의 매칭이군요.
-                </span>
+                playerScore > rivalScore ? (
+                  <span className="text-emerald-400 font-black">
+                    🎉 완벽한 신속성입니다! 승리를 기록하였습니다.
+                  </span>
+                ) : playerScore < rivalScore ? (
+                  <span className="text-rose-400 font-black">
+                    💥 이번 파트는 아쉽네요! 다시 눈에 힘을 기르고 도전해 보실래요?
+                  </span>
+                ) : (
+                  <span className="text-amber-400 font-black">
+                    🤝 놀랍게도 가져간 더미 수가 동일합니다! 환상의 매칭이군요.
+                  </span>
+                )
               )}
             </div>
           </div>

@@ -259,6 +259,12 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
   }, [gameState]);
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const difficultyRef = useRef<'easy' | 'normal' | 'hard'>('normal');
+  const [gameMode, setGameMode] = useState<'solo' | 'two' | 'three'>('solo');
+  const gameModeRef = useRef<'solo' | 'two' | 'three'>('solo');
+
+  useEffect(() => {
+    gameModeRef.current = gameMode;
+  }, [gameMode]);
   const [playerDeck, setPlayerDeck] = useState<Card[]>([]);
   const [bot1Deck, setBot1Deck] = useState<Card[]>([]);
   const [bot2Deck, setBot2Deck] = useState<Card[]>([]);
@@ -412,6 +418,20 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
     current: 'player' | 'bot1' | 'bot2', 
     decks: { player: Card[], bot1: Card[], bot2: Card[] }
   ): 'player' | 'bot1' | 'bot2' => {
+    const mode = gameModeRef.current;
+    if (mode === 'two') {
+      const order: ('player' | 'bot1')[] = ['player', 'bot1'];
+      let idx = order.indexOf(current as any);
+      for (let i = 1; i <= 2; i++) {
+        const next = order[(idx + i) % 2];
+        const hasFacedown = decks[next]?.length > 0;
+        if (hasFacedown) {
+          return next;
+        }
+      }
+      return current;
+    }
+
     const order: ('player' | 'bot1' | 'bot2')[] = ['player', 'bot1', 'bot2'];
     let idx = order.indexOf(current);
     for (let i = 1; i <= 3; i++) {
@@ -458,10 +478,24 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
     setIsAnswerCorrect(false);
 
     const full = makeDeck();
-    // 10 cards each as explicitly requested!
-    const initPlayer = full.slice(0, 10);
-    const initBot1 = full.slice(10, 20);
-    const initBot2 = full.slice(20, 30);
+    let initPlayer: Card[] = [];
+    let initBot1: Card[] = [];
+    let initBot2: Card[] = [];
+
+    const mode = gameModeRef.current;
+    if (mode === 'solo') {
+      initPlayer = full.slice(0, 10);
+      initBot1 = full.slice(10, 20);
+      initBot2 = full.slice(20, 30);
+    } else if (mode === 'two') {
+      initPlayer = full.slice(0, 15);
+      initBot1 = full.slice(15, 30);
+      initBot2 = [];
+    } else {
+      initPlayer = full.slice(0, 10);
+      initBot1 = full.slice(10, 20);
+      initBot2 = full.slice(20, 30);
+    }
 
     playerDeckRef.current = initPlayer;
     bot1DeckRef.current = initBot1;
@@ -480,7 +514,7 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
     setBot2Played([]);
     setCurrentTurn('player');
     setGameState('PLAYING');
-    setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+    setMessage(mode === 'solo' ? '내 차례 — 카드를 뒤집으세요! 👇' : '1번 플레이어 차례 — 카드를 뒤집으세요! 👇');
   }, []);
 
   const getTopFruitCountsInternal = (pPlayed: Card[], b1Played: Card[], b2Played: Card[]) => {
@@ -664,6 +698,12 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
     if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
     if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
 
+    const mode = gameModeRef.current;
+    if (mode === 'two') {
+      // 2 humans, no computer automatic bell!
+      return;
+    }
+
     const b1Total = bot1DeckRef.current.length + bot1PlayedRef.current.length;
     const b2Total = bot2DeckRef.current.length + bot2PlayedRef.current.length;
 
@@ -680,16 +720,26 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
       b2ReactTime = 280 + Math.random() * 220; // 280ms to 500ms
     }
 
-    if (b1Total > 0) {
-      bot1ActionTimerRef.current = setTimeout(() => {
-        ringBell('bot1');
-      }, b1ReactTime);
-    }
+    if (mode === 'three') {
+      // Player 1, Player 2 (bot1) are human. Only Bot 2 is computer.
+      if (b2Total > 0) {
+        bot2ActionTimerRef.current = setTimeout(() => {
+          ringBell('bot2');
+        }, b2ReactTime);
+      }
+    } else {
+      // Solo mode - bot1 and bot2 are both computer bots
+      if (b1Total > 0) {
+        bot1ActionTimerRef.current = setTimeout(() => {
+          ringBell('bot1');
+        }, b1ReactTime);
+      }
 
-    if (b2Total > 0) {
-      bot2ActionTimerRef.current = setTimeout(() => {
-        ringBell('bot2');
-      }, b2ReactTime);
+      if (b2Total > 0) {
+        bot2ActionTimerRef.current = setTimeout(() => {
+          ringBell('bot2');
+        }, b2ReactTime);
+      }
     }
   };
 
@@ -736,26 +786,35 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
     if (correct) {
       playSound('win');
       const shuffledWin = shuffle(allPlayed);
+      const mode = gameModeRef.current;
 
       if (who === 'player') {
         nextPlayerDeck = [...nextPlayerDeck, ...shuffledWin];
         setPlayerDeck(nextPlayerDeck);
-        showToast('🎉 정답!', `바닥의 카드 ${allPlayed.length}장을 획득했습니다!`);
-        setMessage(`정답! 내가 카드 ${allPlayed.length}장 획득! 🌟`);
+        const toastTitle = mode === 'solo' ? '🎉 정답!' : '🎉 1번 플레이어 득점!';
+        const toastSub = mode === 'solo' 
+          ? `바닥의 카드 ${allPlayed.length}장을 획득했습니다!`
+          : `1번 플레이어가 선착하여 카드 ${allPlayed.length}장을 획득했습니다!`;
+        showToast(toastTitle, toastSub);
+        setMessage(mode === 'solo' ? `정답! 내가 카드 ${allPlayed.length}장 획득! 🌟` : `1번 플레이어 선착! 카드 ${allPlayed.length}장 획득! 🌟`);
         setCurrentTurn('player');
         currentTurnRef.current = 'player';
       } else if (who === 'bot1') {
         nextBot1Deck = [...nextBot1Deck, ...shuffledWin];
         setBot1Deck(nextBot1Deck);
-        showToast('🤖 IB봇 1 선착!', `아이비봇 1이 먼저 종을 쳐서 카드 ${allPlayed.length}장을 가져갔습니다!`);
-        setMessage(`아이비봇 1 선착! 카드를 뺏겼습니다 😭`);
+        const toastTitle = mode === 'solo' ? '🤖 IB봇 1 선착!' : '🎉 2번 플레이어 득점!';
+        const toastSub = mode === 'solo'
+          ? `아이비봇 1이 먼저 종을 쳐서 카드 ${allPlayed.length}장을 가져갔습니다!`
+          : `2번 플레이어가 선착하여 카드 ${allPlayed.length}장을 획득했습니다!`;
+        showToast(toastTitle, toastSub);
+        setMessage(mode === 'solo' ? `아이비봇 1 선착! 카드를 뺏겼습니다 😭` : `2번 플레이어 선착! 카드 ${allPlayed.length}장 획득! 🌟`);
         setCurrentTurn('bot1');
         currentTurnRef.current = 'bot1';
       } else {
         nextBot2Deck = [...nextBot2Deck, ...shuffledWin];
         setBot2Deck(nextBot2Deck);
-        showToast('🤖 IB봇 2 선착!', `아이비봇 2가 먼저 종을 쳐서 카드 ${allPlayed.length}장을 가져갔습니다!`);
-        setMessage(`아이비봇 2 선착! 카드를 뺏겼습니다 😭`);
+        showToast('🤖 컴퓨터봇 선착!', `컴퓨터봇이 먼저 종을 쳐서 카드 ${allPlayed.length}장을 가져갔습니다!`);
+        setMessage(`컴퓨터봇 선착! 카드를 뺏겼습니다 😭`);
         setCurrentTurn('bot2');
         currentTurnRef.current = 'bot2';
       }
@@ -771,38 +830,56 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
       nextPlayerPlayed = [...playerPlayedRef.current];
       nextBot1Played = [...bot1PlayedRef.current];
       nextBot2Played = [...bot2PlayedRef.current];
-      // Penalty: Wrong ringer gives 1 card from their facedown deck to each of other players!
+      
+      const mode = gameModeRef.current;
       if (who === 'player') {
         let penaltyDesc = '';
         if (nextPlayerDeck.length > 0) {
           const c1 = nextPlayerDeck.shift()!;
           nextBot1Deck.push(c1);
-          penaltyDesc += ' (봇1에 1장)';
+          penaltyDesc += ' (2번 플레이어에게 1장)';
         }
-        if (nextPlayerDeck.length > 0) {
+        if (mode !== 'two' && nextPlayerDeck.length > 0) {
           const c2 = nextPlayerDeck.shift()!;
           nextBot2Deck.push(c2);
-          penaltyDesc += ' (봇2에 1장)';
+          penaltyDesc += ' (컴퓨터에게 1장)';
         }
         setPlayerDeck(nextPlayerDeck);
         setBot1Deck(nextBot1Deck);
-        setBot2Deck(nextBot2Deck);
-        showToast('❌ 틀렸습니다!', `5개가 아닙니다! 두 봇에게 각각 1장씩 선물했습니다.${penaltyDesc}`);
-        setMessage('실수! 오답 패널티로 카드를 나누어 주었습니다 😢');
+        if (mode !== 'two') setBot2Deck(nextBot2Deck);
+        
+        const mainMsg = mode === 'solo' 
+          ? `5개가 아닙니다! 두 봇에게 각각 1장씩 선물했습니다.${penaltyDesc}`
+          : mode === 'two'
+            ? `5개가 아닙니다! 2번 플레이어에게 벌칙 카드 1장을 전송했습니다.${penaltyDesc}`
+            : `5개가 아닙니다! 2번 플레이어와 컴퓨터봇에게 카드를 1장씩 전송했습니다.${penaltyDesc}`;
+            
+        showToast(mode === 'solo' ? '❌ 틀렸습니다!' : '❌ 1번 플레이어 오답!', mainMsg);
+        setMessage(mode === 'solo' ? '실수! 오답 패널티로 카드를 나누어 주었습니다 😢' : '1번 플레이어 실수! 상대방에게 벌칙 카드를 보냈습니다 😢');
       } else if (who === 'bot1') {
+        let penaltyDesc = '';
         if (nextBot1Deck.length > 0) {
           const c1 = nextBot1Deck.shift()!;
           nextPlayerDeck.push(c1);
+          penaltyDesc += mode === 'solo' ? ' (나에게 1장)' : ' (1번 플레이어에게 1장)';
         }
-        if (nextBot1Deck.length > 0) {
+        if (mode !== 'two' && nextBot1Deck.length > 0) {
           const c2 = nextBot1Deck.shift()!;
           nextBot2Deck.push(c2);
+          penaltyDesc += mode === 'solo' ? ' (봇2에게 1장)' : ' (컴퓨터에게 1장)';
         }
         setPlayerDeck(nextPlayerDeck);
         setBot1Deck(nextBot1Deck);
-        setBot2Deck(nextBot2Deck);
-        showToast('🤖 IB봇 1 오답!', `아이비봇 1이 실수했습니다! 다른 플레이어들이 카드를 받았습니다.`);
-        setMessage('IB 봇 1 오답! 행운의 보너스티 카드를 1장 얻었습니다! 🎉');
+        if (mode !== 'two') setBot2Deck(nextBot2Deck);
+        
+        const mainMsg = mode === 'solo'
+          ? `아이비봇 1이 실수했습니다! 다른 플레이어들이 카드를 받았습니다.`
+          : mode === 'two'
+            ? `2번 플레이어가 실수했습니다! 1번 플레이어에게 벌칙 카드 1장을 전송했습니다.`
+            : `2번 플레이어가 실수했습니다! 1번 플레이어와 컴퓨터봇에게 카드를 1장씩 전송했습니다.`;
+            
+        showToast(mode === 'solo' ? '🤖 IB봇 1 오답!' : '❌ 2번 플레이어 오답!', mainMsg);
+        setMessage(mode === 'solo' ? 'IB 봇 1 오답! 행운의 보너스티 카드를 1장 얻었습니다! 🎉' : '2번 플레이어 실수! 상대방에게 벌칙 카드를 보냈습니다 😢');
       } else {
         if (nextBot2Deck.length > 0) {
           const c1 = nextBot2Deck.shift()!;
@@ -815,8 +892,8 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
         setPlayerDeck(nextPlayerDeck);
         setBot1Deck(nextBot1Deck);
         setBot2Deck(nextBot2Deck);
-        showToast('🤖 IB봇 2 오답!', `아이비봇 2가 실수했습니다! 다른 플레이어들이 카드를 받았습니다.`);
-        setMessage('IB 봇 2 오답! 행운의 보너스티 카드를 1장 얻었습니다! 🎉');
+        showToast('🤖 컴퓨터봇 오답!', `컴퓨터봇이 실수했습니다! 다른 플레이어들이 카드를 받았습니다.`);
+        setMessage('컴퓨터봇 오답! 행운의 보너스티 카드를 1장 얻었습니다! 🎉');
       }
     }
 
@@ -873,6 +950,12 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
 
   const triggerBotFlip = (botId: 'bot1' | 'bot2') => {
     if (gameOverRef.current) return;
+
+    // In 2-player mode, we NEVER auto-flip any cards because both are human!
+    if (gameModeRef.current === 'two') return;
+
+    // In 3-player mode, only bot2 is computer, so we NEVER auto-flip bot1 (Player 2)!
+    if (gameModeRef.current === 'three' && botId === 'bot1') return;
 
     if (bot1ActionTimerRef.current) clearTimeout(bot1ActionTimerRef.current);
     if (bot2ActionTimerRef.current) clearTimeout(bot2ActionTimerRef.current);
@@ -1015,10 +1098,13 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
     setCurrentTurn(nextTurnId);
     currentTurnRef.current = nextTurnId;
 
+    const mode = gameModeRef.current;
     if (nextTurnId === 'player') {
-      setMessage('내 차례 — 카드를 뒤집으세요! 👇');
+      setMessage(mode === 'solo' ? '내 차례 — 카드를 뒤집으세요! 👇' : '1번 플레이어 차례 — 카드를 뒤집으세요! 👇');
+    } else if (nextTurnId === 'bot1') {
+      setMessage(mode === 'solo' ? '아이비봇 1의 차례입니다... 🤖' : '2번 플레이어 차례 — 카드를 뒤집으세요! 👇');
     } else {
-      setMessage(`아이비봇 ${nextTurnId === 'bot1' ? '1' : '2'}의 차례입니다... 🤖`);
+      setMessage('아이비봇 2의 차례입니다... 🤖');
     }
 
     setTotalGameFlips(prev => {
@@ -1030,7 +1116,7 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
 
       // Is there a 5 on the board now?
       const counts = getTopFruitCountsInternal(
-        nextPlayerPlayed,
+        nextPlayerPlayedFinal,
         bot1PlayedRef.current,
         bot2PlayedRef.current
       );
@@ -1040,7 +1126,76 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
         setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
         triggerBotsBellReaction();
       } else {
-        if (nextTurnId !== 'player') {
+        if (nextTurnId !== 'player' && nextTurnId !== 'bot1') {
+          triggerBotFlip(nextTurnId);
+        }
+      }
+      return nextFlips;
+    });
+  };
+
+  const player2Flip = () => {
+    if (gameOverRef.current || processingBellRef.current || currentTurnRef.current !== 'bot1' || showQuizPopup) return;
+    if (gameModeRef.current === 'solo') return; // Only in local multiplayer modes
+
+    let activeBot1Deck = [...bot1DeckRef.current];
+    let nextBot1Played = [...bot1PlayedRef.current];
+
+    if (activeBot1Deck.length === 0) {
+      return; // No cards to flip
+    }
+
+    const nextBot1Deck = [...activeBot1Deck];
+    const card = nextBot1Deck.shift()!;
+    setBot1Deck(nextBot1Deck);
+    bot1DeckRef.current = nextBot1Deck;
+
+    const nextBot1PlayedFinal = [...nextBot1Played, card];
+    setBot1Played(nextBot1PlayedFinal);
+    bot1PlayedRef.current = nextBot1PlayedFinal;
+
+    playSound('flip');
+    lastFlipTimeRef.current = Date.now();
+    lastFlipByRef.current = 'bot1';
+
+    // Pivot turn
+    const nextTurnId = getNextTurn('bot1', {
+      player: playerDeckRef.current,
+      bot1: nextBot1Deck,
+      bot2: bot2DeckRef.current
+    });
+    setCurrentTurn(nextTurnId);
+    currentTurnRef.current = nextTurnId;
+
+    const mode = gameModeRef.current;
+    if (nextTurnId === 'player') {
+      setMessage(mode === 'solo' ? '내 차례 — 카드를 뒤집으세요! 👇' : '1번 플레이어 차례 — 카드를 뒤집으세요! 👇');
+    } else if (nextTurnId === 'bot1') {
+      setMessage(mode === 'solo' ? '아이비봇 1의 차례입니다... 🤖' : '2번 플레이어 차례 — 카드를 뒤집으세요! 👇');
+    } else {
+      setMessage('아이비봇 2의 차례입니다... 🤖');
+    }
+
+    setTotalGameFlips(prev => {
+      const nextFlips = prev + 1;
+      if (nextFlips === 8 && !hasPromptedQuiz) {
+        setTimeout(() => startQuizPopup(), 100);
+        return nextFlips;
+      }
+
+      // Is there a 5 on the board now?
+      const counts = getTopFruitCountsInternal(
+        playerPlayedRef.current,
+        nextBot1PlayedFinal,
+        bot2PlayedRef.current
+      );
+      const hasFive = Object.values(counts).some(v => v === 5);
+
+      if (hasFive) {
+        setMessage('🔔 한 과일이 정확히 5개! 빨리 종을 누르세요!');
+        triggerBotsBellReaction();
+      } else {
+        if (nextTurnId !== 'player' && nextTurnId !== 'bot1') {
           triggerBotFlip(nextTurnId);
         }
       }
@@ -1051,19 +1206,35 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
   // Keyboard hooks
   const ringBellStaticRef = useRef(ringBell);
   const playerFlipStaticRef = useRef(playerFlip);
+  const player2FlipStaticRef = useRef(player2Flip);
   useEffect(() => { ringBellStaticRef.current = ringBell; });
   useEffect(() => { playerFlipStaticRef.current = playerFlip; });
+  useEffect(() => { player2FlipStaticRef.current = player2Flip; });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (showQuizPopupRef.current) return;
-      if (e.code === 'Space') {
+
+      // Player 1 Keyboard Controls
+      if (e.code === 'Space' || e.code === 'KeyW') {
         e.preventDefault();
         ringBellStaticRef.current('player');
       }
-      if (e.code === 'Enter' || e.code === 'ArrowRight') {
+      if (e.code === 'Enter' || e.code === 'ArrowRight' || e.code === 'KeyQ') {
         e.preventDefault();
         playerFlipStaticRef.current();
+      }
+
+      // Player 2 Keyboard Controls
+      if (gameModeRef.current !== 'solo') {
+        if (e.code === 'KeyO') {
+          e.preventDefault();
+          ringBellStaticRef.current('bot1');
+        }
+        if (e.code === 'KeyP') {
+          e.preventDefault();
+          player2FlipStaticRef.current();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1125,55 +1296,120 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
               className="w-12 h-12 object-contain"
             />
           </div>
-          <h2 className="text-lg font-black text-amber-200 mb-2 leading-snug">💡 3인 대결 할리갈리 규칙 안내</h2>
-          <div className="w-full bg-emerald-950/65 p-3.5 rounded-xl border border-emerald-500/20 text-left text-[11px] text-emerald-100 mb-4 space-y-2 leading-relaxed">
-            <p>1. <b>대결 인원</b>: 나(학습자), 그리고 두 명의 뛰어난 인공지능 <b>아이비봇 1, 아이비봇 2</b>와 함께 총 3명이서 진행합니다.</p>
-            <p>2. <b>시작 카드</b>: 각각 <b>10장씩</b> 사이좋게 카드를 나누어 받고 대결을 개시합니다.</p>
-            <p>3. <b>카드 뒤집기</b>: 내 순서에 내 덱을 터치하면 바닥에 카드가 뒤집혀 노출됩니다.</p>
-            <p>4. <b>종 치기(🛎️)</b>: 세 명의 플레이어가 깔아놓은 활성 공개 카드 속 과일들을 더했을 때, <b>어떤 종류든 합계가 정확히 5개</b>가 되는 즉시 가운데 벨을 칩니다!</p>
-            <p>5. <b>카드 쓸어가기</b>: 종을 가장 빨리 터치한 사람이 <b>바닥에 쌓인 모든 카드들을 획득</b>하여 본인의 덱 뒤로 쏙 집어넣습니다.</p>
-            <p>6. <b>패널티</b>: 5개가 아닐 때 실수로 빈 벨을 울리면, <b>다른 두 명의 플레이어에게 카드를 1장씩 선물로 넘겨주는</b> 엄격한 패널티가 가용됩니다!</p>
-          </div>
-
-          {/* 난이도 선택 */}
-          <div className="w-full mb-5">
-            <span className="text-xs font-black text-amber-300 block mb-2">🔥 봇 난이도 선택</span>
-            <div className="grid grid-cols-3 gap-2 bg-emerald-950/80 p-1.5 rounded-2xl border border-emerald-500/30">
+          <h2 className="text-lg font-black text-amber-200 mb-2 leading-snug">🛎️ 대결 방식 & 규칙 안내</h2>
+          
+          {/* 게임 방식 선택 */}
+          <div className="w-full mb-3.5 text-left">
+            <span className="text-[10px] font-black text-amber-400 block mb-1.5 uppercase tracking-wider">1. 게임 방식 선택</span>
+            <div className="grid grid-cols-3 gap-1.5 bg-emerald-950/80 p-1.5 rounded-2xl border border-emerald-500/30">
               <button
                 type="button"
-                onClick={() => setDifficulty('easy')}
-                className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  difficulty === 'easy'
-                    ? 'bg-emerald-500 text-white shadow-md border border-emerald-300/30'
-                    : 'text-emerald-300 hover:bg-emerald-900/40'
-                }`}
-              >
-                하 (초보자)
-              </button>
-              <button
-                type="button"
-                onClick={() => setDifficulty('normal')}
-                className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  difficulty === 'normal'
+                onClick={() => setGameMode('solo')}
+                className={`py-2 px-1 rounded-xl text-[10px] sm:text-xs font-black transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                  gameMode === 'solo'
                     ? 'bg-amber-400 text-slate-950 shadow-md border border-amber-300/30'
                     : 'text-emerald-300 hover:bg-emerald-900/40'
                 }`}
               >
-                중 (일반)
+                <span>솔로 (vs 봇 2)</span>
               </button>
               <button
                 type="button"
-                onClick={() => setDifficulty('hard')}
-                className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  difficulty === 'hard'
-                    ? 'bg-rose-600 text-white shadow-md border border-rose-300/30'
+                onClick={() => setGameMode('two')}
+                className={`py-2 px-1 rounded-xl text-[10px] sm:text-xs font-black transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                  gameMode === 'two'
+                    ? 'bg-amber-400 text-slate-950 shadow-md border border-amber-300/30'
                     : 'text-emerald-300 hover:bg-emerald-900/40'
                 }`}
               >
-                상 (프로)
+                <span>2인용 (인간끼리)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGameMode('three')}
+                className={`py-2 px-1 rounded-xl text-[10px] sm:text-xs font-black transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                  gameMode === 'three'
+                    ? 'bg-amber-400 text-slate-950 shadow-md border border-amber-300/30'
+                    : 'text-emerald-300 hover:bg-emerald-900/40'
+                }`}
+              >
+                <span>3인용 (2인+컴)</span>
               </button>
             </div>
           </div>
+
+          {/* 동적 룰 정보 박스 */}
+          <div className="w-full bg-emerald-950/65 p-3.5 rounded-xl border border-emerald-500/20 text-left text-[11px] text-emerald-100 mb-4 space-y-1.5 leading-relaxed">
+            {gameMode === 'solo' && (
+              <>
+                <p>👥 <b>플레이어</b>: 나 vs 인공지능 로봇 2명 (아이비봇 1, 2)</p>
+                <p>🃏 <b>시작 카드</b>: 각각 <b>10장씩</b> 나누어 가집니다.</p>
+                <p>⌨️ <b>단축키</b>: 카드 뒤집기 (<b>Q / Enter / ArrowRight</b>), 종 치기 (<b>W / Spacebar</b>)</p>
+              </>
+            )}
+            {gameMode === 'two' && (
+              <>
+                <p>👥 <b>플레이어</b>: 1번 플레이어 vs 2번 플레이어 (로컬 2인용)</p>
+                <p>🃏 <b>시작 카드</b>: 각각 <b>15장씩</b> 나누어 가집니다.</p>
+                <p>⌨️ <b>단축키 안내</b>:</p>
+                <p className="pl-2 text-[10px] text-amber-200">- <b>1번 플레이어 (초록)</b>: 뒤집기 <b>Q</b>, 종치기 <b>W / Space</b></p>
+                <p className="pl-2 text-[10px] text-amber-200">- <b>2번 플레이어 (빨강)</b>: 뒤집기 <b>P</b>, 종치기 <b>O</b></p>
+              </>
+            )}
+            {gameMode === 'three' && (
+              <>
+                <p>👥 <b>플레이어</b>: 1번 플레이어 vs 2번 플레이어 vs 컴퓨터 봇 1명</p>
+                <p>🃏 <b>시작 카드</b>: 각각 <b>10장씩</b> 나누어 가집니다.</p>
+                <p>⌨️ <b>단축키 안내</b>:</p>
+                <p className="pl-2 text-[10px] text-amber-200">- <b>1번 플레이어 (초록)</b>: 뒤집기 <b>Q</b>, 종치기 <b>W / Space</b></p>
+                <p className="pl-2 text-[10px] text-amber-200">- <b>2번 플레이어 (빨강)</b>: 뒤집기 <b>P</b>, 종치기 <b>O</b></p>
+                <p className="pl-2 text-[10px] text-purple-300">- <b>컴퓨터 봇 (보라)</b>: 자동으로 뒤집고 합이 5가 되면 빠르게 종을 칩니다.</p>
+              </>
+            )}
+            <p>🔔 <b>공통 룰</b>: 깔린 카드 중 <b>어떤 종류든 합계가 정확히 5개</b>가 되면 재빨리 종을 칩니다! 먼저 울린 사람이 바닥 카드를 다 가져가며, 오답 종은 카드 1장씩 선물로 주는 벌칙이 주어집니다.</p>
+          </div>
+
+          {/* 난이도 선택 (solo 및 three 모드일 때만 봇 난이도가 유효) */}
+          {gameMode !== 'two' && (
+            <div className="w-full mb-5">
+              <span className="text-[10px] font-black text-amber-300 block mb-1.5 uppercase tracking-wider">2. 봇 난이도 선택</span>
+              <div className="grid grid-cols-3 gap-2 bg-emerald-950/80 p-1.5 rounded-2xl border border-emerald-500/30">
+                <button
+                  type="button"
+                  onClick={() => setDifficulty('easy')}
+                  className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    difficulty === 'easy'
+                      ? 'bg-emerald-500 text-white shadow-md border border-emerald-300/30'
+                      : 'text-emerald-300 hover:bg-emerald-900/40'
+                  }`}
+                >
+                  하 (초보자)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficulty('normal')}
+                  className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    difficulty === 'normal'
+                      ? 'bg-amber-400 text-slate-950 shadow-md border border-amber-300/30'
+                      : 'text-emerald-300 hover:bg-emerald-900/40'
+                  }`}
+                >
+                  중 (일반)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDifficulty('hard')}
+                  className={`py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    difficulty === 'hard'
+                      ? 'bg-rose-600 text-white shadow-md border border-rose-300/30'
+                      : 'text-emerald-300 hover:bg-emerald-900/40'
+                  }`}
+                >
+                  상 (프로)
+                </button>
+              </div>
+            </div>
+          )}
 
           <Button 
             onClick={initGame}
@@ -1181,7 +1417,9 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
             className="py-3 px-8 text-xs font-black bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 rounded-xl w-full border-b-4 border-amber-800 shadow-lg active:scale-95 transition-all"
             id="start-halligalli-btn"
           >
-            3인 대결 시작하기 (각 10장)
+            {gameMode === 'solo' && '솔로 3인전 배틀 시작하기'}
+            {gameMode === 'two' && '한패드 2인용 대결 시작하기'}
+            {gameMode === 'three' && '3인전 대결 시작하기 (2인+컴퓨터)'}
           </Button>
         </div>
       )}
@@ -1202,28 +1440,36 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
           </div>
 
           {/* TOP 3-WAY STATUS PANEL */}
-          <div className="grid grid-cols-3 gap-1.5 bg-black/35 border border-white/5 p-2 rounded-xl text-center">
+          <div className={`grid ${gameMode === 'two' ? 'grid-cols-2' : 'grid-cols-3'} gap-1.5 bg-black/35 border border-white/5 p-2 rounded-xl text-center`}>
             <div className={`p-1 rounded-lg border transition-all ${
               currentTurn === 'player' ? 'bg-amber-400/20 border-amber-400' : 'bg-slate-900/40 border-transparent text-zinc-400'
             }`}>
-              <span className="text-[10px] font-black block">👦 나 (학습자)</span>
+              <span className="text-[10px] font-black block">
+                {gameMode === 'solo' ? '👦 나 (학습자)' : '👦 1번 플레이어 (초록)'}
+              </span>
               <span className="text-[9px] font-bold text-amber-300">{playerDeck.length + playerPlayed.length}장 </span>
               {currentTurn === 'player' && <span className="text-[8px] bg-amber-500 text-slate-950 px-1 rounded font-black inline-block ml-1 animate-pulse">TURN</span>}
             </div>
             <div className={`p-1 rounded-lg border transition-all ${
               currentTurn === 'bot1' ? 'bg-orange-500/20 border-orange-400' : 'bg-slate-900/40 border-transparent text-zinc-400'
             }`}>
-              <span className="text-[10px] font-black block">🤖 아이비봇 1</span>
+              <span className="text-[10px] font-black block">
+                {gameMode === 'solo' ? '🤖 아이비봇 1' : '👧 2번 플레이어 (빨강)'}
+              </span>
               <span className="text-[9px] font-bold text-orange-300">{bot1Deck.length + bot1Played.length}장</span>
               {currentTurn === 'bot1' && <span className="text-[8px] bg-orange-500 text-slate-950 px-1 rounded font-black inline-block ml-1 animate-pulse">TURN</span>}
             </div>
-            <div className={`p-1 rounded-lg border transition-all ${
-              currentTurn === 'bot2' ? 'bg-pink-500/20 border-pink-400' : 'bg-slate-900/40 border-transparent text-zinc-400'
-            }`}>
-              <span className="text-[10px] font-black block">🤖 아이비봇 2</span>
-              <span className="text-[9px] font-bold text-pink-300">{bot2Deck.length + bot2Played.length}장</span>
-              {currentTurn === 'bot2' && <span className="text-[8px] bg-pink-500 text-slate-950 px-1 rounded font-black inline-block ml-1 animate-pulse">TURN</span>}
-            </div>
+            {gameMode !== 'two' && (
+              <div className={`p-1 rounded-lg border transition-all ${
+                currentTurn === 'bot2' ? 'bg-pink-500/20 border-pink-400' : 'bg-slate-900/40 border-transparent text-zinc-400'
+              }`}>
+                <span className="text-[10px] font-black block">
+                  {gameMode === 'three' ? '🤖 컴퓨터봇' : '🤖 아이비봇 2'}
+                </span>
+                <span className="text-[9px] font-bold text-pink-300">{bot2Deck.length + bot2Played.length}장</span>
+                {currentTurn === 'bot2' && <span className="text-[8px] bg-pink-500 text-slate-950 px-1 rounded font-black inline-block ml-1 animate-pulse">TURN</span>}
+              </div>
+            )}
           </div>
 
           {/* REAL COLLABORATIVE FELT TABLE (Triangle circular layout modeled like the image) */}
@@ -1235,26 +1481,35 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
               {/* Bot 1 (Left) */}
               <div className="flex flex-col items-center gap-1.5 max-w-[45%]">
                 <div className="text-[9px] text-orange-200 font-extrabold flex items-center gap-1">
-                  <span>🤖 봇1</span>
+                  <span>{gameMode === 'solo' ? '🤖 봇1' : '👧 P2 (빨강)'}</span>
                   <span className="text-[8px] font-mono text-orange-400">({bot1Deck.length}장 대기)</span>
                 </div>
                 <div className="flex items-center gap-1.5 scale-90 sm:scale-100 origin-top-left">
-                  <RenderDeck count={bot1Deck.length} label="봇1" />
+                  <RenderDeck 
+                    count={bot1Deck.length} 
+                    label={gameMode === 'solo' ? '봇1' : 'P2'} 
+                    isPlayerTurn={currentTurn === 'bot1'} 
+                    onClick={player2Flip}
+                    disabled={currentTurn !== 'bot1' || bot1Deck.length === 0}
+                    isPlayer={gameMode !== 'solo'}
+                  />
                   <RenderCard card={bot1Played.length > 0 ? bot1Played[bot1Played.length - 1] : null} label="공공 필드" playedCount={bot1Played.length} />
                 </div>
               </div>
 
               {/* Bot 2 (Right) */}
-              <div className="flex flex-col items-center gap-1.5 max-w-[45%]">
-                <div className="text-[9px] text-pink-200 font-extrabold flex items-center gap-1">
-                  <span>🤖 봇2</span>
-                  <span className="text-[8px] font-mono text-pink-400">({bot2Deck.length}장 대기)</span>
+              {gameMode !== 'two' && (
+                <div className="flex flex-col items-center gap-1.5 max-w-[45%]">
+                  <div className="text-[9px] text-pink-200 font-extrabold flex items-center gap-1">
+                    <span>{gameMode === 'three' ? '🤖 컴퓨터봇' : '🤖 봇2'}</span>
+                    <span className="text-[8px] font-mono text-pink-400">({bot2Deck.length}장 대기)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 scale-90 sm:scale-100 origin-top-right">
+                    <RenderCard card={bot2Played.length > 0 ? bot2Played[bot2Played.length - 1] : null} label="공공 필드" playedCount={bot2Played.length} />
+                    <RenderDeck count={bot2Deck.length} label="봇2" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 scale-90 sm:scale-100 origin-top-right">
-                  <RenderCard card={bot2Played.length > 0 ? bot2Played[bot2Played.length - 1] : null} label="공공 필드" playedCount={bot2Played.length} />
-                  <RenderDeck count={bot2Deck.length} label="봇2" />
-                </div>
-              </div>
+              )}
 
             </div>
 
@@ -1315,13 +1570,13 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
                   
                   {/* Player played card */}
                   <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-[8px] text-zinc-400 font-bold">내 공개 카드</span>
+                    <span className="text-[8px] text-zinc-400 font-bold">오픈 카드</span>
                     <RenderCard card={playerPlayed.length > 0 ? playerPlayed[playerPlayed.length - 1] : null} label="빈 필드" playedCount={playerPlayed.length} />
                   </div>
 
                   {/* Player deck to flip */}
                   <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-[8px] text-zinc-400 font-bold">내 카드 덱</span>
+                    <span className="text-[8px] text-zinc-400 font-bold">카드 덱</span>
                     <RenderDeck 
                       count={playerDeck.length} 
                       label="내 카드" 
@@ -1333,7 +1588,9 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
                   </div>
 
                 </div>
-                <div className="text-[9px] text-[#86efac] font-bold mt-1">👦 나 (학습자) · 총 {playerDeck.length + playerPlayed.length}장 보유</div>
+                <div className="text-[9px] text-[#86efac] font-bold mt-1">
+                  {gameMode === 'solo' ? '👦 나 (학습자)' : '👦 1번 플레이어 (초록)'} · 총 {playerDeck.length + playerPlayed.length}장 보유
+                </div>
               </div>
             </div>
 
@@ -1408,21 +1665,25 @@ export const HalliGalliGame = ({ soundEnabled, onGameFinish }: { soundEnabled: b
       {gameState === 'END' && (
         <div className="flex-1 flex flex-col items-center justify-center p-5 text-center max-w-sm mx-auto z-10 overflow-y-auto w-full">
           <div className="w-16 h-16 rounded-2xl bg-zinc-950/40 border border-white/10 flex items-center justify-center shadow-lg mb-4 text-3xl">
-            {winner === 'player' ? '🏆' : winner === 'draw' ? '🤝' : '🤖'}
+            {winner === 'player' ? '🏆' : (winner === 'bot1' && gameMode !== 'solo') ? '🏆' : winner === 'draw' ? '🤝' : '🤖'}
           </div>
           <h2 className="text-lg font-black mb-1.5 text-amber-200">
             {winner === 'player' 
-              ? '🎉 내가 승리했습니다!!' 
-              : winner === 'draw' 
-                ? '🤝 무승부로 끝났습니다!' 
-                : `🤖 아이비봇 ${winner === 'bot1' ? '1' : '2'} 승리!`}
+              ? (gameMode === 'solo' ? '🎉 내가 승리했습니다!!' : '🎉 1번 플레이어 승리!!')
+              : winner === 'bot1'
+                ? (gameMode === 'solo' ? '🤖 아이비봇 1 승리!' : '🎉 2번 플레이어 승리!!')
+                : winner === 'draw' 
+                  ? '🤝 무승부로 끝났습니다!' 
+                  : '🤖 컴퓨터봇 승리!'}
           </h2>
           <p className="text-[11px] text-zinc-300 font-semibold mb-6 max-w-[280px] leading-relaxed">
             {winner === 'player' 
-              ? '아이비봇 두 명의 카드를 완전히 싹 쓸어왔습니다! 당신은 할리갈리의 왕이군요!' 
-              : winner === 'draw' 
-                ? '모든 플레이어의 카드가 완전히 분배되거나 소진되어 승부를 가릴 수 없습니다. 치열한 대결이었습니다!' 
-                : `아이비봇 ${winner === 'bot1' ? '1' : '2'}이 영광의 승리를 쟁취했습니다. 다시 시작하여 굴복시키세요!`}
+              ? (gameMode === 'solo' ? '아이비봇 두 명의 카드를 완전히 싹 쓸어왔습니다! 당신은 할리갈리의 왕이군요!' : '상대방의 카드를 완전히 싹 쓸어왔습니다! 1번 플레이어 대승리!') 
+              : winner === 'bot1'
+                ? (gameMode === 'solo' ? '아이비봇 1이 영광의 승리를 쟁취했습니다. 다시 시작하여 굴복시키세요!' : '상대방의 카드를 완전히 싹 쓸어왔습니다! 2번 플레이어 대승리!')
+                : winner === 'draw' 
+                  ? '모든 플레이어의 카드가 완전히 분배되거나 소진되어 승부를 가릴 수 없습니다. 치열한 대결이었습니다!' 
+                  : '컴퓨터봇이 영광의 승리를 쟁취했습니다. 다시 시작하여 승리해 보세요!'}
           </p>
 
           <Button 
